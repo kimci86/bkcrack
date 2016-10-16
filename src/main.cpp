@@ -37,7 +37,7 @@ int main(int argc, char const *argv[])
     Data data;
     Keys keys;
     bool keysFound = false;
-    std::size_t begin = 0, size = 0;
+    std::size_t begin = 0, size = 1 << 22;
     bool slice = false;
 
     for(int i = 1; i < argc; i++)
