@@ -17,6 +17,11 @@ class FileError : public std::runtime_error
 /// \exception FileError if the file can not be opened
 std::ifstream openInput(std::string filename);
 
+/// Open an input file stream ready to read a zip archive entry data
+///
+/// \exception FileError if the file can not be opened or the entry does not exist
+std::ifstream openInputZipEntry(const std::string archivename, const std::string& entryname, std::size_t& size);
+
 /// Open an output file stream
 ///
 /// \exception FileError if the file can not be opened
