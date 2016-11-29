@@ -87,3 +87,26 @@ std::ofstream openOutput(std::string filename)
     else
         throw FileError("Could not open output file " + filename);
 }
+
+bytevec loadStream(std::istream& is, std::size_t size)
+{
+    bytevec content;
+    std::istreambuf_iterator<char> it(is);
+    for(std::size_t i = 0; i < size && it != std::istreambuf_iterator<char>(); i++, ++it)
+        content.push_back(*it);
+
+    return content;
+}
+
+bytevec loadFile(std::string filename, std::size_t size)
+{
+    std::ifstream is = openInput(filename);
+    return loadStream(is, size);
+}
+
+bytevec loadZipEntry(const std::string archivename, const std::string& entryname, std::size_t size)
+{
+    std::size_t entrysize;
+    std::ifstream is = openInputZipEntry(archivename, entryname, entrysize);
+    return loadStream(is, std::min(entrysize, size));
+}
