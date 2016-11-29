@@ -20,9 +20,10 @@ struct Data
 
     /// Load ciphertext and plaintext. Compute keystream.
     ///
-    /// \exception FileError if a file can not be opened
+    /// \exception FileError if a file can not be opened or an entry does not exist
     /// \exception Error if data can not be used to carry out an attack
-    void load(const std::string& cipherfile, const std::string& plainfile);
+    void load(const std::string& cipherarchive, const std::string& cipherfile,
+              const std::string& plainarchive, const std::string& plainfile);
 
     bytevec ciphertext, ///< ciphertext bytes including encryption header
             plaintext, ///< plaintext bytes

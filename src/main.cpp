@@ -20,6 +20,8 @@ Mandatory:
                       in hexadecimal (requires -d)
 
 Optional:
+ -C encryptedzip    Zip archive containing cipherfile
+ -P plainzip        Zip archive containing plainfile
  -o offset          Known plaintext offset relative to ciphertext
                       without encryption header (may be negative)
  -d decipheredfile  File to write the deciphered text
@@ -33,7 +35,9 @@ int main(int argc, char const *argv[])
     std::cout << std::fixed << std::setprecision(1);
 
     // parse arguments
-    std::string cipherfile, plainfile, decipheredfile;
+    std::string cipherfile, cipherarchive,
+                plainfile, plainarchive,
+                decipheredfile;
     Data data;
     Keys keys;
     bool keysFound = false;
@@ -53,6 +57,12 @@ int main(int argc, char const *argv[])
                     break;
                 case 'p':
                     plainfile = value;
+                    break;
+                case 'C':
+                    cipherarchive = value;
+                    break;
+                case 'P':
+                    plainarchive = value;
                     break;
                 case 'o':
                     data.offset = std::stoi(value);
@@ -111,7 +121,7 @@ int main(int argc, char const *argv[])
         // load data
         try
         {
-            data.load(cipherfile, plainfile);
+            data.load(cipherarchive, cipherfile, plainarchive, plainfile);
         }
         catch(FileError e)
         {
@@ -186,11 +196,15 @@ int main(int argc, char const *argv[])
     if(keysFound && !decipheredfile.empty())
     {
         std::ifstream cipherstream;
+        std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
         std::ofstream decipheredstream;
 
         try
         {
-            cipherstream = openInput(cipherfile);
+            if(cipherarchive.empty())
+                cipherstream = openInput(cipherfile);
+            else
+                cipherstream = openInputZipEntry(cipherarchive, cipherfile, ciphersize);
             decipheredstream = openOutput(decipheredfile);
         }
         catch(FileError e)
@@ -201,10 +215,11 @@ int main(int argc, char const *argv[])
 
         // discard the encryption header
         std::istreambuf_iterator<char> cipher(cipherstream);
-        for(std::size_t i = 0; i < Data::headerSize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
+        std::size_t i;
+        for(i = 0; i < Data::headerSize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
             keys.update(*cipher ^ KeystreamTab::getByte(keys.getZ()));
 
-        for(std::ostreambuf_iterator<char> plain(decipheredstream); cipher != std::istreambuf_iterator<char>(); ++cipher, ++plain)
+        for(std::ostreambuf_iterator<char> plain(decipheredstream); i < ciphersize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)
         {
             byte p = *cipher ^ KeystreamTab::getByte(keys.getZ());
             keys.update(p);
