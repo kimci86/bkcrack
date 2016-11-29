@@ -23,17 +23,31 @@ The following options can be configured:
 Usage
 -----
 
+### Data required
+
 The attack uses at least 12 bytes of contiguous plaintext.
 The larger the known plaintext, the faster the attack.
+
+#### From zip archives
+
+Having a zip archive `encrypted.zip` with the entry `cipher` being the ciphertext and `plain.zip` with the entry `plain` as the known plaintext, bkcrack can be run like this:
+
+    bkcrack -C encrypted.zip -c cipher -P plain.zip -p plain
+
+#### From files
 
 Having a file `cipherfile` with the ciphertext (starting with the 12 bytes corresponding to the encryption header) and `plainfile` with the known plaintext, bkcrack can be run like this:
 
     bkcrack -c cipherfile -p plainfile
 
+#### Offset
+
 If the plaintext corresponds to a part other than the beginning of the ciphertext, you can specify an offset.
 It can be negative if the plaintext includes a part of the encryption header.
 
     bkcrack -c cipherfile -p plainfile -o offset
+
+### Slice of keyspace
 
 It is possible to test only a given range of keys remaining after the reduction step.
 It can be useful to carry out an attack in several times or on multiple computers at once.
@@ -42,6 +56,8 @@ It can be useful to carry out an attack in several times or on multiple computer
 
     bkcrack -c cipherfile -p plainfile -b begin -s size
 
+### Decipher
+
 If the attack is successful, the deciphered text can be saved:
 
     bkcrack -c cipherfile -p plainfile -d decipheredfile
@@ -49,6 +65,10 @@ If the attack is successful, the deciphered text can be saved:
 If the keys are known from a previous attack, it is possible to use bkcrack to decipher data:
 
     bkcrack -c cipherfile -k 12345678 23456789 34567890 -d decipheredfile
+
+The data will only be deciphered and not decompressed. An external tool may be used to do it.
+
+### Number of threads
 
 If bkcrack was built with parallel mode enabled, the number of threads used can be set through the environment variable `OMP_NUM_THREADS`.
 
