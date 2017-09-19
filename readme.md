@@ -47,15 +47,6 @@ It can be negative if the plaintext includes a part of the encryption header.
 
     bkcrack -c cipherfile -p plainfile -o offset
 
-### Slice of keyspace
-
-It is possible to test only a given range of keys remaining after the reduction step.
-It can be useful to carry out an attack in several times or on multiple computers at once.
-
-    bkcrack -c cipherfile -p plainfile -b begin
-
-    bkcrack -c cipherfile -p plainfile -b begin -s size
-
 ### Decipher
 
 If the attack is successful, the deciphered text can be saved:
