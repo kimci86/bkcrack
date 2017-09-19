@@ -47,4 +47,3 @@ class Attack
 };
 
 #endif // BKCRACK_ATTACK_HPP
-
