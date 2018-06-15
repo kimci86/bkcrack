@@ -92,5 +92,5 @@ int Arguments::readInt(const std::string& description)
 
 dword Arguments::readKey(const std::string& description)
 {
-    return std::stol(readString(description), nullptr, 16);
+    return std::stoul(readString(description), nullptr, 16);
 }
