@@ -14,12 +14,15 @@ void Arguments::parse(int argc, const char* argv[])
         parseArgument();
 
     // check mandatory arguments
-    if(cipherfile.empty())
-        throw Error("-c parameter is missing");
-    if(!keysGiven && plainfile.empty())
-        throw Error("-p parameter is missing");
-    if(keysGiven && decipheredfile.empty())
-        throw Error("-d parameter is missing");
+    if(!help)
+    {
+        if(cipherfile.empty())
+            throw Error("-c parameter is missing");
+        if(!keysGiven && plainfile.empty())
+            throw Error("-p parameter is missing");
+        if(keysGiven && decipheredfile.empty())
+            throw Error("-d parameter is missing");
+    }
 }
 
 bool Arguments::finished() const
