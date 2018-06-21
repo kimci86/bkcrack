@@ -57,7 +57,12 @@ If the keys are known from a previous attack, it is possible to use bkcrack to d
 
     bkcrack -c cipherfile -k 12345678 23456789 34567890 -d decipheredfile
 
-The data will only be deciphered and not decompressed. An external tool may be used to do it.
+### Decompress
+
+The deciphered data might be compressed depending on whether compression was used or not when the zip file was created.
+If deflate compression was used, a Python 3 script provided in the `tools` folder may be used to decompress data.
+
+    tools/inflate.py < decipheredfile > decompressedfile
 
 ### Number of threads
 
