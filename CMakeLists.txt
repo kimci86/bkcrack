@@ -20,5 +20,6 @@ endif()
 
 # install rules
 install(DIRECTORY example DESTINATION .)
+install(DIRECTORY tools DESTINATION .)
 install(FILES readme.md DESTINATION .)
 install(FILES license.txt DESTINATION .)
