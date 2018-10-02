@@ -1,0 +1,39 @@
+name: bkcrack
+version: "0.1.0"
+author: Aloxaf <aloxafx@gmail.com>
+about: Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
+args:
+- cipherfile:
+    short: c
+    help: File containing the ciphertext
+    takes_value: true
+    required: true
+- plainfile:
+    short: p
+    help: File containing the known plaintext
+    takes_value: true
+    required: true
+    conflicts_with: key
+- key:
+    short: k
+    help: Internal password representation as three 32-bits integers in hexadecimal (requires -d)
+    takes_value: true
+    multiple: true
+    conflicts_with: plainfile
+
+- encryptedzip:
+    short: C
+    help: Zip archive containing cipherfile
+    takes_value: true
+- plainzip:
+    short: P
+    help: Zip archive containing plainfile
+    takes_value: true
+- offset:
+    short: o
+    help: Known plaintext offset relative to ciphertext without encryption header (may be negative)
+    takes_value: true
+- decipheredfile:
+    short: d
+    help: File to write the deciphered text
+    takes_value: true
