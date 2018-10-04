@@ -38,9 +38,9 @@ class Arguments
         bool help = false; ///< Tell whether help message is needed or not
 
     private:
-        int m_argc;
-        const char** m_argv;
-        const char** m_current;
+        int argc;
+        const char** argv;
+        const char** current;
 
         bool finished() const;
 

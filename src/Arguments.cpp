@@ -7,9 +7,9 @@ Arguments::Error::Error(const std::string& description)
 void Arguments::parse(int argc, const char* argv[])
 {
     // parse arguments
-    m_argc = argc;
-    m_argv = argv;
-    m_current = argv + 1;
+    this->argc = argc;
+    this->argv = argv;
+    this->current = argv + 1;
     while(!finished())
         parseArgument();
 
@@ -27,7 +27,7 @@ void Arguments::parse(int argc, const char* argv[])
 
 bool Arguments::finished() const
 {
-    return m_current == m_argv + m_argc;
+    return current == argv + argc;
 }
 
 void Arguments::parseArgument()
@@ -75,7 +75,7 @@ std::string Arguments::readString(const std::string& description)
     if(finished())
         throw Error("expected "+description+", got nothing");
 
-    return std::string(*m_current++);
+    return std::string(*current++);
 }
 
 char Arguments::readFlag(const std::string& description)
