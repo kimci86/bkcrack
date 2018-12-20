@@ -71,6 +71,8 @@ If bkcrack was built with parallel mode enabled, the number of threads used can 
 Learn
 -----
 
+A tutorial is provided in the `example` folder.
+
 For more information, have a look at the documentation and read the source.
 
 Contribute
