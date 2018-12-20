@@ -32,9 +32,11 @@ void Zreduction::reduce()
     bool waiting = false;
     std::size_t wait = 0;
 
+    dwordvec zim1_2_32_vector;
+
     for(std::size_t i = index; i >= Attack::size; i--)
     {
-        dwordvec zim1_2_32_vector;
+        zim1_2_32_vector.clear();
 
         // generate the Z{i-1}[2,32) values
         for(dword zi_2_32 : zi_2_32_vector)
@@ -66,7 +68,7 @@ void Zreduction::reduce()
             if(bestIndex == i) // hit a minimum
             {
                 // keep a copy of the vector because size is about to grow
-                bestCopy = zi_2_32_vector;
+                std::swap(bestCopy, zi_2_32_vector);
 
                 if(bestSize <= waitSize)
                 {
