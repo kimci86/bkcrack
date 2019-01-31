@@ -1,12 +1,15 @@
-# Tutorial
+Tutorial {#tutorial}
+========
 
-This folder contains an example zip file `secrets.zip` so you can run an attack.
+\brief A guide to crack an example encrypted zip file.
+
+The `example` folder contains an example zip file `secrets.zip` so you can run an attack.
 Its content is probably of great interest!
 
-## What is inside
+# What is inside
 
 Let us see what is inside.
-We ask `unzip` to give us information about it.
+Open a terminal in the `example` folder and ask `unzip` to give us information about it.
 
     $ unzip -Z secrets.zip
 
@@ -22,19 +25,19 @@ The zip file contains two files: `advice.jpg` and `spiral.svg`.
 The capital letter in the fifth field shows the files are encrypted.
 We also see that `advice.jpg` is deflated whereas `spiral.svg` is stored uncompressed.
 
-## Guessing plaintext
+# Guessing plaintext
 
 To run the attack, we must guess at least 12 bytes of plaintext.
 On average, the more plaintext we guess, the faster the attack will be.
 
-### The easy way : stored file
+## The easy way : stored file
 
 We can guess from its extension that `spiral.svg` probably starts with the string `<?xml version="1.0" `.
 
 We are so lucky that this file is stored uncompressed in the zip file.
 So we have 20 bytes of plaintext, which is more than enough.
 
-### The not so easy way : deflated file
+## The not so easy way : deflated file
 
 Let us assume the zip file did not contain the uncompressed `spiral.svg`.
 
@@ -46,7 +49,7 @@ In this example, this approach is not practical.
 It can be practical if the original file can easily be found online, like a .dll file for example.
 Then, one would compress it using various compression software and compression levels to try and generate the correct plaintext.
 
-### Free additional byte from CRC
+## Free additional byte from CRC
 
 In this example, we guessed the first 20 bytes of `spiral.svg`.
 
@@ -60,7 +63,7 @@ We can get the CRC with `unzip`.
 
 So we know the byte just before the plaintext (i.e. at offset -1) is 0xA9.
 
-## Running the attack
+# Running the attack
 
 Let us write the plaintext we guessed in a file.
 
@@ -81,7 +84,7 @@ After a little while, the keys will appear!
     [19:31:02] Keys
     c4038591 d5ff449d d3b0c696
 
-## Recovering the original files
+# Recovering the original files
 
 Once we have the keys, we can decipher the files.
 We assume that the same keys were used for all the files in the zip file.

@@ -7,7 +7,8 @@ STRIP_FROM_INC_PATH = "@DOXYGEN_INPUT_DIR@/include"
 TAB_SIZE = 4
 QUIET = YES
 INPUT = "@DOXYGEN_INPUT_DIR@/include" \
-        "@DOXYGEN_INPUT_DIR@/doc"
+        "@DOXYGEN_INPUT_DIR@/doc" \
+        "@DOXYGEN_INPUT_DIR@/example"
 FILE_PATTERNS = *.hpp *.dox *.md
 SEARCHENGINE = NO
 GENERATE_LATEX = NO
