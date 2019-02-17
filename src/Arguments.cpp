@@ -52,6 +52,9 @@ void Arguments::parseArgument()
         case 'o':
             offset = readInt("offset");
             break;
+        case 't':
+            plainsize = readSize("size");
+            break;
         case 'k':
         {
             // read x, y and z before calling Keys constructor to guarantee evaluation order
@@ -91,6 +94,11 @@ char Arguments::readFlag(const std::string& description)
 int Arguments::readInt(const std::string& description)
 {
     return std::stoi(readString(description), nullptr, 0);
+}
+
+std::size_t Arguments::readSize(const std::string& description)
+{
+    return std::stoull(readString(description), nullptr, 0);
 }
 
 dword Arguments::readKey(const std::string& description)

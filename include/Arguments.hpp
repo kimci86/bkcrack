@@ -2,6 +2,7 @@
 #define BKCRACK_ARGUMENTS_HPP
 
 #include <stdexcept>
+#include <limits>
 
 #include "types.hpp"
 #include "Keys.hpp"
@@ -31,6 +32,8 @@ class Arguments
 
         /// Plaintext offset relative to ciphertext without encryption header (may be negative)
         int offset = 0;
+        /// Maximum number of bytes of plaintext to read
+        std::size_t plainsize = std::numeric_limits<std::size_t>::max();
 
         Keys keys; ///< Internal password representation
         bool keysGiven = false; ///< Tell whether keys were given or not
@@ -49,6 +52,7 @@ class Arguments
         std::string readString(const std::string& description);
         char readFlag(const std::string& description);
         int readInt(const std::string& description);
+        std::size_t readSize(const std::string& description);
         dword readKey(const std::string& description);
         Keys readKeys(const std::string& description);
 };
