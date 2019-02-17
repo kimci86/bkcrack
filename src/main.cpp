@@ -25,6 +25,7 @@ Optional:
  -P plainzip        Zip archive containing plainfile
  -o offset          Known plaintext offset relative to ciphertext
                       without encryption header (may be negative)
+ -t size            Maximum number of bytes of plaintext to read
  -d decipheredfile  File to write the deciphered text
  -h                 Show this help and exit)_";
 
@@ -64,7 +65,7 @@ int main(int argc, char const *argv[])
         data.offset = args.offset;
         try
         {
-            data.load(args.cipherarchive, args.cipherfile, args.plainarchive, args.plainfile);
+            data.load(args.cipherarchive, args.cipherfile, args.plainarchive, args.plainfile, args.plainsize);
         }
         catch(const FileError& e)
         {

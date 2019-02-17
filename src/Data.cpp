@@ -10,7 +10,7 @@ Data::Error::Error(const std::string& description)
 {}
 
 void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
-                const std::string& plainarchive, const std::string& plainfile)
+                const std::string& plainarchive, const std::string& plainfile, std::size_t plainsize)
 {
     // check that offset is not too small
     if(headerSize + offset < 0)
@@ -18,9 +18,9 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
 
     // load known plaintext
     if(plainarchive.empty())
-        plaintext = loadFile(plainfile);
+        plaintext = loadFile(plainfile, plainsize);
     else
-        plaintext = loadZipEntry(plainarchive, plainfile);
+        plaintext = loadZipEntry(plainarchive, plainfile, plainsize);
 
     // check that plaintext is big enough
     if(plaintext.size() < Attack::size)

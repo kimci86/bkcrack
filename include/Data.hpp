@@ -23,7 +23,7 @@ struct Data
     /// \exception FileError if a file can not be opened or an entry does not exist
     /// \exception Error if data can not be used to carry out an attack
     void load(const std::string& cipherarchive, const std::string& cipherfile,
-              const std::string& plainarchive, const std::string& plainfile);
+              const std::string& plainarchive, const std::string& plainfile, std::size_t plainsize);
 
     bytevec ciphertext, ///< ciphertext bytes including encryption header
             plaintext, ///< plaintext bytes
