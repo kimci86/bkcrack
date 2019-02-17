@@ -66,7 +66,7 @@ void Arguments::parseArgument()
             help = true;
             break;
         default:
-            throw Error("unknown flag "+flag);
+            throw Error(std::string("unknown flag ")+flag);
     }
 }
 
