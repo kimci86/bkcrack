@@ -136,11 +136,22 @@ int main(int argc, char const *argv[])
 
         try
         {
+            // fstreams are swapped instead of move-assigned to avoid
+            // a bug in some old versions of GCC (see issue #4 on github)
+
             if(args.cipherarchive.empty())
-                cipherstream = openInput(args.cipherfile);
+            {
+                std::ifstream stream = openInput(args.cipherfile);
+                cipherstream.swap(stream);
+            }
             else
-                cipherstream = openInputZipEntry(args.cipherarchive, args.cipherfile, ciphersize);
-            decipheredstream = openOutput(args.decipheredfile);
+            {
+                std::ifstream stream = openInputZipEntry(args.cipherarchive, args.cipherfile, ciphersize);
+                cipherstream.swap(stream);
+            }
+
+            std::ofstream stream = openOutput(args.decipheredfile);
+            decipheredstream.swap(stream);
         }
         catch(const FileError& e)
         {
