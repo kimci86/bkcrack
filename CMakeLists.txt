@@ -12,14 +12,14 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # option to select parallel or serial attack
-option(PARALLEL_MODE "Enable multithreaded attack with OpenMP." ON)
+option(BKCRACK_PARALLEL_MODE "Enable multithreaded attack with OpenMP." ON)
 
 # option for building the documentation
-option(BUILD_DOC "Enable documentation generation with doxygen." ON)
+option(BKCRACK_BUILD_DOC "Enable documentation generation with doxygen." ON)
 
 # add the subdirectories
 add_subdirectory(src)
-if(BUILD_DOC)
+if(BKCRACK_BUILD_DOC)
     add_subdirectory(doc)
 endif()
 

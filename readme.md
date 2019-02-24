@@ -17,8 +17,8 @@ The following options can be configured:
 
 - `CMAKE_INSTALL_PREFIX`: Install path prefix, prepended onto install directories.
 - `CMAKE_BUILD_TYPE`: Type of build (Debug or Release).
-- `PARALLEL_MODE`: Enable multithreaded attack with [OpenMP](http://openmp.org). This requires a compiler that supports OpenMP.
-- `BUILD_DOC`: Enable documentation generation with [doxygen](http://doxygen.org).
+- `BKCRACK_PARALLEL_MODE`: Enable multithreaded attack with [OpenMP](http://openmp.org). This requires a compiler that supports OpenMP.
+- `BKCRACK_BUILD_DOC`: Enable documentation generation with [doxygen](http://doxygen.org).
 
 Usage
 -----
