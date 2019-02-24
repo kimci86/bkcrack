@@ -4,7 +4,12 @@ cmake_minimum_required(VERSION 3.0)
 project(bkcrack CXX)
 
 # default build type
-set(CMAKE_BUILD_TYPE Release CACHE STRING "Type of build (Debug or Release)." FORCE)
+set(default_build_type "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+    set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 
 # option to select parallel or serial attack
 option(PARALLEL_MODE "Enable multithreaded attack with OpenMP." ON)
