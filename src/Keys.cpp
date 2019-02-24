@@ -2,6 +2,7 @@
 #include "Crc32Tab.hpp"
 #include "KeystreamTab.hpp"
 #include "MultTab.hpp"
+#include <iomanip>
 
 Keys::Keys(dword x, dword y, dword z)
  : x(x), y(y), z(z)
@@ -34,4 +35,13 @@ dword Keys::getY() const
 dword Keys::getZ() const
 {
     return z;
+}
+
+std::ostream& operator<<(std::ostream& os, const Keys& keys)
+{
+    return os << std::hex
+              << std::setw(8) << keys.getX() << " "
+              << std::setw(8) << keys.getY() << " "
+              << std::setw(8) << keys.getZ() << " "
+              << std::dec;
 }

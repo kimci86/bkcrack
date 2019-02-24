@@ -1,6 +1,8 @@
 #ifndef BKCRACK_KEYS_HPP
 #define BKCRACK_KEYS_HPP
 
+#include <iostream>
+
 #include "types.hpp"
 
 /// Keys defining the cipher state
@@ -28,5 +30,8 @@ class Keys
     private:
         dword x, y, z;
 };
+
+/// Insert a representation of keys into the stream os
+std::ostream& operator<<(std::ostream& os, const Keys& keys);
 
 #endif // BKCRACK_KEYS_HPP

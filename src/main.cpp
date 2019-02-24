@@ -123,7 +123,7 @@ int main(int argc, char const *argv[])
     std::cout << "[" << put_time << "] ";
     if(keysFound)
         std::cout << "Keys" << std::endl
-                  << std::hex << keys.getX() << " " << keys.getY() << " " << keys.getZ() << std::endl;
+                  << keys << std::endl;
     else
         std::cout << "Could not find the keys." << std::endl;
 
