@@ -26,6 +26,7 @@ Optional:
  -o offset          Known plaintext offset relative to ciphertext
                       without encryption header (may be negative)
  -t size            Maximum number of bytes of plaintext to read
+ -e                 Exhaustively try all the keys remaining after Z reduction
  -d decipheredfile  File to write the deciphered text
  -h                 Show this help and exit)_";
 
@@ -98,9 +99,14 @@ int main(int argc, char const *argv[])
         std::cout << "[" << put_time << "] Attack on " << size << " Z values at index " << (data.offset + static_cast<int>(zr.getIndex())) << std::endl;
         Attack attack(data, zr.getIndex()-11);
 
+        const bool canStop = !args.exhaustive;
+        bool shouldStop = false;
+
         #pragma omp parallel for firstprivate(attack) schedule(dynamic)
         for(dwordvec::const_iterator it = zbegin; it < zend; ++it)
         {
+            if(shouldStop)
+                continue; // can not break out of an OpenMP for loop
 
             if(attack.carryout(*it))
             #pragma omp critical
@@ -108,6 +114,9 @@ int main(int argc, char const *argv[])
                 Keys possibleKeys = attack.getKeys();
                 std::cout << "Keys: " << possibleKeys << std::endl;
                 keysvec.push_back(possibleKeys);
+
+                if(canStop)
+                    shouldStop = true;
             }
 
             #pragma omp critical

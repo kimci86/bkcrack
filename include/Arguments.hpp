@@ -35,6 +35,9 @@ class Arguments
         /// Maximum number of bytes of plaintext to read
         std::size_t plainsize = std::numeric_limits<std::size_t>::max();
 
+        /// Tell whether to try all candidate keys exhaustively or stop after the first success
+        bool exhaustive = false;
+
         Keys keys; ///< Internal password representation
         bool keysGiven = false; ///< Tell whether keys were given or not
 

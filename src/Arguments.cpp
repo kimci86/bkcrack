@@ -55,6 +55,9 @@ void Arguments::parseArgument()
         case 't':
             plainsize = readSize("size");
             break;
+        case 'e':
+            exhaustive = true;
+            break;
         case 'k':
         {
             // read x, y and z before calling Keys constructor to guarantee evaluation order
