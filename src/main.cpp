@@ -112,11 +112,12 @@ int main(int argc, char const *argv[])
             #pragma omp critical
             {
                 Keys possibleKeys = attack.getKeys();
-                std::cout << "Keys: " << possibleKeys << std::endl;
                 keysvec.push_back(possibleKeys);
 
                 if(canStop)
                     shouldStop = true;
+                else
+                    std::cout << "Keys: " << possibleKeys << std::endl;
             }
 
             #pragma omp critical
