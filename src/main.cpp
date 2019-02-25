@@ -54,11 +54,11 @@ int main(int argc, char const *argv[])
         return 0;
     }
 
-    Keys keys = args.keys;
-    bool keysFound = args.keysGiven;
-
+    std::vector<Keys> keysvec;
+    if(args.keysGiven)
+        keysvec.push_back(args.keys);
+    else
     // find keys from known plaintext
-    if(!keysFound)
     {
         // load data
         Data data;
@@ -101,14 +101,13 @@ int main(int argc, char const *argv[])
         #pragma omp parallel for firstprivate(attack) schedule(dynamic)
         for(dwordvec::const_iterator it = zbegin; it < zend; ++it)
         {
-            if(keysFound)
-                continue;
 
             if(attack.carryout(*it))
             #pragma omp critical
             {
-                keysFound = true;
-                keys = attack.getKeys();
+                Keys possibleKeys = attack.getKeys();
+                std::cout << "Keys: " << possibleKeys << std::endl;
+                keysvec.push_back(possibleKeys);
             }
 
             #pragma omp critical
@@ -121,15 +120,23 @@ int main(int argc, char const *argv[])
 
     // print the keys
     std::cout << "[" << put_time << "] ";
-    if(keysFound)
-        std::cout << "Keys" << std::endl
-                  << keys << std::endl;
-    else
+    if(keysvec.empty())
         std::cout << "Could not find the keys." << std::endl;
+    else
+    {
+        std::cout << "Keys" << std::endl;
+        for(const Keys& keys : keysvec)
+            std::cout << keys << std::endl;
+    }
 
     // decipher
-    if(keysFound && !args.decipheredfile.empty())
+    if(!keysvec.empty() && !args.decipheredfile.empty())
     {
+        Keys keys = keysvec.front();
+        if(keysvec.size() > 1)
+            std::cout << "Deciphering data using the keys " << keys
+                      << "Use the command line option -k to provide other keys." << std::endl;
+
         std::ifstream cipherstream;
         std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
         std::ofstream decipheredstream;
