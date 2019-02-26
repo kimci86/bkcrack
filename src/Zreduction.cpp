@@ -32,28 +32,35 @@ void Zreduction::reduce()
     bool waiting = false;
     std::size_t wait = 0;
 
+    dwordvec zim1_10_32_vector;
     dwordvec zim1_2_32_vector;
 
     for(std::size_t i = index; i >= Attack::size; i--)
     {
+        zim1_10_32_vector.clear();
         zim1_2_32_vector.clear();
 
-        // generate the Z{i-1}[2,32) values
+        // generate the Z{i-1}[10,32) values
         for(dword zi_2_32 : zi_2_32_vector)
         {
             // get Z{i-1}[10,32) from CRC32^-1
             dword zim1_10_32 = Crc32Tab::getZim1_10_32(zi_2_32);
-
-            // get Z{i-1}[2,16) values from keystream byte k{i-1} and Z{i-1}[10,16)
-            for(dword zim1_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i-1], zim1_10_32))
-                zim1_2_32_vector.push_back(zim1_10_32 | zim1_2_16);
+            // collect only those that are compatible with keystream{i-1}
+            if(KeystreamTab::hasZi_2_16(keystream[i-1], zim1_10_32))
+                zim1_10_32_vector.push_back(zim1_10_32);
         }
 
         // remove duplicates
-        std::sort(zim1_2_32_vector.begin(), zim1_2_32_vector.end());
-        zim1_2_32_vector.erase(
-            std::unique(zim1_2_32_vector.begin(), zim1_2_32_vector.end()),
-            zim1_2_32_vector.end());
+        std::sort(zim1_10_32_vector.begin(), zim1_10_32_vector.end());
+        zim1_10_32_vector.erase(
+            std::unique(zim1_10_32_vector.begin(), zim1_10_32_vector.end()),
+            zim1_10_32_vector.end());
+
+        // complete Z{i-1}[10,32) values up to Z{i-1}[2,32)
+        for(dword zim1_10_32 : zim1_10_32_vector)
+            // get Z{i-1}[2,16) values from keystream byte k{i-1} and Z{i-1}[10,16)
+            for(dword zim1_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i-1], zim1_10_32))
+                zim1_2_32_vector.push_back(zim1_10_32 | zim1_2_16);
 
         // update smallest vector tracking
         if(zim1_2_32_vector.size() <= bestSize) // new smallest vector
