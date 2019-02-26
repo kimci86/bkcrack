@@ -11,5 +11,6 @@ KeystreamTab::KeystreamTab()
         keystreamtab[z_2_16 >> 2] = k;
         keystreaminvtab[k][next[k]++] = z_2_16;
         keystreaminvfiltertab[k][z_2_16 >> 10].push_back(z_2_16);
+        keystreaminvexists[k].set(z_2_16 >> 10);
     }
 }

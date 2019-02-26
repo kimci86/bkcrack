@@ -1,6 +1,8 @@
 #ifndef BKCRACK_KEYSTREAMTAB_HPP
 #define BKCRACK_KEYSTREAMTAB_HPP
 
+#include <bitset>
+
 #include "types.hpp"
 
 /// Lookup tables for keystream related computations
@@ -29,6 +31,13 @@ class KeystreamTab
             return instance.keystreaminvfiltertab[ki][(zi_10_16 & mask_0_16) >> 10];
         }
 
+        /// \return true if the vector returned by getZi_2_16_vector is not empty,
+        /// false otherwise
+        static inline bool hasZi_2_16(byte ki, dword zi_10_16)
+        {
+            return instance.keystreaminvexists[ki][(zi_10_16 & mask_0_16) >> 10];
+        }
+
     private:
         // initialize lookup tables
         KeystreamTab();
@@ -37,6 +46,7 @@ class KeystreamTab
         bytearr<1<<14> keystreamtab;
         std::array<dwordarr<64>, 256> keystreaminvtab;
         std::array<std::array<dwordvec, 64>, 256> keystreaminvfiltertab;
+        std::array<std::bitset<64>, 256> keystreaminvexists;
 
         static const KeystreamTab instance;
 };
