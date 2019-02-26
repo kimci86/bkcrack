@@ -4,6 +4,7 @@
 #include "Crc32Tab.hpp"
 #include "KeystreamTab.hpp"
 #include <algorithm>
+#include <pdqsort/pdqsort.h>
 
 Zreduction::Zreduction(const bytevec& keystream)
  : keystream(keystream)
@@ -51,7 +52,7 @@ void Zreduction::reduce()
         }
 
         // remove duplicates
-        std::sort(zim1_10_32_vector.begin(), zim1_10_32_vector.end());
+        pdqsort(zim1_10_32_vector.begin(), zim1_10_32_vector.end());
         zim1_10_32_vector.erase(
             std::unique(zim1_10_32_vector.begin(), zim1_10_32_vector.end()),
             zim1_10_32_vector.end());
