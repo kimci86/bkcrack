@@ -11,6 +11,8 @@ Get the latest version from the [git repository](https://github.com/kimci86/bkcr
 Install
 -------
 
+### Manually
+
 Build and install it with [CMake](https://cmake.org).
 
 The following options can be configured:
@@ -19,6 +21,12 @@ The following options can be configured:
 - `CMAKE_BUILD_TYPE`: Type of build (Debug or Release).
 - `BKCRACK_PARALLEL_MODE`: Enable multithreaded attack with [OpenMP](http://openmp.org). This requires a compiler that supports OpenMP.
 - `BKCRACK_BUILD_DOC`: Enable documentation generation with [doxygen](http://doxygen.org).
+
+### Arch Linux (unofficial)
+
+An unofficial package [bkcrack-git](https://aur.archlinux.org/packages/bkcrack-git/) is available in AUR.
+
+Install it with any AUR helpers you like.
 
 Usage
 -----
