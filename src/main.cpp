@@ -231,5 +231,8 @@ int main(int argc, char const *argv[])
             std::cout << "[" << put_time << "] Could not recover password" << std::endl;
     }
 
+    if(keysvec.empty())
+	    return 1;
+
     return 0;
 }
