@@ -49,12 +49,14 @@ inline byte msb(dword x)
 
 enum : dword
 {
-    mask_0_16  = 0x0000ffff,
-    mask_26_32 = 0xfc000000,
-    mask_24_32 = 0xff000000,
-    mask_10_32 = 0xfffffc00,
-    mask_8_32  = 0xffffff00,
-    mask_2_32  = 0xfffffffc
+    MASK_0_16  = 0x0000ffff,
+    MASK_0_24  = 0x00ffffff,
+    MASK_0_26  = 0x03ffffff,
+    MASK_26_32 = 0xfc000000,
+    MASK_24_32 = 0xff000000,
+    MASK_10_32 = 0xfffffc00,
+    MASK_8_32  = 0xffffff00,
+    MASK_2_32  = 0xfffffffc
 };
 
 // maximum difference between integers A and B[x,32) where A = B + somebyte.
@@ -64,8 +66,8 @@ enum : dword
 
 enum : dword
 {
-    maxdiff_0_24 = 0x00ffffff + 0xff,
-    maxdiff_0_26 = 0x03ffffff + 0xff
+    MAXDIFF_0_24 = MASK_0_24 + 0xff,
+    MAXDIFF_0_26 = MASK_0_26 + 0xff
 };
 
 #endif // BKCRACK_TYPES_HPP

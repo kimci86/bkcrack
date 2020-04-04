@@ -13,7 +13,7 @@ class KeystreamTab
         /// \note Only Zi[2,16) is used
         static inline byte getByte(dword zi)
         {
-            return instance.keystreamtab[(zi & mask_0_16) >> 2];
+            return instance.keystreamtab[(zi & MASK_0_16) >> 2];
         }
 
         /// \return a sorted array of 64 Zi[2,16) values such that
@@ -28,14 +28,14 @@ class KeystreamTab
         /// \note the vector contains one element on average
         static inline const dwordvec& getZi_2_16_vector(byte ki, dword zi_10_16)
         {
-            return instance.keystreaminvfiltertab[ki][(zi_10_16 & mask_0_16) >> 10];
+            return instance.keystreaminvfiltertab[ki][(zi_10_16 & MASK_0_16) >> 10];
         }
 
         /// \return true if the vector returned by getZi_2_16_vector is not empty,
         /// false otherwise
         static inline bool hasZi_2_16(byte ki, dword zi_10_16)
         {
-            return instance.keystreaminvexists[ki][(zi_10_16 & mask_0_16) >> 10];
+            return instance.keystreaminvexists[ki][(zi_10_16 & MASK_0_16) >> 10];
         }
 
     private:

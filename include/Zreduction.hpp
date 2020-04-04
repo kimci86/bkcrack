@@ -31,8 +31,8 @@ class Zreduction
     private:
         enum : std::size_t
         {
-            waitSize  = 1 << 8,
-            trackSize = 1 << 16
+            WAIT_SIZE  = 1 << 8,
+            TRACK_SIZE = 1 << 16
         };
 
         const bytevec& keystream;

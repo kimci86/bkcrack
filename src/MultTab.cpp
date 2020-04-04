@@ -4,8 +4,8 @@ const MultTab MultTab::instance;
 
 MultTab::MultTab()
 {
-    dword prodinv = 0; // x * mult^-1
-    for(int x = 0; x < 256; x++, prodinv += multinv)
+    dword prodinv = 0; // x * MULT^-1
+    for(int x = 0; x < 256; x++, prodinv += MULTINV)
     {
         multinvtab[x] = prodinv;
 

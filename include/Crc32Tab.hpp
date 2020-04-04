@@ -28,7 +28,7 @@ class Crc32Tab
         /// \return Z{i-1}[10,32) from Zi[2,32) using CRC32^-1
         static inline dword getZim1_10_32(dword zi_2_32)
         {
-            return crc32inv(zi_2_32, 0) & mask_10_32; // discard 10 least significant bits
+            return crc32inv(zi_2_32, 0) & MASK_10_32; // discard 10 least significant bits
         }
 
     private:
@@ -40,7 +40,7 @@ class Crc32Tab
         dwordarr<256> crcinvtab;
 
         // CRC32 polynomial representation
-        enum : dword { crcpol = 0xedb88320 };
+        enum : dword { CRCPOL = 0xedb88320 };
 
         static const Crc32Tab instance;
 };

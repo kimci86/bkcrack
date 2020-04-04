@@ -27,7 +27,7 @@ void Zreduction::reduce()
     // variables to keep track of the smallest Zi[2,32) vector
     bool tracking = false;
     dwordvec bestCopy;
-    std::size_t bestIndex, bestSize = trackSize;
+    std::size_t bestIndex, bestSize = TRACK_SIZE;
 
     // variables to wait for a limited number of steps when a small enough vector is found
     bool waiting = false;
@@ -36,7 +36,7 @@ void Zreduction::reduce()
     dwordvec zim1_10_32_vector;
     dwordvec zim1_2_32_vector;
 
-    for(std::size_t i = index; i >= Attack::size; i--)
+    for(std::size_t i = index; i >= Attack::ATTACK_SIZE; i--)
     {
         zim1_10_32_vector.clear();
         zim1_2_32_vector.clear();
@@ -78,7 +78,7 @@ void Zreduction::reduce()
                 // keep a copy of the vector because size is about to grow
                 std::swap(bestCopy, zi_2_32_vector);
 
-                if(bestSize <= waitSize)
+                if(bestSize <= WAIT_SIZE)
                 {
                     // enable waiting
                     waiting = true;
@@ -93,7 +93,7 @@ void Zreduction::reduce()
         // put result in z_2_32_vector
         std::swap(zi_2_32_vector, zim1_2_32_vector);
 
-        std::cout << progress(keystream.size() - i, keystream.size() - Attack::size) << std::flush << "\r";
+        std::cout << progress(keystream.size() - i, keystream.size() - Attack::ATTACK_SIZE) << std::flush << "\r";
     }
 
     std::cout << std::endl;
@@ -101,12 +101,12 @@ void Zreduction::reduce()
     if(tracking)
     {
         // put bestCopy in z_2_32_vector only if bestIndex is not the index of z_2_32_vector
-        if(bestIndex != Attack::size - 1)
+        if(bestIndex != Attack::ATTACK_SIZE - 1)
             std::swap(zi_2_32_vector, bestCopy);
         index = bestIndex;
     }
     else
-        index = Attack::size - 1;
+        index = Attack::ATTACK_SIZE - 1;
 }
 
 std::size_t Zreduction::size() const

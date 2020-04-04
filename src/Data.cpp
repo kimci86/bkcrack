@@ -13,7 +13,7 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
                 const std::string& plainarchive, const std::string& plainfile, std::size_t plainsize)
 {
     // check that offset is not too small
-    if(headerSize + offset < 0)
+    if(ENCRYPTION_HEADER_SIZE + offset < 0)
         throw Error("offset is too small");
 
     // load known plaintext
@@ -23,11 +23,11 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
         plaintext = loadZipEntry(plainarchive, plainfile, plainsize);
 
     // check that plaintext is big enough
-    if(plaintext.size() < Attack::size)
+    if(plaintext.size() < Attack::ATTACK_SIZE)
         throw Error("plaintext is too small");
 
     // load ciphertext needed by the attack
-    std::size_t toRead = headerSize + offset + plaintext.size();
+    std::size_t toRead = ENCRYPTION_HEADER_SIZE + offset + plaintext.size();
     if(cipherarchive.empty())
         ciphertext = loadFile(cipherfile, toRead);
     else
@@ -36,11 +36,11 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
     // check that ciphertext is valid
     if(plaintext.size() > ciphertext.size())
         throw Error("ciphertext is smaller than plaintext");
-    else if(headerSize + offset + plaintext.size() > ciphertext.size())
+    else if(ENCRYPTION_HEADER_SIZE + offset + plaintext.size() > ciphertext.size())
         throw Error("offset is too large");
 
     // compute keystream
     std::transform(plaintext.begin(), plaintext.end(),
-                   ciphertext.begin() + headerSize + offset,
+                   ciphertext.begin() + ENCRYPTION_HEADER_SIZE + offset,
                    std::back_inserter(keystream), std::bit_xor<byte>());
 }

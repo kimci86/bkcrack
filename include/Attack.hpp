@@ -21,10 +21,10 @@ class Attack
         /// \return the keys after a successful attack
         Keys getKeys() const;
 
-        enum
+        enum : std::size_t
         {
             /// Number of known plaintext bytes required by the attack
-            size = 12
+            ATTACK_SIZE = 12
         };
 
     private:
@@ -41,9 +41,9 @@ class Attack
 
         const std::size_t index;
 
-        dwordarr<size> zlist;
-        dwordarr<size> ylist; // the first two elements are not used
-        dwordarr<size> xlist; // the first four elements are not used
+        dwordarr<ATTACK_SIZE> zlist;
+        dwordarr<ATTACK_SIZE> ylist; // the first two elements are not used
+        dwordarr<ATTACK_SIZE> xlist; // the first four elements are not used
 };
 
 #endif // BKCRACK_ATTACK_HPP

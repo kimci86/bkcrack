@@ -21,7 +21,7 @@ Keys Attack::getKeys() const
     using rit = std::reverse_iterator<bytevec::const_iterator>;
 
     // get the keys associated with the initial state
-    for(rit i = rit(data.ciphertext.begin() + data.headerSize + data.offset + index + 7); i != data.ciphertext.rend(); ++i)
+    for(rit i = rit(data.ciphertext.begin() + Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 7); i != data.ciphertext.rend(); ++i)
         keys.updateBackward(*i);
 
     return keys;
@@ -40,8 +40,8 @@ bool Attack::exploreZlists(int i)
             // add Z{i-1}[2,32) to the Z-list
             zlist[i-1] = zim1_10_32 | zim1_2_16;
 
-            // find Zi[0,2) from Crc32^1
-            zlist[i] &= mask_2_32; // discard 2 least significant bits
+            // find Zi[0,2) from CRC32^1
+            zlist[i] &= MASK_2_32; // discard 2 least significant bits
             zlist[i] |= (Crc32Tab::crc32inv(zlist[i], 0) ^ zlist[i-1]) >> 8;
 
             // get Y{i+1}[24,32)
@@ -57,15 +57,15 @@ bool Attack::exploreZlists(int i)
     else // the Z-list is complete so iterate over possible Y values
     {
         // guess Y11[8,24) and keep prod == (Y11[8,32) - 1) * mult^-1
-        for(dword y11_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[11])) << 24) - MultTab::multinv;
+        for(dword y11_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[11])) << 24) - MultTab::MULTINV;
             y11_8_24 < 1 << 24;
-            y11_8_24 += 1 << 8, prod += MultTab::multinv << 8)
+            y11_8_24 += 1 << 8, prod += MultTab::MULTINV << 8)
             // get possible Y11[0,8) values
             for(byte y11_0_8 : MultTab::getMsbProdFiber3(msb(ylist[10]) - msb(prod)))
                 // filter Y11[0,8) using Y10[24,32)
-                if(prod + MultTab::getMultinv(y11_0_8) - (ylist[10] & mask_24_32) <= maxdiff_0_24)
+                if(prod + MultTab::getMultinv(y11_0_8) - (ylist[10] & MASK_24_32) <= MAXDIFF_0_24)
                 {
-                    ylist[11] = y11_0_8 | y11_8_24 | (ylist[11] & mask_24_32);
+                    ylist[11] = y11_0_8 | y11_8_24 | (ylist[11] & MASK_24_32);
                     if(exploreYlists(11))
                         return true;
                 }
@@ -78,17 +78,17 @@ bool Attack::exploreYlists(int i)
 {
     if(i != 3) // the Y-list is not complete so generate Y{i-1} values
     {
-        dword fy = (ylist[i] - 1) * MultTab::multinv;
-        dword ffy = (fy - 1) * MultTab::multinv;
+        dword fy = (ylist[i] - 1) * MultTab::MULTINV;
+        dword ffy = (fy - 1) * MultTab::MULTINV;
 
         // get possible LSB(Xi)
-        for(byte xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i-2] & mask_24_32))))
+        for(byte xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i-2] & MASK_24_32))))
         {
             // compute corresponding Y{i-1}
             dword yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
-            if(ffy - MultTab::getMultinv(xi_0_8) - (ylist[i-2] & mask_24_32) <= maxdiff_0_24
+            if(ffy - MultTab::getMultinv(xi_0_8) - (ylist[i-2] & MASK_24_32) <= MAXDIFF_0_24
                 && msb(yim1) == msb(ylist[i-1]))
             {
                 // add Y{i-1} to the Y-list
@@ -113,7 +113,7 @@ bool Attack::testXlist()
     // compute X7
     for(int i = 5; i <= 7; i++)
         xlist[i] = (Crc32Tab::crc32(xlist[i-1], data.plaintext[index+i-1])
-                    & mask_8_32) // discard the LSB
+                    & MASK_8_32) // discard the LSB
                     | lsb(xlist[i]); // set the LSB
 
     dword x = xlist[7];
@@ -132,8 +132,8 @@ bool Attack::testXlist()
         x = Crc32Tab::crc32inv(x, data.plaintext[index+i]);
 
     // check that X3 fits with Y1[26,32)
-    dword y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & mask_26_32;
-    if(((ylist[3] - 1) * MultTab::multinv - lsb(x) - 1) * MultTab::multinv - y1_26_32 > maxdiff_0_26)
+    dword y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & MASK_26_32;
+    if(((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
         return false;
 
     // all tests passed so the keys are found

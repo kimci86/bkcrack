@@ -11,14 +11,14 @@ Keys::Keys(dword x, dword y, dword z)
 void Keys::update(byte p)
 {
     x = Crc32Tab::crc32(x, p);
-    y = (y + lsb(x)) * MultTab::mult + 1;
+    y = (y + lsb(x)) * MultTab::MULT + 1;
     z = Crc32Tab::crc32(z, msb(y));
 }
 
 void Keys::updateBackward(byte c)
 {
     z = Crc32Tab::crc32inv(z, msb(y));
-    y = (y - 1) * MultTab::multinv - lsb(x);
+    y = (y - 1) * MultTab::MULTINV - lsb(x);
     x = Crc32Tab::crc32inv(x, c ^ KeystreamTab::getByte(z));
 }
 

@@ -78,9 +78,9 @@ int main(int argc, char const *argv[])
         zr.generate();
         std::cout << "Generated " << zr.size() << " Z values." << std::endl;
 
-        if(data.keystream.size() > Attack::size)
+        if(data.keystream.size() > Attack::ATTACK_SIZE)
         {
-            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::size) << " extra bytes of known plaintext" << std::endl;
+            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::ATTACK_SIZE) << " extra bytes of known plaintext" << std::endl;
             zr.reduce();
             std::cout << zr.size() << " values remaining." << std::endl;
         }
@@ -91,7 +91,7 @@ int main(int argc, char const *argv[])
         std::size_t done = 0;
 
         std::cout << "[" << put_time << "] Attack on " << size << " Z values at index " << (data.offset + static_cast<int>(zr.getIndex())) << std::endl;
-        Attack attack(data, zr.getIndex() + 1 - Attack::size);
+        Attack attack(data, zr.getIndex() + 1 - Attack::ATTACK_SIZE);
 
         const bool canStop = !args.exhaustive;
         bool shouldStop = false;
@@ -173,7 +173,7 @@ int main(int argc, char const *argv[])
         // discard the encryption header
         std::istreambuf_iterator<char> cipher(cipherstream);
         std::size_t i;
-        for(i = 0; i < Data::headerSize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
+        for(i = 0; i < Data::ENCRYPTION_HEADER_SIZE && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
             keys.update(*cipher ^ KeystreamTab::getByte(keys.getZ()));
 
         for(std::ostreambuf_iterator<char> plain(decipheredstream); i < ciphersize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)

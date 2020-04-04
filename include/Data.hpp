@@ -6,7 +6,7 @@
 /// Structure to hold the data
 struct Data
 {
-    enum { headerSize = 12 };
+    enum : std::size_t { ENCRYPTION_HEADER_SIZE = 12 };
 
     /// Exception thrown if data can not be used to carry out an attack
     class Error : public BaseError
