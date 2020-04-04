@@ -1,8 +1,6 @@
 #ifndef BKCRACK_DATA_HPP
 #define BKCRACK_DATA_HPP
 
-#include <stdexcept>
-
 #include "types.hpp"
 
 /// Structure to hold the data
@@ -11,7 +9,7 @@ struct Data
     enum { headerSize = 12 };
 
     /// Exception thrown if data can not be used to carry out an attack
-    class Error : public std::logic_error
+    class Error : public BaseError
     {
         public:
             /// Constructor

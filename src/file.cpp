@@ -12,7 +12,7 @@ void read(std::istream& stream, T& x)
 } // namespace
 
 FileError::FileError(const std::string& description)
- : std::runtime_error(description)
+ : BaseError("File error", description)
 {}
 
 std::ifstream openInput(std::string filename)

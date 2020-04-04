@@ -1,7 +1,6 @@
 #ifndef BKCRACK_ARGUMENTS_HPP
 #define BKCRACK_ARGUMENTS_HPP
 
-#include <stdexcept>
 #include <limits>
 
 #include "types.hpp"
@@ -12,7 +11,7 @@ class Arguments
 {
     public:
         /// Exception thrown if an argument is not valid
-        class Error : public std::logic_error
+        class Error : public BaseError
         {
             public:
                 /// Constructor

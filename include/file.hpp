@@ -2,13 +2,12 @@
 #define BKCRACK_FILE_HPP
 
 #include <fstream>
-#include <stdexcept>
 #include <limits>
 
 #include "types.hpp"
 
 /// Exception thrown if a file can not be opened
-class FileError : public std::runtime_error
+class FileError : public BaseError
 {
     public:
         /// Constructor

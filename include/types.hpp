@@ -1,9 +1,18 @@
 #ifndef BKCRACK_TYPES_HPP
 #define BKCRACK_TYPES_HPP
 
+#include <stdexcept>
 #include <cstdint>
 #include <vector>
 #include <array>
+
+/// Base exception type
+class BaseError : public std::runtime_error
+{
+public:
+    /// Constructor
+    BaseError(const std::string& type, const std::string& description);
+};
 
 // scalar types
 

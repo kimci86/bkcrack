@@ -1,7 +1,7 @@
 #include "Arguments.hpp"
 
 Arguments::Error::Error(const std::string& description)
- : std::logic_error(description)
+ : BaseError("Arguments error", description)
 {}
 
 void Arguments::parse(int argc, const char* argv[])

@@ -6,7 +6,7 @@
 #include <iterator>
 
 Data::Error::Error(const std::string& description)
- : std::logic_error(description)
+ : BaseError("Data error", description)
 {}
 
 void Data::load(const std::string& cipherarchive, const std::string& cipherfile,

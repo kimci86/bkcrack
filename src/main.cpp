@@ -43,9 +43,8 @@ int main(int argc, char const *argv[])
     }
     catch(const Arguments::Error& e)
     {
-        std::cout << "arguments error: " << e.what() << std::endl;
-        std::cout << std::endl;
-        std::cout << usage << std::endl;
+        std::cout << e.what() << std::endl;
+        std::cout << "Run 'bkcrack -h' for help." << std::endl;
         return 1;
     }
 
@@ -68,14 +67,9 @@ int main(int argc, char const *argv[])
         {
             data.load(args.cipherarchive, args.cipherfile, args.plainarchive, args.plainfile, args.plainsize);
         }
-        catch(const FileError& e)
+        catch(const BaseError& e)
         {
-            std::cout << "file error: " << e.what() << std::endl;
-            return 1;
-        }
-        catch(const Data::Error& e)
-        {
-            std::cout << "invalid data: " << e.what() << std::endl;
+            std::cout << e.what() << std::endl;
             return 1;
         }
 
@@ -172,7 +166,7 @@ int main(int argc, char const *argv[])
         }
         catch(const FileError& e)
         {
-            std::cout << "file error: " << e.what() << std::endl;
+            std::cout << e.what() << std::endl;
             return 1;
         }
 
