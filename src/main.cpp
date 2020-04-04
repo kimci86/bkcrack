@@ -120,17 +120,17 @@ int main(int argc, char const *argv[])
 
         if(size)
             std::cout << std::endl;
-    }
 
-    // print the keys
-    std::cout << "[" << put_time << "] ";
-    if(keysvec.empty())
-        std::cout << "Could not find the keys." << std::endl;
-    else
-    {
-        std::cout << "Keys" << std::endl;
-        for(const Keys& keys : keysvec)
-            std::cout << keys << std::endl;
+        // print the keys
+        std::cout << "[" << put_time << "] ";
+        if(keysvec.empty())
+            std::cout << "Could not find the keys." << std::endl;
+        else
+        {
+            std::cout << "Keys" << std::endl;
+            for(const Keys& keys : keysvec)
+                std::cout << keys << std::endl;
+        }
     }
 
     // decipher
