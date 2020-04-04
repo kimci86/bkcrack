@@ -60,11 +60,7 @@ void Arguments::parseArgument()
             break;
         case 'k':
         {
-            // read x, y and z before calling Keys constructor to guarantee evaluation order
-            dword x = readKey("X"),
-                  y = readKey("Y"),
-                  z = readKey("Z");
-            keys = Keys(x, y, z);
+            keys = readKeys();
             keysGiven = true;
             break;
         }
@@ -107,4 +103,13 @@ std::size_t Arguments::readSize(const std::string& description)
 dword Arguments::readKey(const std::string& description)
 {
     return std::stoul(readString(description), nullptr, 16);
+}
+
+Keys Arguments::readKeys()
+{
+    // read x, y and z before calling Keys constructor to guarantee evaluation order
+    dword x = readKey("X"),
+          y = readKey("Y"),
+          z = readKey("Z");
+    return Keys(x, y, z);
 }

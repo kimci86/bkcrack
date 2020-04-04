@@ -56,7 +56,7 @@ class Arguments
         int readInt(const std::string& description);
         std::size_t readSize(const std::string& description);
         dword readKey(const std::string& description);
-        Keys readKeys(const std::string& description);
+        Keys readKeys();
 };
 
 #endif // BKCRACK_ARGUMENTS_HPP
