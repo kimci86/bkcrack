@@ -15,7 +15,7 @@ endif()
 option(BKCRACK_PARALLEL_MODE "Enable multithreaded attack with OpenMP." ON)
 
 # option for building the documentation
-option(BKCRACK_BUILD_DOC "Enable documentation generation with doxygen." ON)
+option(BKCRACK_BUILD_DOC "Enable documentation generation with doxygen." OFF)
 
 # add the subdirectories
 add_subdirectory(src)
