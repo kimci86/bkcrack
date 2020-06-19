@@ -138,7 +138,7 @@ int main(int argc, char const *argv[])
     {
         Keys keys = keysvec.front();
         if(keysvec.size() > 1)
-            std::cout << "Deciphering data using the keys " << keys
+            std::cout << "Deciphering data using the keys " << keys << "\n"
                       << "Use the command line option -k to provide other keys." << std::endl;
 
         std::ifstream cipherstream;
