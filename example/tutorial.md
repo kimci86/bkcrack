@@ -30,14 +30,14 @@ We also see that `advice.jpg` is deflated whereas `spiral.svg` is stored uncompr
 To run the attack, we must guess at least 12 bytes of plaintext.
 On average, the more plaintext we guess, the faster the attack will be.
 
-## The easy way : stored file
+## The easy way: stored file
 
 We can guess from its extension that `spiral.svg` probably starts with the string `<?xml version="1.0" `.
 
 We are so lucky that this file is stored uncompressed in the zip file.
 So we have 20 bytes of plaintext, which is more than enough.
 
-## The not so easy way : deflated file
+## The not so easy way: deflated file
 
 Let us assume the zip file did not contain the uncompressed `spiral.svg`.
 
