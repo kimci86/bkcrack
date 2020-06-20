@@ -12,11 +12,11 @@ class Attack
         /// Constructor
         ///
         /// \param data Data used to carry out the attack
-        /// \param index Starting index of the used plaintext and keystream
+        /// \param index Index of Z[2,32) values passed to carry out the attack
         Attack(const Data& data, std::size_t index);
 
         /// Carry out the attack
-        bool carryout(dword z11_2_32);
+        bool carryout(dword z_2_32);
 
         /// \return the keys after a successful attack
         Keys getKeys() const;
@@ -42,7 +42,8 @@ class Attack
 
         const Data& data;
 
-        const std::size_t index;
+        const int last; // index of Z[2,32) values passed to carry out the attack relative to index
+        const std::size_t index; // starting index of the used plaintext and keystream
 
         dwordarr<ATTACK_SIZE> zlist;
         dwordarr<ATTACK_SIZE> ylist; // the first two elements are not used

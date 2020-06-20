@@ -5,13 +5,13 @@
 #include "MultTab.hpp"
 
 Attack::Attack(const Data& data, std::size_t index)
- : data(data), index(index)
+ : data(data), last(std::min(static_cast<std::size_t>(Attack::ATTACK_SIZE), data.plaintext.size()) - 1), index(index - last)
 {}
 
-bool Attack::carryout(dword z11_2_32)
+bool Attack::carryout(dword z_2_32)
 {
-    zlist[11] = z11_2_32;
-    return exploreZlists(11);
+    zlist[last] = z_2_32;
+    return exploreZlists(last);
 }
 
 Keys Attack::getKeys() const
@@ -45,7 +45,7 @@ bool Attack::exploreZlists(int i)
             zlist[i] |= (Crc32Tab::crc32inv(zlist[i], 0) ^ zlist[i-1]) >> 8;
 
             // get Y{i+1}[24,32)
-            if(i < 11)
+            if(i + 1 < ylist.size())
                 ylist[i+1] = Crc32Tab::getYi_24_32(zlist[i+1], zlist[i]);
 
             if(exploreZlists(i-1))
@@ -56,17 +56,17 @@ bool Attack::exploreZlists(int i)
     }
     else // the Z-list is complete so iterate over possible Y values
     {
-        // guess Y11[8,24) and keep prod == (Y11[8,32) - 1) * mult^-1
-        for(dword y11_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[11])) << 24) - MultTab::MULTINV;
-            y11_8_24 < 1 << 24;
-            y11_8_24 += 1 << 8, prod += MultTab::MULTINV << 8)
-            // get possible Y11[0,8) values
-            for(byte y11_0_8 : MultTab::getMsbProdFiber3(msb(ylist[10]) - msb(prod)))
-                // filter Y11[0,8) using Y10[24,32)
-                if(prod + MultTab::getMultinv(y11_0_8) - (ylist[10] & MASK_24_32) <= MAXDIFF_0_24)
+        // guess Y{last}[8,24) and keep prod == (Y{last}[8,32) - 1) * mult^-1
+        for(dword y_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[last])) << 24) - MultTab::MULTINV;
+            y_8_24 < 1 << 24;
+            y_8_24 += 1 << 8, prod += MultTab::MULTINV << 8)
+            // get possible Y{last}[0,8) values
+            for(byte y_0_8 : MultTab::getMsbProdFiber3(msb(ylist[last-1]) - msb(prod)))
+                // filter Y{last}[0,8) using Y{last-1}[24,32)
+                if(prod + MultTab::getMultinv(y_0_8) - (ylist[last-1] & MASK_24_32) <= MAXDIFF_0_24)
                 {
-                    ylist[11] = y11_0_8 | y11_8_24 | (ylist[11] & MASK_24_32);
-                    if(exploreYlists(11))
+                    ylist[last] = y_0_8 | y_8_24 | (ylist[last] & MASK_24_32);
+                    if(exploreYlists(last))
                         return true;
                 }
 
@@ -118,8 +118,8 @@ bool Attack::testXlist()
 
     dword x = xlist[7];
 
-    // compare 4 LSB(Xi) obtained from plaintext with those from the X-list
-    for(int i = 8; i <= 11; i++)
+    // compare available LSB(Xi) bytes obtained from plaintext with those from the X-list
+    for(int i = 8; i <= last; i++)
     {
         x = Crc32Tab::crc32(x, data.plaintext[index+i-1]);
         if(lsb(x) != lsb(xlist[i]))
@@ -135,6 +135,8 @@ bool Attack::testXlist()
     dword y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & MASK_26_32;
     if(((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
         return false;
+
+    // TODO further filtering with extra plaintext
 
     // all tests passed so the keys are found
     return true;

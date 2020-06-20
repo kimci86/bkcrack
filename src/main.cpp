@@ -94,7 +94,7 @@ int main(int argc, char const *argv[])
         std::size_t done = 0;
 
         std::cout << "[" << put_time << "] Attack on " << size << " Z values at index " << (data.offset + static_cast<int>(zr.getIndex())) << std::endl;
-        Attack attack(data, zr.getIndex() + 1 - Attack::ATTACK_SIZE);
+        Attack attack(data, zr.getIndex());
 
         const bool canStop = !args.exhaustive;
         bool shouldStop = false;
