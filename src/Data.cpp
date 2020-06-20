@@ -23,11 +23,17 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
         plaintext = loadZipEntry(plainarchive, plainfile, plainsize);
 
     // check that plaintext is big enough
-    if(plaintext.size() < Attack::ATTACK_SIZE)
+    if(plaintext.size() < Attack::CONTIGUOUS_SIZE)
+        throw Error("contiguous plaintext is too small");
+    if(plaintext.size() + extraPlaintext.size() < Attack::ATTACK_SIZE)
         throw Error("plaintext is too small");
 
     // load ciphertext needed by the attack
-    std::size_t toRead = ENCRYPTION_HEADER_SIZE + offset + plaintext.size();
+    const int maxOffset = std::max_element(extraPlaintext.begin(), extraPlaintext.end(),
+        [](const std::pair<int, byte>& a, const std::pair<int, byte>& b) { return a.first < b.first; }
+        )->first;
+    std::size_t toRead = std::max(ENCRYPTION_HEADER_SIZE + offset + plaintext.size(),
+                                  ENCRYPTION_HEADER_SIZE + maxOffset + 1);
     if(cipherarchive.empty())
         ciphertext = loadFile(cipherfile, toRead);
     else
@@ -36,7 +42,7 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
     // check that ciphertext is valid
     if(plaintext.size() > ciphertext.size())
         throw Error("ciphertext is smaller than plaintext");
-    else if(ENCRYPTION_HEADER_SIZE + offset + plaintext.size() > ciphertext.size())
+    else if(toRead > ciphertext.size())
         throw Error("offset is too large");
 
     // compute keystream

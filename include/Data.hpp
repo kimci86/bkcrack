@@ -29,6 +29,9 @@ struct Data
 
     /// plaintext and keystream offset relative to ciphertext without encryption header (may be negative)
     int offset = 0;
+
+    // additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be negative)
+    std::vector<std::pair<int, byte>> extraPlaintext;
 };
 
 #endif // BKCRACK_DATA_HPP

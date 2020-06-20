@@ -23,7 +23,10 @@ class Attack
 
         enum : std::size_t
         {
-            /// Number of known plaintext bytes required by the attack
+            /// Number of contiguous known plaintext bytes required by the attack
+            CONTIGUOUS_SIZE = 8,
+
+            /// Total number of known plaintext bytes required by the attack
             ATTACK_SIZE = 12
         };
 
