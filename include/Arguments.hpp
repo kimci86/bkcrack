@@ -34,6 +34,9 @@ class Arguments
         /// Maximum number of bytes of plaintext to read
         std::size_t plainsize = std::numeric_limits<std::size_t>::max();
 
+        /// Additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be negative)
+        std::vector<std::pair<int, byte>> extraPlaintext;
+
         /// Tell whether to try all candidate keys exhaustively or stop after the first success
         bool exhaustive = false;
 
@@ -55,6 +58,7 @@ class Arguments
         char readFlag(const std::string& description);
         int readInt(const std::string& description);
         std::size_t readSize(const std::string& description);
+        bytevec readHex(const std::string& description);
         dword readKey(const std::string& description);
         Keys readKeys();
 };

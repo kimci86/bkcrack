@@ -55,6 +55,13 @@ void Arguments::parseArgument()
         case 't':
             plainsize = readSize("size");
             break;
+        case 'x':
+        {
+            int i = readInt("offset");
+            for(byte b : readHex("data"))
+                extraPlaintext.push_back(std::make_pair(i++, b));
+            break;
+        }
         case 'e':
             exhaustive = true;
             break;
@@ -98,6 +105,20 @@ int Arguments::readInt(const std::string& description)
 std::size_t Arguments::readSize(const std::string& description)
 {
     return std::stoull(readString(description), nullptr, 0);
+}
+
+bytevec Arguments::readHex(const std::string& description)
+{
+    std::string str = readString(description);
+
+    if(str.size() % 2)
+        throw Error("expected an even length string, got "+str);
+
+    bytevec data;
+    for(int i = 0; i < str.length(); i += 2)
+        data.push_back(std::stoul(str.substr(i, 2), nullptr, 16));
+
+    return data;
 }
 
 dword Arguments::readKey(const std::string& description)

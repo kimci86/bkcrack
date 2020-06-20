@@ -26,6 +26,8 @@ Optional:
  -o offset          Known plaintext offset relative to ciphertext
                       without encryption header (may be negative)
  -t size            Maximum number of bytes of plaintext to read
+ -x offset data     Additional plaintext in hexadecimal starting
+                      at the given offset (may be negative)
  -e                 Exhaustively try all the keys remaining after Z reduction
  -d decipheredfile  File to write the deciphered text
  -h                 Show this help and exit)_";
