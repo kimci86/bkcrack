@@ -29,11 +29,14 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
         throw Error("plaintext is too small");
 
     // load ciphertext needed by the attack
-    const int maxOffset = std::max_element(extraPlaintext.begin(), extraPlaintext.end(),
-        [](const std::pair<int, byte>& a, const std::pair<int, byte>& b) { return a.first < b.first; }
-        )->first;
-    std::size_t toRead = std::max(ENCRYPTION_HEADER_SIZE + offset + plaintext.size(),
-                                  ENCRYPTION_HEADER_SIZE + maxOffset + 1);
+    std::size_t toRead = ENCRYPTION_HEADER_SIZE + offset + plaintext.size();
+    if(!extraPlaintext.empty())
+    {
+        const int maxOffset = std::max_element(extraPlaintext.begin(), extraPlaintext.end(),
+            [](const std::pair<int, byte>& a, const std::pair<int, byte>& b) { return a.first < b.first; }
+            )->first;
+        toRead = std::max(toRead, ENCRYPTION_HEADER_SIZE + maxOffset + 1);
+    }
     if(cipherarchive.empty())
         ciphertext = loadFile(cipherfile, toRead);
     else
