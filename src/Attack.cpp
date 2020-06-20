@@ -133,7 +133,34 @@ bool Attack::testXlist()
     if(((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
         return false;
 
-    // TODO further filtering with extra plaintext
+    // further filtering with extra plaintext
+    Keys keysForward(xlist[7], ylist[7], zlist[7]);
+    std::size_t indexForward = Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 7;
+
+    Keys keysBackward = keysForward;
+    std::size_t indexBackward = indexForward;
+
+    for(const std::pair<int, byte>& extra : data.extraPlaintext)
+    {
+        std::size_t target = Data::ENCRYPTION_HEADER_SIZE + extra.first;
+
+        byte p;
+        if(target < indexBackward)
+        {
+            keysBackward.updateBackward(data.ciphertext, indexBackward, target);
+            indexBackward = target;
+            p = data.ciphertext[indexBackward] ^ KeystreamTab::getByte(keysBackward.getZ());
+        }
+        else
+        {
+            keysForward.update(data.ciphertext, indexForward, target);
+            indexForward = target;
+            p = data.ciphertext[indexForward] ^ KeystreamTab::getByte(keysForward.getZ());
+        }
+
+        if(p != extra.second)
+            return false;
+    }
 
     // all tests passed so the keys are found
     return true;
