@@ -18,11 +18,8 @@ Keys Attack::getKeys() const
 {
     Keys keys(xlist[7], ylist[7], zlist[7]);
 
-    using rit = std::reverse_iterator<bytevec::const_iterator>;
-
     // get the keys associated with the initial state
-    for(rit i = rit(data.ciphertext.begin() + Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 7); i != data.ciphertext.rend(); ++i)
-        keys.updateBackward(*i);
+    keys.updateBackward(data.ciphertext, Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 7, 0);
 
     return keys;
 }
