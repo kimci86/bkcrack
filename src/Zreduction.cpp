@@ -36,7 +36,7 @@ void Zreduction::reduce()
     dwordvec zim1_10_32_vector;
     dwordvec zim1_2_32_vector;
 
-    for(std::size_t i = index; i >= Attack::ATTACK_SIZE; i--)
+    for(std::size_t i = index; i >= Attack::CONTIGUOUS_SIZE; i--)
     {
         zim1_10_32_vector.clear();
         zim1_2_32_vector.clear();
@@ -93,7 +93,7 @@ void Zreduction::reduce()
         // put result in z_2_32_vector
         std::swap(zi_2_32_vector, zim1_2_32_vector);
 
-        std::cout << progress(keystream.size() - i, keystream.size() - Attack::ATTACK_SIZE) << std::flush << "\r";
+        std::cout << progress(keystream.size() - i, keystream.size() - Attack::CONTIGUOUS_SIZE) << std::flush << "\r";
     }
 
     std::cout << std::endl;
@@ -101,12 +101,12 @@ void Zreduction::reduce()
     if(tracking)
     {
         // put bestCopy in z_2_32_vector only if bestIndex is not the index of z_2_32_vector
-        if(bestIndex != Attack::ATTACK_SIZE - 1)
+        if(bestIndex != Attack::CONTIGUOUS_SIZE - 1)
             std::swap(zi_2_32_vector, bestCopy);
         index = bestIndex;
     }
     else
-        index = Attack::ATTACK_SIZE - 1;
+        index = Attack::CONTIGUOUS_SIZE - 1;
 }
 
 std::size_t Zreduction::size() const

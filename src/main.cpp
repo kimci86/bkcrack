@@ -81,9 +81,9 @@ int main(int argc, char const *argv[])
         zr.generate();
         std::cout << "Generated " << zr.size() << " Z values." << std::endl;
 
-        if(data.keystream.size() > Attack::ATTACK_SIZE)
+        if(data.keystream.size() > Attack::CONTIGUOUS_SIZE)
         {
-            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::ATTACK_SIZE) << " extra bytes of known plaintext" << std::endl;
+            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::CONTIGUOUS_SIZE) << " bytes of known plaintext" << std::endl;
             zr.reduce();
             std::cout << zr.size() << " values remaining." << std::endl;
         }

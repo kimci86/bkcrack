@@ -16,7 +16,7 @@ class Attack
         Attack(const Data& data, std::size_t index);
 
         /// Carry out the attack
-        bool carryout(dword z_2_32);
+        bool carryout(dword z7_2_32);
 
         /// \return the keys after a successful attack
         Keys getKeys() const;
@@ -42,12 +42,11 @@ class Attack
 
         const Data& data;
 
-        const int last; // index of Z[2,32) values passed to carry out the attack relative to index
         const std::size_t index; // starting index of the used plaintext and keystream
 
-        dwordarr<ATTACK_SIZE> zlist;
-        dwordarr<ATTACK_SIZE> ylist; // the first two elements are not used
-        dwordarr<ATTACK_SIZE> xlist; // the first four elements are not used
+        dwordarr<CONTIGUOUS_SIZE> zlist;
+        dwordarr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
+        dwordarr<CONTIGUOUS_SIZE> xlist; // the first four elements are not used
 };
 
 #endif // BKCRACK_ATTACK_HPP

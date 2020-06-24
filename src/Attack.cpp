@@ -5,13 +5,13 @@
 #include "MultTab.hpp"
 
 Attack::Attack(const Data& data, std::size_t index)
- : data(data), last(std::min(static_cast<std::size_t>(Attack::ATTACK_SIZE), data.plaintext.size()) - 1), index(index - last)
+ : data(data), index(index + 1 - Attack::CONTIGUOUS_SIZE)
 {}
 
-bool Attack::carryout(dword z_2_32)
+bool Attack::carryout(dword z7_2_32)
 {
-    zlist[last] = z_2_32;
-    return exploreZlists(last);
+    zlist[7] = z7_2_32;
+    return exploreZlists(7);
 }
 
 Keys Attack::getKeys() const
@@ -42,7 +42,7 @@ bool Attack::exploreZlists(int i)
             zlist[i] |= (Crc32Tab::crc32inv(zlist[i], 0) ^ zlist[i-1]) >> 8;
 
             // get Y{i+1}[24,32)
-            if(i + 1 < ylist.size())
+            if(i < 7)
                 ylist[i+1] = Crc32Tab::getYi_24_32(zlist[i+1], zlist[i]);
 
             if(exploreZlists(i-1))
@@ -53,17 +53,17 @@ bool Attack::exploreZlists(int i)
     }
     else // the Z-list is complete so iterate over possible Y values
     {
-        // guess Y{last}[8,24) and keep prod == (Y{last}[8,32) - 1) * mult^-1
-        for(dword y_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[last])) << 24) - MultTab::MULTINV;
-            y_8_24 < 1 << 24;
-            y_8_24 += 1 << 8, prod += MultTab::MULTINV << 8)
-            // get possible Y{last}[0,8) values
-            for(byte y_0_8 : MultTab::getMsbProdFiber3(msb(ylist[last-1]) - msb(prod)))
-                // filter Y{last}[0,8) using Y{last-1}[24,32)
-                if(prod + MultTab::getMultinv(y_0_8) - (ylist[last-1] & MASK_24_32) <= MAXDIFF_0_24)
+        // guess Y7[8,24) and keep prod == (Y7[8,32) - 1) * mult^-1
+        for(dword y7_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[7])) << 24) - MultTab::MULTINV;
+            y7_8_24 < 1 << 24;
+            y7_8_24 += 1 << 8, prod += MultTab::MULTINV << 8)
+            // get possible Y7[0,8) values
+            for(byte y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
+                // filter Y7[0,8) using Y6[24,32)
+                if(prod + MultTab::getMultinv(y7_0_8) - (ylist[6] & MASK_24_32) <= MAXDIFF_0_24)
                 {
-                    ylist[last] = y_0_8 | y_8_24 | (ylist[last] & MASK_24_32);
-                    if(exploreYlists(last))
+                    ylist[7] = y7_0_8 | y7_8_24 | (ylist[7] & MASK_24_32);
+                    if(exploreYlists(7))
                         return true;
                 }
 
@@ -113,18 +113,8 @@ bool Attack::testXlist()
                     & MASK_8_32) // discard the LSB
                     | lsb(xlist[i]); // set the LSB
 
-    dword x = xlist[7];
-
-    // compare available LSB(Xi) bytes obtained from plaintext with those from the X-list
-    for(int i = 8; i <= last; i++)
-    {
-        x = Crc32Tab::crc32(x, data.plaintext[index+i-1]);
-        if(lsb(x) != lsb(xlist[i]))
-            return false;
-    }
-
     // compute X3
-    x = xlist[7];
+    dword x = xlist[7];
     for(int i = 6; i >= 3; i--)
         x = Crc32Tab::crc32inv(x, data.plaintext[index+i]);
 
@@ -133,12 +123,24 @@ bool Attack::testXlist()
     if(((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
         return false;
 
-    // further filtering with extra plaintext
+    // decipher and filter by comparing with remaining contiguous plaintext
     Keys keysForward(xlist[7], ylist[7], zlist[7]);
-    std::size_t indexForward = Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 7;
+    keysForward.update(data.plaintext[index+7]);
+    for(bytevec::const_iterator p = data.plaintext.begin() + index + 8,
+            c = data.ciphertext.begin() + Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 8;
+            p != data.plaintext.end();
+            ++p, ++c)
+    {
+        if((*c ^ KeystreamTab::getByte(keysForward.getZ())) != *p)
+            return false;
+        keysForward.update(*p);
+    }
 
-    Keys keysBackward = keysForward;
-    std::size_t indexBackward = indexForward;
+    std::size_t indexForward = Data::ENCRYPTION_HEADER_SIZE + data.offset + data.plaintext.size();
+
+    // continue filtering with extra known plaintext
+    Keys keysBackward(x, ylist[3], zlist[3]);
+    std::size_t indexBackward = Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 3;
 
     for(const std::pair<int, byte>& extra : data.extraPlaintext)
     {
