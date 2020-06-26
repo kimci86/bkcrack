@@ -15,13 +15,13 @@ class Keys
         /// Update the state with a plaintext byte
         void update(byte p);
 
-        // Update the state forward to a target offset
+        /// Update the state forward to a target offset
         void update(const bytevec& ciphertext, std::size_t current, std::size_t target);
 
         /// Update the state backward with a ciphertext byte
         void updateBackward(byte c);
 
-        // Update the state backward to a target offset
+        /// Update the state backward to a target offset
         void updateBackward(const bytevec& ciphertext, std::size_t current, std::size_t target);
 
         /// \return X value

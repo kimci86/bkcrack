@@ -5,7 +5,7 @@
 #include "Data.hpp"
 #include "Keys.hpp"
 
-/// Class to carry out the attack for a given Z11[2,32) value
+/// Class to carry out the attack for a given Z[2,32) value
 class Attack
 {
     public:
