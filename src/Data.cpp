@@ -23,7 +23,6 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
         plaintext = loadZipEntry(plainarchive, plainfile, plainsize);
 
     // TODO
-    // - remove duplicates in extra plaintext and emit warning if any
     // - extend contiguous plaintext with extra plaintext if possible, emit warning on overlap
     // - check that extra plaintext offset is not too small
     // - sort extra plaintext for better filtering performance

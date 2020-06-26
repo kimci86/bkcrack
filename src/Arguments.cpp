@@ -59,7 +59,7 @@ void Arguments::parseArgument()
         {
             int i = readInt("offset");
             for(byte b : readHex("data"))
-                extraPlaintext.push_back(std::make_pair(i++, b));
+                extraPlaintext[i++] = b;
             break;
         }
         case 'e':

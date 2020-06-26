@@ -2,6 +2,7 @@
 #define BKCRACK_ARGUMENTS_HPP
 
 #include <limits>
+#include <map>
 
 #include "types.hpp"
 #include "Keys.hpp"
@@ -35,7 +36,7 @@ class Arguments
         std::size_t plainsize = std::numeric_limits<std::size_t>::max();
 
         /// Additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be negative)
-        std::vector<std::pair<int, byte>> extraPlaintext;
+        std::map<int, byte> extraPlaintext;
 
         /// Tell whether to try all candidate keys exhaustively or stop after the first success
         bool exhaustive = false;
