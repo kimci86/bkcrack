@@ -27,7 +27,7 @@ void Zreduction::reduce()
     // variables to keep track of the smallest Zi[2,32) vector
     bool tracking = false;
     dwordvec bestCopy;
-    std::size_t bestIndex, bestSize = TRACK_SIZE;
+    std::size_t bestIndex = index, bestSize = TRACK_SIZE;
 
     // variables to wait for a limited number of steps when a small enough vector is found
     bool waiting = false;

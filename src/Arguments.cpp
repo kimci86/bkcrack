@@ -124,7 +124,7 @@ bytevec Arguments::readHex(const std::string& description)
         throw Error("expected an even length string, got "+str);
 
     bytevec data;
-    for(int i = 0; i < str.length(); i += 2)
+    for(std::size_t i = 0; i < str.length(); i += 2)
         data.push_back(std::stoul(str.substr(i, 2), nullptr, 16));
 
     return data;
