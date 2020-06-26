@@ -12,10 +12,6 @@ Data::Error::Error(const std::string& description)
 void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
                 const std::string& plainarchive, const std::string& plainfile, std::size_t plainsize)
 {
-    // check that offset is not too small
-    if(ENCRYPTION_HEADER_SIZE + offset < 0)
-        throw Error("offset is too small");
-
     // load known plaintext
     if(plainarchive.empty())
         plaintext = loadFile(plainfile, plainsize);
@@ -24,7 +20,6 @@ void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
 
     // TODO
     // - extend contiguous plaintext with extra plaintext if possible, emit warning on overlap
-    // - check that extra plaintext offset is not too small
     // - sort extra plaintext for better filtering performance
 
     // check that plaintext is big enough

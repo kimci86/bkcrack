@@ -1,4 +1,5 @@
 #include "Arguments.hpp"
+#include "Data.hpp"
 
 Arguments::Error::Error(const std::string& description)
  : BaseError("Arguments error", description)
@@ -13,16 +14,24 @@ void Arguments::parse(int argc, const char* argv[])
     while(!finished())
         parseArgument();
 
+    if(help)
+        return;
+
     // check mandatory arguments
-    if(!help)
-    {
-        if(cipherfile.empty())
-            throw Error("-c parameter is missing");
-        if(!keysGiven && plainfile.empty())
-            throw Error("-p parameter is missing");
-        if(keysGiven && decipheredfile.empty())
-            throw Error("-d parameter is missing");
-    }
+    if(cipherfile.empty())
+        throw Error("-c parameter is missing");
+    if(!keysGiven && plainfile.empty())
+        throw Error("-p parameter is missing");
+    if(keysGiven && decipheredfile.empty())
+        throw Error("-d parameter is missing");
+
+    // check that offset is not too small
+    if(offset < -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE))
+        throw Error("plaintext offset "+std::to_string(offset)+" is too small");
+
+    // check that extra plaintext offsets are not too small
+    if(!extraPlaintext.empty() && extraPlaintext.begin()->first < -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE))
+        throw Error("extra plaintext offset "+std::to_string(extraPlaintext.begin()->first)+" is too small");
 }
 
 bool Arguments::finished() const
