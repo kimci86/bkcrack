@@ -64,11 +64,9 @@ int main(int argc, char const *argv[])
     {
         // load data
         Data data;
-        data.offset = args.offset;
-        data.extraPlaintext = args.extraPlaintext;
         try
         {
-            data.load(args.cipherarchive, args.cipherfile, args.plainarchive, args.plainfile, args.plainsize);
+            data.load(args);
         }
         catch(const BaseError& e)
         {
@@ -93,7 +91,8 @@ int main(int argc, char const *argv[])
         std::size_t size = std::distance(zbegin, zend);
         std::size_t done = 0;
 
-        std::cout << "[" << put_time << "] Attack on " << size << " Z values at index " << (data.offset + static_cast<int>(zr.getIndex())) << std::endl;
+        std::cout << "[" << put_time << "] Attack on " << size << " Z values at index "
+                  << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
         Attack attack(data, zr.getIndex());
 
         const bool canStop = !args.exhaustive;

@@ -19,7 +19,7 @@ Keys Attack::getKeys() const
     Keys keys(xlist[7], ylist[7], zlist[7]);
 
     // get the keys associated with the initial state
-    keys.updateBackward(data.ciphertext, Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 7, 0);
+    keys.updateBackward(data.ciphertext, data.offset + index + 7, 0);
 
     return keys;
 }
@@ -127,7 +127,7 @@ bool Attack::testXlist()
     Keys keysForward(xlist[7], ylist[7], zlist[7]);
     keysForward.update(data.plaintext[index+7]);
     for(bytevec::const_iterator p = data.plaintext.begin() + index + 8,
-            c = data.ciphertext.begin() + Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 8;
+            c = data.ciphertext.begin() + data.offset + index + 8;
             p != data.plaintext.end();
             ++p, ++c)
     {
@@ -136,27 +136,25 @@ bool Attack::testXlist()
         keysForward.update(*p);
     }
 
-    std::size_t indexForward = Data::ENCRYPTION_HEADER_SIZE + data.offset + data.plaintext.size();
+    std::size_t indexForward = data.offset + data.plaintext.size();
 
     // continue filtering with extra known plaintext
     Keys keysBackward(x, ylist[3], zlist[3]);
-    std::size_t indexBackward = Data::ENCRYPTION_HEADER_SIZE + data.offset + index + 3;
+    std::size_t indexBackward = data.offset + index + 3;
 
-    for(const std::pair<int, byte>& extra : data.extraPlaintext)
+    for(const std::pair<std::size_t, byte>& extra : data.extraPlaintext)
     {
-        std::size_t target = Data::ENCRYPTION_HEADER_SIZE + extra.first;
-
         byte p;
-        if(target < indexBackward)
+        if(extra.first < indexBackward)
         {
-            keysBackward.updateBackward(data.ciphertext, indexBackward, target);
-            indexBackward = target;
+            keysBackward.updateBackward(data.ciphertext, indexBackward, extra.first);
+            indexBackward = extra.first;
             p = data.ciphertext[indexBackward] ^ KeystreamTab::getByte(keysBackward.getZ());
         }
         else
         {
-            keysForward.update(data.ciphertext, indexForward, target);
-            indexForward = target;
+            keysForward.update(data.ciphertext, indexForward, extra.first);
+            indexForward = extra.first;
             p = data.ciphertext[indexForward] ^ KeystreamTab::getByte(keysForward.getZ());
         }
 

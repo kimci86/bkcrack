@@ -9,47 +9,54 @@ Data::Error::Error(const std::string& description)
  : BaseError("Data error", description)
 {}
 
-void Data::load(const std::string& cipherarchive, const std::string& cipherfile,
-                const std::string& plainarchive, const std::string& plainfile, std::size_t plainsize)
+void Data::load(const Arguments& args)
 {
     // load known plaintext
-    if(plainarchive.empty())
-        plaintext = loadFile(plainfile, plainsize);
+    if(args.plainarchive.empty())
+        plaintext = loadFile(args.plainfile, args.plainsize);
     else
-        plaintext = loadZipEntry(plainarchive, plainfile, plainsize);
+        plaintext = loadZipEntry(args.plainarchive, args.plainfile, args.plainsize);
 
     // TODO
     // - extend contiguous plaintext with extra plaintext if possible, emit warning on overlap
     // - sort extra plaintext for better filtering performance
 
-    // check that plaintext is big enough
+    // copy extra plaintext and shift offsets to absolute values
+    std::transform(args.extraPlaintext.begin(), args.extraPlaintext.end(),
+        std::back_inserter(extraPlaintext),
+        [](const std::pair<int, byte>& extra)
+        {
+            return std::make_pair(ENCRYPTION_HEADER_SIZE + extra.first, extra.second);
+        });
+
+    offset = ENCRYPTION_HEADER_SIZE + args.offset;
+
+    // check that there is enough known plaintext
     if(plaintext.size() < Attack::CONTIGUOUS_SIZE)
         throw Error("contiguous plaintext is too small");
     if(plaintext.size() + extraPlaintext.size() < Attack::ATTACK_SIZE)
         throw Error("plaintext is too small");
 
     // load ciphertext needed by the attack
-    std::size_t toRead = ENCRYPTION_HEADER_SIZE + offset + plaintext.size();
+    std::size_t toRead = offset + plaintext.size();
     if(!extraPlaintext.empty())
-    {
-        const int maxOffset = std::max_element(extraPlaintext.begin(), extraPlaintext.end(),
-            [](const std::pair<int, byte>& a, const std::pair<int, byte>& b) { return a.first < b.first; }
-            )->first;
-        toRead = std::max(toRead, ENCRYPTION_HEADER_SIZE + maxOffset + 1);
-    }
-    if(cipherarchive.empty())
-        ciphertext = loadFile(cipherfile, toRead);
-    else
-        ciphertext = loadZipEntry(cipherarchive, cipherfile, toRead);
+        toRead = std::max(toRead, extraPlaintext.back().first + 1);
 
-    // check that ciphertext is valid
-    if(plaintext.size() > ciphertext.size())
+    if(args.cipherarchive.empty())
+        ciphertext = loadFile(args.cipherfile, toRead);
+    else
+        ciphertext = loadZipEntry(args.cipherarchive, args.cipherfile, toRead);
+
+    // check that ciphertext's size is valid
+    if(ciphertext.size() < plaintext.size())
         throw Error("ciphertext is smaller than plaintext");
-    else if(toRead > ciphertext.size())
-        throw Error("offset is too large");
+    else if(ciphertext.size() < offset + plaintext.size())
+        throw Error("plaintext offset is too large");
+    else if(ciphertext.size() < toRead)
+        throw Error("extra plaintext offset is too large");
 
     // compute keystream
     std::transform(plaintext.begin(), plaintext.end(),
-                   ciphertext.begin() + ENCRYPTION_HEADER_SIZE + offset,
+                   ciphertext.begin() + offset,
                    std::back_inserter(keystream), std::bit_xor<byte>());
 }
