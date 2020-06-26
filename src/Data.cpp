@@ -17,10 +17,6 @@ void Data::load(const Arguments& args)
     else
         plaintext = loadZipEntry(args.plainarchive, args.plainfile, args.plainsize);
 
-    // TODO
-    // - extend contiguous plaintext with extra plaintext if possible, emit warning on overlap
-    // - sort extra plaintext for better filtering performance
-
     // copy extra plaintext and shift offsets to absolute values
     std::transform(args.extraPlaintext.begin(), args.extraPlaintext.end(),
         std::back_inserter(extraPlaintext),
@@ -30,6 +26,30 @@ void Data::load(const Arguments& args)
         });
 
     offset = ENCRYPTION_HEADER_SIZE + args.offset;
+
+    // merge extra plaintext with contiguous plaintext if possible
+    auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
+    auto after = std::lower_bound(before, extraPlaintext.end(), std::make_pair(offset + plaintext.size(), byte()));
+
+    std::for_each(before, after,
+        [this](const std::pair<std::size_t, byte>& a)
+        {
+            plaintext[a.first - offset] = a.second;
+        });
+
+    while(before != extraPlaintext.begin() && (before - 1)->first == offset - 1)
+    {
+        plaintext.insert(plaintext.begin(), (--before)->second);
+        offset--;
+    }
+
+    while(after != extraPlaintext.end() && after->first == offset + plaintext.size())
+    {
+        plaintext.push_back(after->second);
+        after++;
+    }
+
+    after = extraPlaintext.erase(before, after);
 
     // check that there is enough known plaintext
     if(plaintext.size() < Attack::CONTIGUOUS_SIZE)
