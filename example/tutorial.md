@@ -76,12 +76,12 @@ We are now ready to run the attack.
 After a little while, the keys will appear!
 
     Generated 4194304 Z values.
-    [19:28:24] Z reduction using 9 extra bytes of known plaintext
-    100.0 % (9 / 9)
-    693762 values remaining.
-    [19:28:26] Attack on 693762 Z values at index 10
-    7.8 % (53913 / 693762)
-    [19:31:02] Keys
+    [15:56:33] Z reduction using 13 bytes of known plaintext
+    100.0 % (13 / 13)
+    521733 values remaining.
+    [15:56:34] Attack on 521733 Z values at index 6
+    44.5 % (231951 / 521733)
+    [16:03:28] Keys
     c4038591 d5ff449d d3b0c696
 
 # Recovering the original files
