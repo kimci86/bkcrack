@@ -5,25 +5,28 @@
 #include "Data.hpp"
 #include "Keys.hpp"
 
-/// Class to carry out the attack for a given Z11[2,32) value
+/// Class to carry out the attack for a given Z[2,32) value
 class Attack
 {
     public:
         /// Constructor
         ///
         /// \param data Data used to carry out the attack
-        /// \param index Starting index of the used plaintext and keystream
+        /// \param index Index of Z[2,32) values passed to carry out the attack
         Attack(const Data& data, std::size_t index);
 
         /// Carry out the attack
-        bool carryout(dword z11_2_32);
+        bool carryout(dword z7_2_32);
 
         /// \return the keys after a successful attack
         Keys getKeys() const;
 
         enum : std::size_t
         {
-            /// Number of known plaintext bytes required by the attack
+            /// Number of contiguous known plaintext bytes required by the attack
+            CONTIGUOUS_SIZE = 8,
+
+            /// Total number of known plaintext bytes required by the attack
             ATTACK_SIZE = 12
         };
 
@@ -39,11 +42,11 @@ class Attack
 
         const Data& data;
 
-        const std::size_t index;
+        const std::size_t index; // starting index of the used plaintext and keystream
 
-        dwordarr<ATTACK_SIZE> zlist;
-        dwordarr<ATTACK_SIZE> ylist; // the first two elements are not used
-        dwordarr<ATTACK_SIZE> xlist; // the first four elements are not used
+        dwordarr<CONTIGUOUS_SIZE> zlist;
+        dwordarr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
+        dwordarr<CONTIGUOUS_SIZE> xlist; // the first four elements are not used
 };
 
 #endif // BKCRACK_ATTACK_HPP

@@ -45,6 +45,12 @@ inline byte msb(dword x)
     return x >> 24;
 }
 
+/// \return the absolute difference between two unsigned values
+inline std::size_t absdiff(std::size_t x, std::size_t y)
+{
+    return x < y ? y - x : x - y;
+}
+
 // masks
 
 enum : dword

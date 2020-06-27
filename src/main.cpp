@@ -26,6 +26,8 @@ Optional:
  -o offset          Known plaintext offset relative to ciphertext
                       without encryption header (may be negative)
  -t size            Maximum number of bytes of plaintext to read
+ -x offset data     Additional plaintext in hexadecimal starting
+                      at the given offset (may be negative)
  -e                 Exhaustively try all the keys remaining after Z reduction
  -d decipheredfile  File to write the deciphered text
  -h                 Show this help and exit)_";
@@ -62,10 +64,9 @@ int main(int argc, char const *argv[])
     {
         // load data
         Data data;
-        data.offset = args.offset;
         try
         {
-            data.load(args.cipherarchive, args.cipherfile, args.plainarchive, args.plainfile, args.plainsize);
+            data.load(args);
         }
         catch(const BaseError& e)
         {
@@ -78,9 +79,9 @@ int main(int argc, char const *argv[])
         zr.generate();
         std::cout << "Generated " << zr.size() << " Z values." << std::endl;
 
-        if(data.keystream.size() > Attack::ATTACK_SIZE)
+        if(data.keystream.size() > Attack::CONTIGUOUS_SIZE)
         {
-            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::ATTACK_SIZE) << " extra bytes of known plaintext" << std::endl;
+            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::CONTIGUOUS_SIZE) << " bytes of known plaintext" << std::endl;
             zr.reduce();
             std::cout << zr.size() << " values remaining." << std::endl;
         }
@@ -90,8 +91,9 @@ int main(int argc, char const *argv[])
         std::size_t size = std::distance(zbegin, zend);
         std::size_t done = 0;
 
-        std::cout << "[" << put_time << "] Attack on " << size << " Z values at index " << (data.offset + static_cast<int>(zr.getIndex())) << std::endl;
-        Attack attack(data, zr.getIndex() + 1 - Attack::ATTACK_SIZE);
+        std::cout << "[" << put_time << "] Attack on " << size << " Z values at index "
+                  << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
+        Attack attack(data, zr.getIndex());
 
         const bool canStop = !args.exhaustive;
         bool shouldStop = false;
