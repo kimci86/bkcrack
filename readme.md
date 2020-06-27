@@ -33,8 +33,9 @@ Usage
 
 ### Data required
 
-The attack uses at least 12 bytes of contiguous plaintext.
-The larger the known plaintext, the faster the attack.
+The attack requires at least 12 bytes of known plaintext.
+At least 8 of them must be contiguous.
+The larger the contiguous known plaintext, the faster the attack.
 
 #### From zip archives
 
@@ -54,6 +55,13 @@ If the plaintext corresponds to a part other than the beginning of the ciphertex
 It can be negative if the plaintext includes a part of the encryption header.
 
     bkcrack -c cipherfile -p plainfile -o offset
+
+#### Sparse plaintext
+
+If you know little contiguous plaintext (between 8 and 11 bytes), but know some bytes at some other known offsets, you can provide this information to reach the requirement of a total of 12 known bytes.
+To do so, use the `-x` flag followed by an offset and bytes in hexadecimal.
+
+    bkcrack -c cipherfile -p plainfile -x 25 4b4f -x 30 21
 
 ### Decipher
 
