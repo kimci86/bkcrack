@@ -80,6 +80,7 @@ After a little while, the keys will appear!
     100.0 % (13 / 13)
     521733 values remaining.
     [15:56:34] Attack on 521733 Z values at index 6
+    Keys: c4038591 d5ff449d d3b0c696
     44.5 % (231951 / 521733)
     [16:03:28] Keys
     c4038591 d5ff449d d3b0c696
