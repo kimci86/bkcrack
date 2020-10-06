@@ -13,13 +13,11 @@ class Attack
         ///
         /// \param data Data used to carry out the attack
         /// \param index Index of Z[2,32) values passed to carry out the attack
-        Attack(const Data& data, std::size_t index);
+        /// \param solutions Shared output vector for valid keys
+        Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions);
 
         /// Carry out the attack
-        bool carryout(dword z7_2_32);
-
-        /// \return the keys after a successful attack
-        Keys getKeys() const;
+        void carryout(dword z7_2_32);
 
         enum : std::size_t
         {
@@ -32,15 +30,17 @@ class Attack
 
     private:
         // iterate recursively over Z-lists
-        bool exploreZlists(int i);
+        void exploreZlists(int i);
 
         // iterate recursively over Y-lists
-        bool exploreYlists(int i);
+        void exploreYlists(int i);
 
         // check whether the X-list is valid or not
-        bool testXlist();
+        void testXlist();
 
         const Data& data;
+
+        std::vector<Keys>& solutions; // shared output vector of valid keys
 
         const std::size_t index; // starting index of the used plaintext and keystream
 

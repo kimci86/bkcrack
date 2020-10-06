@@ -4,27 +4,17 @@
 #include "KeystreamTab.hpp"
 #include "MultTab.hpp"
 
-Attack::Attack(const Data& data, std::size_t index)
- : data(data), index(index + 1 - Attack::CONTIGUOUS_SIZE)
+Attack::Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions)
+ : data(data), index(index + 1 - Attack::CONTIGUOUS_SIZE), solutions(solutions)
 {}
 
-bool Attack::carryout(dword z7_2_32)
+void Attack::carryout(dword z7_2_32)
 {
     zlist[7] = z7_2_32;
     return exploreZlists(7);
 }
 
-Keys Attack::getKeys() const
-{
-    Keys keys(xlist[7], ylist[7], zlist[7]);
-
-    // get the keys associated with the initial state
-    keys.updateBackward(data.ciphertext, data.offset + index + 7, 0);
-
-    return keys;
-}
-
-bool Attack::exploreZlists(int i)
+void Attack::exploreZlists(int i)
 {
     if(i != 0) // the Z-list is not complete so generate Z{i-1}[2,32) values
     {
@@ -45,11 +35,8 @@ bool Attack::exploreZlists(int i)
             if(i < 7)
                 ylist[i+1] = Crc32Tab::getYi_24_32(zlist[i+1], zlist[i]);
 
-            if(exploreZlists(i-1))
-                return true;
+            exploreZlists(i-1);
         }
-
-        return false;
     }
     else // the Z-list is complete so iterate over possible Y values
     {
@@ -63,15 +50,12 @@ bool Attack::exploreZlists(int i)
                 if(prod + MultTab::getMultinv(y7_0_8) - (ylist[6] & MASK_24_32) <= MAXDIFF_0_24)
                 {
                     ylist[7] = y7_0_8 | y7_8_24 | (ylist[7] & MASK_24_32);
-                    if(exploreYlists(7))
-                        return true;
+                    exploreYlists(7);
                 }
-
-        return false;
     }
 }
 
-bool Attack::exploreYlists(int i)
+void Attack::exploreYlists(int i)
 {
     if(i != 3) // the Y-list is not complete so generate Y{i-1} values
     {
@@ -94,18 +78,15 @@ bool Attack::exploreYlists(int i)
                 // set Xi value
                 xlist[i] = xi_0_8;
 
-                if(exploreYlists(i-1))
-                    return true;
+                exploreYlists(i-1);
             }
         }
-
-        return false;
     }
     else // the Y-list is complete so check if the corresponding X-list is valid
-        return testXlist();
+        testXlist();
 }
 
-bool Attack::testXlist()
+void Attack::testXlist()
 {
     // compute X7
     for(int i = 5; i <= 7; i++)
@@ -121,7 +102,7 @@ bool Attack::testXlist()
     // check that X3 fits with Y1[26,32)
     dword y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & MASK_26_32;
     if(((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
-        return false;
+        return;
 
     // decipher and filter by comparing with remaining contiguous plaintext
     Keys keysForward(xlist[7], ylist[7], zlist[7]);
@@ -132,7 +113,7 @@ bool Attack::testXlist()
             ++p, ++c)
     {
         if((*c ^ KeystreamTab::getByte(keysForward.getZ())) != *p)
-            return false;
+            return;
         keysForward.update(*p);
     }
 
@@ -159,9 +140,18 @@ bool Attack::testXlist()
         }
 
         if(p != extra.second)
-            return false;
+            return;
     }
 
     // all tests passed so the keys are found
-    return true;
+    Keys keys(xlist[7], ylist[7], zlist[7]);
+
+    // get the keys associated with the initial state
+    keys.updateBackward(data.ciphertext, data.offset + index + 7, 0);
+
+    #pragma omp critical
+    {
+        std::cout << "Keys: " << keys << std::endl;
+        solutions.push_back(keys);
+    }
 }

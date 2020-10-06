@@ -93,7 +93,7 @@ int main(int argc, char const *argv[])
 
         std::cout << "[" << put_time << "] Attack on " << size << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
-        Attack attack(data, zr.getIndex());
+        Attack attack(data, zr.getIndex(), keysvec);
 
         const bool canStop = !args.exhaustive;
         bool shouldStop = false;
@@ -104,20 +104,13 @@ int main(int argc, char const *argv[])
             if(shouldStop)
                 continue; // can not break out of an OpenMP for loop
 
-            if(attack.carryout(*it))
+            attack.carryout(*it);
+
             #pragma omp critical
             {
-                Keys possibleKeys = attack.getKeys();
-                keysvec.push_back(possibleKeys);
-
-                if(canStop)
-                    shouldStop = true;
-                else
-                    std::cout << "Keys: " << possibleKeys << std::endl;
+                std::cout << progress(++done, size) << std::flush << "\r";
+                shouldStop = canStop && !keysvec.empty();
             }
-
-            #pragma omp critical
-            std::cout << progress(++done, size) << std::flush << "\r";
         }
 
         if(size)
