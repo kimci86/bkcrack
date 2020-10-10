@@ -40,9 +40,9 @@ class Attack
 
         const Data& data;
 
-        std::vector<Keys>& solutions; // shared output vector of valid keys
-
         const std::size_t index; // starting index of the used plaintext and keystream
+
+        std::vector<Keys>& solutions; // shared output vector of valid keys
 
         dwordarr<CONTIGUOUS_SIZE> zlist;
         dwordarr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
