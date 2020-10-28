@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <array>
+#include <string>
 
 /// Base exception type
 class BaseError : public std::runtime_error
