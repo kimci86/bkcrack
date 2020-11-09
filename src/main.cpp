@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 
+#include "version.hpp"
 #include "log.hpp"
 #include "file.hpp"
 #include "Arguments.hpp"
@@ -36,6 +37,9 @@ int main(int argc, char const *argv[])
 {
     // setup output stream
     std::cout << std::fixed << std::setprecision(1);
+
+    // version information
+    std::cout << "bkcrack " BKCRACK_VERSION " - " BKCRACK_COMPILATION_DATE << std::endl;
 
     // parse arguments
     Arguments args;

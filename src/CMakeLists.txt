@@ -1,13 +1,19 @@
+# configure version header
+string(TIMESTAMP TODAY "%Y-%m-%d")
+set(VERSION_HEADER_CONFIGURED "${PROJECT_BINARY_DIR}/include/version.hpp" )
+configure_file("${PROJECT_SOURCE_DIR}/include/version.hpp.in" "${VERSION_HEADER_CONFIGURED}")
+
 # list files
 file(GLOB HEADERS "${PROJECT_SOURCE_DIR}/include/*.hpp")
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
 # add the executable target
-add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
+add_executable(${PROJECT_NAME} ${VERSION_HEADER_CONFIGURED} ${HEADERS} ${SOURCES})
 
 # set include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
+    "${PROJECT_BINARY_DIR}/include"
     "${PROJECT_SOURCE_DIR}/external")
 
 # enable C++11
