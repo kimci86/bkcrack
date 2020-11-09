@@ -30,3 +30,11 @@ install(DIRECTORY example DESTINATION .)
 install(DIRECTORY tools DESTINATION .)
 install(FILES readme.md DESTINATION .)
 install(FILES license.txt DESTINATION .)
+
+# package generation
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP")
+else()
+    set(CPACK_GENERATOR "TGZ")
+endif()
+include(CPack)
