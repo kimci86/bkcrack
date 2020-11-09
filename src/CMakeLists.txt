@@ -1,9 +1,3 @@
-# enable OpenMP if wanted
-if(BKCRACK_PARALLEL_MODE)
-    find_package(OpenMP 2.0 REQUIRED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
-
 # list files
 file(GLOB HEADERS "${PROJECT_SOURCE_DIR}/include/*.hpp")
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
@@ -19,6 +13,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 # enable C++11
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# enable OpenMP if wanted
+if(BKCRACK_PARALLEL_MODE)
+    find_package(OpenMP 2.0 REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 # install rules
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
