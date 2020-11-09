@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 
-# set project name and language
-project(bkcrack CXX)
+# project definition
+project(bkcrack
+    VERSION 1.0.0
+    LANGUAGES CXX)
 
 # default build type
 set(default_build_type "Release")
