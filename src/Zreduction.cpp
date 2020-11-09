@@ -114,14 +114,9 @@ std::size_t Zreduction::size() const
     return zi_2_32_vector.size();
 }
 
-dwordvec::const_iterator Zreduction::begin() const
+const dword* Zreduction::data() const
 {
-    return zi_2_32_vector.begin();
-}
-
-dwordvec::const_iterator Zreduction::end() const
-{
-    return zi_2_32_vector.end();
+    return zi_2_32_vector.data();
 }
 
 std::size_t Zreduction::getIndex() const

@@ -87,8 +87,8 @@ int main(int argc, char const *argv[])
         }
 
         // iterate over remaining Zi[2,32) values
-        dwordvec::const_iterator zbegin = zr.begin(), zend = zr.end();
-        std::size_t size = std::distance(zbegin, zend);
+        const dword* candidates = zr.data();
+        const std::int32_t size = zr.size();
         std::size_t done = 0;
 
         std::cout << "[" << put_time << "] Attack on " << size << " Z values at index "
@@ -99,12 +99,12 @@ int main(int argc, char const *argv[])
         bool shouldStop = false;
 
         #pragma omp parallel for firstprivate(attack) schedule(dynamic)
-        for(dwordvec::const_iterator it = zbegin; it < zend; ++it)
+        for(std::int32_t i = 0; i < size; ++i)
         {
             if(shouldStop)
                 continue; // can not break out of an OpenMP for loop
 
-            attack.carryout(*it);
+            attack.carryout(candidates[i]);
 
             #pragma omp critical
             {

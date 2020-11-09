@@ -19,11 +19,8 @@ class Zreduction
         /// \return the number of Zi[2,32) values
         std::size_t size() const;
 
-        /// \return an iterator to the beginning of the Zi[2,32) values
-        dwordvec::const_iterator begin() const;
-
-        /// \return an iterator to the end of the Zi[2,32) values
-        dwordvec::const_iterator end() const;
+        /// \return a pointer to the beginning of the Zi[2,32) values
+        const dword* data() const;
 
         /// \return the index of the Zi[2,32) values relative to keystream
         std::size_t getIndex() const;

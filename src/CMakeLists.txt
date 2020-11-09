@@ -1,6 +1,6 @@
 # enable OpenMP if wanted
 if(BKCRACK_PARALLEL_MODE)
-    find_package(OpenMP REQUIRED)
+    find_package(OpenMP 2.0 REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
