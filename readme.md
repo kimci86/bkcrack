@@ -1,26 +1,32 @@
 bkcrack
 =======
 
+[![Badge](https://github.com/kimci86/bkcrack/workflows/Release/badge.svg)](https://github.com/kimci86/bkcrack/releases)
+
 Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
-
-Download
---------
-
-Get the latest version from the [git repository](https://github.com/kimci86/bkcrack).
 
 Install
 -------
 
-### Manually
+### Precompiled packages
 
-Build and install it with [CMake](https://cmake.org).
+You can get the latest official release on [GitHub](https://github.com/kimci86/bkcrack/releases).
 
-The following options can be configured:
+Precompiled packages for Ubuntu, MacOS and Windows are available for download.
+Extract the downloaded archive wherever you like.
 
-- `CMAKE_INSTALL_PREFIX`: Install path prefix, prepended onto install directories.
-- `CMAKE_BUILD_TYPE`: Type of build (Debug or Release).
-- `BKCRACK_PARALLEL_MODE`: Enable multithreaded attack with [OpenMP](http://openmp.org). This requires a compiler that supports OpenMP.
-- `BKCRACK_BUILD_DOC`: Enable documentation generation with [doxygen](http://doxygen.org).
+### Compile from source
+
+Alternatively, you can compile the project with [CMake](https://cmake.org).
+
+First, download the source files or clone the git repository.
+Then, running the following commands in the source tree will create an installation in the `install` folder.
+
+```
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=install
+cmake --build build --config Release
+cmake --build build --config Release --target install
+```
 
 ### Arch Linux (unofficial)
 
@@ -94,7 +100,7 @@ For more information, have a look at the documentation and read the source.
 Contribute
 ----------
 
-Do not hesitate to suggest improvements or submit pull requests on [github](https://github.com/kimci86/bkcrack).
+Do not hesitate to suggest improvements or submit pull requests on [GitHub](https://github.com/kimci86/bkcrack).
 
 License
 -------
