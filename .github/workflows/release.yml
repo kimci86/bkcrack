@@ -17,6 +17,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Install dependencies
+      if: runner.os == 'macOS'
+      run: brew install libomp
+
     - name: Configure CMake
       run: cmake -S . -B build
 
