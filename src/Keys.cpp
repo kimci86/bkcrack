@@ -56,6 +56,6 @@ std::ostream& operator<<(std::ostream& os, const Keys& keys)
     return os << std::hex
               << std::setw(8) << keys.getX() << " "
               << std::setw(8) << keys.getY() << " "
-              << std::setw(8) << keys.getZ() << " "
+              << std::setw(8) << keys.getZ()
               << std::dec;
 }
