@@ -51,14 +51,6 @@ void Data::load(const Arguments& args)
 
     after = extraPlaintext.erase(before, after);
 
-    // reorder remaining extra plaintext for filtering
-    std::reverse(extraPlaintext.begin(), after);
-    std::inplace_merge(extraPlaintext.begin(), after, extraPlaintext.end(),
-        [this](const std::pair<std::size_t, byte>& a, const std::pair<std::size_t, byte>& b)
-        {
-            return absdiff(a.first, offset + Attack::CONTIGUOUS_SIZE) < absdiff(b.first, offset + Attack::CONTIGUOUS_SIZE);
-        });
-
     // check that there is enough known plaintext
     if(plaintext.size() < Attack::CONTIGUOUS_SIZE)
         throw Error("contiguous plaintext is too small");
@@ -82,6 +74,14 @@ void Data::load(const Arguments& args)
         throw Error("plaintext offset is too large");
     else if(ciphertext.size() < toRead)
         throw Error("extra plaintext offset is too large");
+
+    // reorder remaining extra plaintext for filtering
+    std::reverse(extraPlaintext.begin(), after);
+    std::inplace_merge(extraPlaintext.begin(), after, extraPlaintext.end(),
+        [this](const std::pair<std::size_t, byte>& a, const std::pair<std::size_t, byte>& b)
+        {
+            return absdiff(a.first, offset + Attack::CONTIGUOUS_SIZE) < absdiff(b.first, offset + Attack::CONTIGUOUS_SIZE);
+        });
 
     // compute keystream
     std::transform(plaintext.begin(), plaintext.end(),
