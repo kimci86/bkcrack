@@ -16,6 +16,7 @@ void Data::load(const Arguments& args)
         plaintext = loadFile(args.plainfile, args.plainsize);
     else
         plaintext = loadZipEntry(args.plainarchive, args.plainfile, args.plainsize);
+    std::size_t plaintextSizeBeforeExtra = plaintext.size();
 
     // copy extra plaintext and shift offsets to absolute values
     std::transform(args.extraPlaintext.begin(), args.extraPlaintext.end(),
@@ -70,7 +71,7 @@ void Data::load(const Arguments& args)
     // check that ciphertext's size is valid
     if(ciphertext.size() < plaintext.size())
         throw Error("ciphertext is smaller than plaintext");
-    else if(ciphertext.size() < offset + plaintext.size())
+    else if(ciphertext.size() < offset + plaintextSizeBeforeExtra)
         throw Error("plaintext offset is too large");
     else if(ciphertext.size() < toRead)
         throw Error("extra plaintext offset is too large");
