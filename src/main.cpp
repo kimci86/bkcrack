@@ -36,7 +36,8 @@ Optional:
 int main(int argc, char const *argv[])
 {
     // setup output stream
-    std::cout << std::fixed << std::setprecision(1);
+    std::cout << std::setfill('0') // leading zeros for keys
+              << std::fixed << std::setprecision(1); // for progress percentage
 
     // version information
     std::cout << "bkcrack " BKCRACK_VERSION " - " BKCRACK_COMPILATION_DATE << std::endl;
