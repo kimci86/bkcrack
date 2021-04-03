@@ -1,5 +1,6 @@
 #include "Arguments.hpp"
 #include "Data.hpp"
+#include <algorithm>
 
 Arguments::Error::Error(const std::string& description)
  : BaseError("Arguments error", description)
@@ -121,18 +122,27 @@ bytevec Arguments::readHex(const std::string& description)
     std::string str = readString(description);
 
     if(str.size() % 2)
-        throw Error("expected an even length string, got "+str);
+        throw Error("expected an even-length string, got "+str);
+    if(!std::all_of(str.begin(), str.end(), [](unsigned char c){ return std::isxdigit(c); }))
+        throw Error("expected "+description+" in hexadecimal, got "+str);
 
     bytevec data;
     for(std::size_t i = 0; i < str.length(); i += 2)
-        data.push_back(std::stoul(str.substr(i, 2), nullptr, 16));
+        data.push_back(static_cast<byte>(std::stoul(str.substr(i, 2), nullptr, 16)));
 
     return data;
 }
 
 uint32 Arguments::readKey(const std::string& description)
 {
-    return std::stoul(readString(description), nullptr, 16);
+    std::string str = readString(description);
+
+    if(str.size() > 8)
+        throw Error("expected a string of length 8 or less, got "+str);
+    if(!std::all_of(str.begin(), str.end(), [](unsigned char c){ return std::isxdigit(c); }))
+        throw Error("expected "+description+" in hexadecimal, got "+str);
+
+    return static_cast<uint32>(std::stoul(str, nullptr, 16));
 }
 
 Keys Arguments::readKeys()
