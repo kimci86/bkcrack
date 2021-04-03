@@ -130,7 +130,7 @@ bytevec Arguments::readHex(const std::string& description)
     return data;
 }
 
-dword Arguments::readKey(const std::string& description)
+uint32 Arguments::readKey(const std::string& description)
 {
     return std::stoul(readString(description), nullptr, 16);
 }
@@ -138,8 +138,8 @@ dword Arguments::readKey(const std::string& description)
 Keys Arguments::readKeys()
 {
     // read x, y and z before calling Keys constructor to guarantee evaluation order
-    dword x = readKey("X"),
-          y = readKey("Y"),
-          z = readKey("Z");
+    uint32 x = readKey("X"),
+           y = readKey("Y"),
+           z = readKey("Z");
     return Keys(x, y, z);
 }

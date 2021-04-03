@@ -5,7 +5,7 @@ const KeystreamTab KeystreamTab::instance;
 KeystreamTab::KeystreamTab()
 {
     std::array<int, 256> next = {};
-    for(dword z_2_16 = 0; z_2_16 < 1 << 16; z_2_16 += 4)
+    for(uint32 z_2_16 = 0; z_2_16 < 1 << 16; z_2_16 += 4)
     {
         byte k = lsb((z_2_16 | 2) * (z_2_16 | 3) >> 8);
         keystreamtab[z_2_16 >> 2] = k;

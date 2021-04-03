@@ -8,7 +8,7 @@ class MultTab
 {
     public:
         /// \return MULT^-1 * x using a lookup table
-        static inline dword getMultinv(byte x)
+        static inline uint32 getMultinv(byte x)
         {
             return instance.multinvtab[x];
         }
@@ -27,7 +27,7 @@ class MultTab
             return instance.msbprodfiber3[msbprodinv];
         }
 
-        enum : dword
+        enum : uint32
         {
             MULT    = 0x08088405,
             MULTINV = 0xd94fa8cd
@@ -38,8 +38,8 @@ class MultTab
         MultTab();
 
         // lookup tables
-        dwordarr<256> multtab;
-        dwordarr<256> multinvtab;
+        u32arr<256> multtab;
+        u32arr<256> multinvtab;
         std::array<bytevec, 256> msbprodfiber2;
         std::array<bytevec, 256> msbprodfiber3;
 

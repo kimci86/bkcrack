@@ -10,7 +10,7 @@ class Keys
 {
     public:
         /// Constructor
-        Keys(dword x = 0x12345678, dword y = 0x23456789, dword z = 0x34567890);
+        Keys(uint32 x = 0x12345678, uint32 y = 0x23456789, uint32 z = 0x34567890);
 
         /// Update the state with a plaintext byte
         void update(byte p);
@@ -25,16 +25,16 @@ class Keys
         void updateBackward(const bytevec& ciphertext, std::size_t current, std::size_t target);
 
         /// \return X value
-        dword getX() const;
+        uint32 getX() const;
 
         /// \return Y value
-        dword getY() const;
+        uint32 getY() const;
 
         /// \return Z value
-        dword getZ() const;
+        uint32 getZ() const;
 
     private:
-        dword x, y, z;
+        uint32 x, y, z;
 };
 
 /// Insert a representation of keys into the stream os

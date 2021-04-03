@@ -17,7 +17,7 @@ class Attack
         Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions);
 
         /// Carry out the attack
-        void carryout(dword z7_2_32);
+        void carryout(uint32 z7_2_32);
 
         enum : std::size_t
         {
@@ -44,9 +44,9 @@ class Attack
 
         std::vector<Keys>& solutions; // shared output vector of valid keys
 
-        dwordarr<CONTIGUOUS_SIZE> zlist;
-        dwordarr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
-        dwordarr<CONTIGUOUS_SIZE> xlist; // the first four elements are not used
+        u32arr<CONTIGUOUS_SIZE> zlist;
+        u32arr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
+        u32arr<CONTIGUOUS_SIZE> xlist; // the first four elements are not used
 };
 
 #endif // BKCRACK_ATTACK_HPP

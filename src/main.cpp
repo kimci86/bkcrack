@@ -92,9 +92,9 @@ int main(int argc, char const *argv[])
         }
 
         // iterate over remaining Zi[2,32) values
-        const dword* candidates = zr.data();
+        const uint32* candidates = zr.data();
         const std::int32_t size = zr.size();
-        std::size_t done = 0;
+        std::int32_t done = 0;
 
         std::cout << "[" << put_time << "] Attack on " << size << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
@@ -104,7 +104,7 @@ int main(int argc, char const *argv[])
         bool shouldStop = false;
 
         #pragma omp parallel for firstprivate(attack) schedule(dynamic)
-        for(std::int32_t i = 0; i < size; ++i)
+        for(std::int32_t i = 0; i < size; ++i) // OpenMP 2.0 requires signed index variable
         {
             if(shouldStop)
                 continue; // can not break out of an OpenMP for loop

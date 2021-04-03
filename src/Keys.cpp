@@ -4,7 +4,7 @@
 #include "MultTab.hpp"
 #include <iomanip>
 
-Keys::Keys(dword x, dword y, dword z)
+Keys::Keys(uint32 x, uint32 y, uint32 z)
  : x(x), y(y), z(z)
 {}
 
@@ -36,17 +36,17 @@ void Keys::updateBackward(const bytevec& ciphertext, std::size_t current, std::s
         updateBackward(*i);
 }
 
-dword Keys::getX() const
+uint32 Keys::getX() const
 {
     return x;
 }
 
-dword Keys::getY() const
+uint32 Keys::getY() const
 {
     return y;
 }
 
-dword Keys::getZ() const
+uint32 Keys::getZ() const
 {
     return z;
 }

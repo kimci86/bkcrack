@@ -17,7 +17,7 @@ void Zreduction::generate()
     zi_2_32_vector.clear();
     zi_2_32_vector.reserve(1<<22);
 
-    for(dword zi_2_16 : KeystreamTab::getZi_2_16_array(keystream.back())) // get 64 Zi[2,16) values
+    for(uint32 zi_2_16 : KeystreamTab::getZi_2_16_array(keystream.back())) // get 64 Zi[2,16) values
         for(int high = 0; high < 1 << 16; high++) // guess Zi[16,32)
             zi_2_32_vector.push_back(high << 16 | zi_2_16);
 }
@@ -26,15 +26,15 @@ void Zreduction::reduce()
 {
     // variables to keep track of the smallest Zi[2,32) vector
     bool tracking = false;
-    dwordvec bestCopy;
+    u32vec bestCopy;
     std::size_t bestIndex = index, bestSize = TRACK_SIZE;
 
     // variables to wait for a limited number of steps when a small enough vector is found
     bool waiting = false;
     std::size_t wait = 0;
 
-    dwordvec zim1_10_32_vector;
-    dwordvec zim1_2_32_vector;
+    u32vec zim1_10_32_vector;
+    u32vec zim1_2_32_vector;
 
     for(std::size_t i = index; i >= Attack::CONTIGUOUS_SIZE; i--)
     {
@@ -42,10 +42,10 @@ void Zreduction::reduce()
         zim1_2_32_vector.clear();
 
         // generate the Z{i-1}[10,32) values
-        for(dword zi_2_32 : zi_2_32_vector)
+        for(uint32 zi_2_32 : zi_2_32_vector)
         {
             // get Z{i-1}[10,32) from CRC32^-1
-            dword zim1_10_32 = Crc32Tab::getZim1_10_32(zi_2_32);
+            uint32 zim1_10_32 = Crc32Tab::getZim1_10_32(zi_2_32);
             // collect only those that are compatible with keystream{i-1}
             if(KeystreamTab::hasZi_2_16(keystream[i-1], zim1_10_32))
                 zim1_10_32_vector.push_back(zim1_10_32);
@@ -58,9 +58,9 @@ void Zreduction::reduce()
             zim1_10_32_vector.end());
 
         // complete Z{i-1}[10,32) values up to Z{i-1}[2,32)
-        for(dword zim1_10_32 : zim1_10_32_vector)
+        for(uint32 zim1_10_32 : zim1_10_32_vector)
             // get Z{i-1}[2,16) values from keystream byte k{i-1} and Z{i-1}[10,16)
-            for(dword zim1_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i-1], zim1_10_32))
+            for(uint32 zim1_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i-1], zim1_10_32))
                 zim1_2_32_vector.push_back(zim1_10_32 | zim1_2_16);
 
         // update smallest vector tracking
@@ -114,7 +114,7 @@ std::size_t Zreduction::size() const
     return zi_2_32_vector.size();
 }
 
-const dword* Zreduction::data() const
+const uint32* Zreduction::data() const
 {
     return zi_2_32_vector.data();
 }

@@ -20,7 +20,7 @@ class Zreduction
         std::size_t size() const;
 
         /// \return a pointer to the beginning of the Zi[2,32) values
-        const dword* data() const;
+        const uint32* data() const;
 
         /// \return the index of the Zi[2,32) values relative to keystream
         std::size_t getIndex() const;
@@ -33,7 +33,7 @@ class Zreduction
         };
 
         const bytevec& keystream;
-        dwordvec zi_2_32_vector;
+        u32vec zi_2_32_vector;
         std::size_t index;
 };
 

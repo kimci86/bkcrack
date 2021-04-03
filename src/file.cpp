@@ -29,7 +29,7 @@ std::ifstream openInputZipEntry(const std::string archivename, const std::string
 
     // look for end of central directory
     is.seekg(-22, std::ios::end); // start by assuming there is no comment
-    dword sig;
+    uint32 sig;
     read(is, sig);
     is.seekg(-4, std::ios::cur);
     while(sig != 0x06054b50)
@@ -38,21 +38,21 @@ std::ifstream openInputZipEntry(const std::string archivename, const std::string
         read(is, sig);
         is.seekg(-4, std::ios::cur);
     }
-    dword eocdoffset = is.tellg(); // end of central directory offset
+    std::ifstream::pos_type eocdoffset = is.tellg(); // end of central directory offset
 
     // read central directory offset
-    dword cdoffset;
+    uint32 cdoffset;
     is.seekg(16, std::ios::cur);
     read(is, cdoffset);
 
     // iterate on each entry
     is.seekg(cdoffset);
     std::string name;
-    dword compressedSize, offset;
+    uint32 compressedSize, offset;
     while(name != entryname && is.tellg() != eocdoffset)
     {
         name = std::string();
-        word nameSize, extraSize, commentSize;
+        uint16 nameSize, extraSize, commentSize;
 
         is.seekg(20, std::ios::cur);
         read(is, compressedSize);
@@ -71,7 +71,7 @@ std::ifstream openInputZipEntry(const std::string archivename, const std::string
         throw FileError("Could not find " + entryname +" in archive " + archivename);
 
     // read local file header
-    word extraSize;
+    uint16 extraSize;
     is.seekg(offset+28);
     read(is, extraSize);
     is.seekg(name.size() + extraSize, std::ios::cur);
