@@ -5,6 +5,7 @@
 #include "version.hpp"
 #include "log.hpp"
 #include "file.hpp"
+#include "zip.hpp"
 #include "Arguments.hpp"
 #include "Data.hpp"
 #include "Zreduction.hpp"
@@ -157,14 +158,14 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                std::ifstream stream = openInputZipEntry(args.cipherarchive, args.cipherfile, ciphersize);
+                std::ifstream stream = openZipEntry(args.cipherarchive, args.cipherfile, ciphersize);
                 cipherstream.swap(stream);
             }
 
             std::ofstream stream = openOutput(args.decipheredfile);
             decipheredstream.swap(stream);
         }
-        catch(const FileError& e)
+        catch(const BaseError& e)
         {
             std::cout << e.what() << std::endl;
             return 1;

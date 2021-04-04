@@ -1,5 +1,6 @@
 #include "Data.hpp"
 #include "file.hpp"
+#include "zip.hpp"
 #include "Attack.hpp"
 #include <algorithm>
 #include <functional>

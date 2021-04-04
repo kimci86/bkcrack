@@ -9,7 +9,7 @@ struct Data
 {
     enum : std::size_t { ENCRYPTION_HEADER_SIZE = 12 };
 
-    /// Exception thrown if data can not be used to carry out an attack
+    /// Exception thrown if data cannot be used to carry out an attack
     class Error : public BaseError
     {
         public:
@@ -19,8 +19,9 @@ struct Data
 
     /// Load ciphertext and plaintext. Compute keystream.
     ///
-    /// \exception FileError if a file can not be opened or an entry does not exist
-    /// \exception Error if data can not be used to carry out an attack
+    /// \exception FileError if a file cannot be opened
+    /// \exception ZipError if a zip entry cannot be opened
+    /// \exception Error if data cannot be used to carry out an attack
     void load(const Arguments& args);
 
     bytevec ciphertext, ///< ciphertext bytes including encryption header

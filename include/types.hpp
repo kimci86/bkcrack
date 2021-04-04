@@ -20,6 +20,7 @@ public:
 using byte = std::uint8_t;
 using uint16 = std::uint16_t;
 using uint32 = std::uint32_t;
+using uint64 = std::uint64_t;
 
 // container types
 
@@ -59,6 +60,7 @@ enum : uint32
     MASK_0_16  = 0x0000ffff,
     MASK_0_24  = 0x00ffffff,
     MASK_0_26  = 0x03ffffff,
+    MASK_0_32  = 0xffffffff,
     MASK_26_32 = 0xfc000000,
     MASK_24_32 = 0xff000000,
     MASK_10_32 = 0xfffffc00,
