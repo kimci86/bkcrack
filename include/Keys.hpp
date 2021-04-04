@@ -37,7 +37,8 @@ class Keys
         uint32 x, y, z;
 };
 
-/// Insert a representation of keys into the stream os
+/// \brief Insert a representation of keys into the stream \a os
+/// \relates Keys
 std::ostream& operator<<(std::ostream& os, const Keys& keys);
 
 #endif // BKCRACK_KEYS_HPP

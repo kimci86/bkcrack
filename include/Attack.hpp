@@ -9,14 +9,13 @@
 class Attack
 {
     public:
-        /// Constructor
-        ///
+        /// \brief Constructor
         /// \param data Data used to carry out the attack
         /// \param index Index of Z[2,32) values passed to carry out the attack
         /// \param solutions Shared output vector for valid keys
         Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions);
 
-        /// Carry out the attack
+        /// Carry out the attack for the given Z[2,32) value
         void carryout(uint32 z7_2_32);
 
         enum : std::size_t

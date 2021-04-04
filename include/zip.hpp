@@ -1,6 +1,42 @@
 #ifndef BKCRACK_ZIP_HPP
 #define BKCRACK_ZIP_HPP
 
+/// \file zip.hpp
+/// \brief Parse zip entries metadata and read raw content
+///
+/// This graph shows how functions and classes from this file work together:
+/// \dot
+/// digraph {
+///     node [ fontsize=10 ];
+///     edge [ fontsize=10 ];
+///
+///     filename [ label="archive and entry names" ];
+///     filestream [ label="std::ifstream" ];
+///     ZipIterator [ URL="\ref ZipIterator" ];
+///     ZipEntry [ URL="\ref ZipEntry" ];
+///     entrystream [ label="std::ifstream" ];
+///     bytevec [ URL="\ref bytevec" ];
+///
+///     filename -> filestream [ label="openInput", URL="\ref openInput"];
+///     filestream -> ZipIterator [ label="locateZipEntries", URL="\ref locateZipEntries"];
+///     ZipIterator -> ZipIterator [ label="operator++", URL="\ref ZipIterator::operator++()"];
+///     ZipIterator -> ZipEntry [ label="operator*", URL="\ref ZipIterator::operator*"];
+///     ZipEntry -> entrystream [ label="openZipEntry", URL="\ref openZipEntry"];
+///     entrystream -> bytevec [ label="loadStream", URL="\ref loadStream"];
+///
+///     filename -> entrystream [ label="openZipEntry", URL="\ref openZipEntry"];
+///     filename -> bytevec [ label="loadZipEntry", URL="\ref loadZipEntry"];
+/// }
+/// \enddot
+///
+/// \note Zip64 extensions are supported.
+/// \limitation Spanned or split zip files are not supported.
+/// \limitation Strong encryption (SES) is not supported.
+/// In particular, central directory encryption is not supported.
+/// \limitation Language Encoding (EFS) is not supported. (\ref APPNOTE "APPNOTE.TXT", Appendix D)
+///
+/// \see \ref APPNOTE "APPNOTE.TXT"
+
 #include "file.hpp"
 
 /// Exception thrown when parsing a zip file fails
@@ -54,16 +90,19 @@ class ZipIterator : public std::iterator<std::input_iterator_tag, const ZipEntry
         /// then the end-of-stream iterator is constructed.
         ZipIterator(std::istream& is);
 
-        /// Get the current ZipEntry
+        /// \brief Get the current ZipEntry
+        /// \pre The iterator must be valid
         const ZipEntry& operator*() const { return m_entry; }
 
-        /// Access a member of the current ZipEntry
+        /// \brief Access a member of the current ZipEntry
+        /// \pre The iterator must be valid
         const ZipEntry* operator->() const { return &m_entry; }
 
-        /// Read the next central directory record if any or assign end-of-stream iterator
+        /// \brief Read the next central directory record if any or assign end-of-stream iterator
+        /// \pre The iterator must be valid
         ZipIterator& operator++();
 
-        /// \copybrief operator++
+        /// \copydoc operator++
         ZipIterator operator++(int);
 
         /// Test if both iterator are end-of-stream or if both are valid

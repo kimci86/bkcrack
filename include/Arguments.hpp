@@ -19,8 +19,7 @@ class Arguments
                 Error(const std::string& description);
         };
 
-        /// Parse command line arguments
-        ///
+        /// \brief Parse command line arguments
         /// \exception Error if an argument is not valid
         void parse(int argc, const char* argv[]);
 

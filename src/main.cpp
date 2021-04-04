@@ -108,7 +108,7 @@ int main(int argc, char const *argv[])
         for(std::int32_t i = 0; i < size; ++i) // OpenMP 2.0 requires signed index variable
         {
             if(shouldStop)
-                continue; // can not break out of an OpenMP for loop
+                continue; // cannot break out of an OpenMP for loop
 
             attack.carryout(candidates[i]);
 

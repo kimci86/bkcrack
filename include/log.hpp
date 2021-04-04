@@ -3,7 +3,8 @@
 
 #include <iostream>
 
-// output stream manipulators
+/// \file log.hpp
+/// \brief Output stream manipulators
 
 /// Insert the current local time into the output stream
 std::ostream& put_time(std::ostream& os);
@@ -22,7 +23,8 @@ class progress
         int num, den;
 };
 
-/// Insert a progress manipulator into the output stream
+/// \brief Insert a progress manipulator into the output stream
+/// \relates progress
 std::ostream& operator<<(std::ostream& os, const progress& p);
 
 #endif // BKCRACK_LOG_HPP
