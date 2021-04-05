@@ -149,7 +149,7 @@ int main(int argc, char const *argv[])
             }
             else
             {
-                std::ifstream stream = openZipEntry(args.cipherarchive, args.cipherfile, ciphersize);
+                std::ifstream stream = openZipEntry(args.cipherarchive, args.cipherfile, ZipEntry::Encryption::Traditional, ciphersize);
                 cipherstream.swap(stream);
             }
 

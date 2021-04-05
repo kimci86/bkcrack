@@ -144,13 +144,14 @@ std::istream& openZipEntry(std::istream& is, const ZipEntry& entry);
 /// \exception FileError if the archive file cannot be opened
 /// \exception ZipError if the opened file is not a valid zip archive
 /// \exception ZipError if the opened file does not contain an entry with the given name
+/// \exception ZipError if the given entry does not use the expected encryption algorithm
 /// \exception ZipError if the opened file does not contain the entry at the expected offset
-std::ifstream openZipEntry(const std::string& archive, const std::string& entry, std::size_t& size);
+std::ifstream openZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t& size);
 
 /// \brief Open an input file stream, find a zip entry with the given name and
 /// load at most \a size bytes of the corresponding data.
 ///
-/// \copydetails openZipEntry(const std::string&, const std::string&, std::size_t&)
-bytevec loadZipEntry(const std::string& archive, const std::string& entry, std::size_t size);
+/// \copydetails openZipEntry(const std::string&, const std::string&, ZipEntry::Encryption, std::size_t&)
+bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t size);
 
 #endif // BKCRACK_ZIP_HPP
