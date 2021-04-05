@@ -3,6 +3,13 @@ Resources {#resources}
 
 \brief Related publications, online resources and tools.
 
+\if not_doxygen
+
+**Some commands below are for doxygen only.**
+**They are not rendered when viewing the file on GitHub.**
+
+\endif
+
 # Research papers
 
 - \anchor BK94 [A known plaintext attack on the PKZIP stream cipher](https://link.springer.com/content/pdf/10.1007/3-540-60590-8_12.pdf)
