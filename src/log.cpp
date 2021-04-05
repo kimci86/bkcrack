@@ -1,6 +1,14 @@
 #include "log.hpp"
+#include "version.hpp"
 #include <ctime>
 #include <iomanip>
+
+std::ostream& setupLog(std::ostream& os)
+{
+    return os << std::setfill('0') // leading zeros for keys
+              << std::fixed << std::setprecision(1) // for progress percentage
+              << "bkcrack " BKCRACK_VERSION " - " BKCRACK_COMPILATION_DATE; // version information
+}
 
 std::ostream& put_time(std::ostream& os)
 {

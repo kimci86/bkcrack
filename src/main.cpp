@@ -1,8 +1,3 @@
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-
-#include "version.hpp"
 #include "log.hpp"
 #include "file.hpp"
 #include "zip.hpp"
@@ -37,11 +32,7 @@ Optional:
 int main(int argc, char const *argv[])
 {
     // setup output stream
-    std::cout << std::setfill('0') // leading zeros for keys
-              << std::fixed << std::setprecision(1); // for progress percentage
-
-    // version information
-    std::cout << "bkcrack " BKCRACK_VERSION " - " BKCRACK_COMPILATION_DATE << std::endl;
+    std::cout << setupLog << std::endl;
 
     // parse arguments
     Arguments args;
