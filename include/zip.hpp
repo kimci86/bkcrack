@@ -105,7 +105,7 @@ class ZipIterator : public std::iterator<std::input_iterator_tag, const ZipEntry
         /// \copydoc operator++
         ZipIterator operator++(int);
 
-        /// Test if both iterator are end-of-stream or if both are valid
+        /// Test if both iterators are end-of-stream or if both are valid
         bool equal(const ZipIterator& other) const
         {
             return (m_is == nullptr) == (other.m_is == nullptr);
