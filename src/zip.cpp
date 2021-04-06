@@ -233,7 +233,7 @@ std::istream& openZipEntry(std::istream& is, const ZipEntry& entry)
     return is;
 }
 
-std::ifstream openZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption encryption, std::size_t& size)
+std::ifstream openZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t& size)
 {
     std::ifstream is = openInput(archive);
 
@@ -248,11 +248,11 @@ std::ifstream openZipEntry(const std::string& archive, const std::string& entry,
         throw ZipError("found no entry "+entry+" in archive "+archive);
 
     // check encryption algorithm
-    if(it->encryption != encryption)
+    if(it->encryption != expected)
     {
         if(it->encryption == ZipEntry::Encryption::None)
             throw ZipError("entry "+entry+" in archive "+archive+" is not encrypted");
-        else if(encryption == ZipEntry::Encryption::None)
+        else if(expected == ZipEntry::Encryption::None)
             throw ZipError("entry "+entry+" in archive "+archive+" is encrypted");
         else
             throw ZipError("entry "+entry+" in archive "+archive+" is encrypted with an unsupported algorithm");
@@ -264,9 +264,9 @@ std::ifstream openZipEntry(const std::string& archive, const std::string& entry,
     return is;
 }
 
-bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption encryption, std::size_t size)
+bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t size)
 {
     std::size_t entrySize;
-    std::ifstream is = openZipEntry(archive, entry, encryption, entrySize);
+    std::ifstream is = openZipEntry(archive, entry, expected, entrySize);
     return loadStream(is, std::min(entrySize, size));
 }
