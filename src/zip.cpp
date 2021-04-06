@@ -5,13 +5,13 @@ namespace
 {
 
 template <std::size_t N>
-static std::istream& read(std::istream& is, bytearr<N>& bytes)
+std::istream& read(std::istream& is, bytearr<N>& bytes)
 {
     return is.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
 }
 
 template <typename T, std::size_t N = sizeof(T)>
-static std::istream& read(std::istream& is, T& x)
+std::istream& read(std::istream& is, T& x)
 {
     static_assert(N <= sizeof(T), "read requires output type to have at least N bytes");
 
@@ -23,7 +23,7 @@ static std::istream& read(std::istream& is, T& x)
     return is;
 }
 
-static std::istream& read(std::istream& is, std::string& string, std::size_t length)
+std::istream& read(std::istream& is, std::string& string, std::size_t length)
 {
     string.resize(length);
     return is.read(reinterpret_cast<char*>(&string[0]), string.size());
