@@ -4,12 +4,6 @@
 namespace
 {
 
-template <std::size_t N>
-std::istream& read(std::istream& is, bytearr<N>& bytes)
-{
-    return is.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
-}
-
 template <typename T, std::size_t N = sizeof(T)>
 std::istream& read(std::istream& is, T& x)
 {
@@ -101,13 +95,13 @@ ZipIterator& ZipIterator::operator++()
     for(int remaining = extraFieldLength; remaining > 0; )
     {
         // read extra field header
-        bytearr<2> id;
+        uint16 id;
         uint16 size;
         read(*m_is, id);
         read(*m_is, size);
         remaining -= 4;
 
-        if(id == bytearr<2>{1, 0}) // Zip64 extended information
+        if(id == 0x0001) // Zip64 extended information
         {
             // process data block
             if(8 <= size && uncompressedSize == MASK_0_32)
