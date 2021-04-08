@@ -12,6 +12,9 @@ class Keys
         /// Constructor
         Keys(uint32 x = 0x12345678, uint32 y = 0x23456789, uint32 z = 0x34567890);
 
+        /// Construct keys associated to the given password
+        Keys(const std::string& password);
+
         /// Update the state with a plaintext byte
         void update(byte p);
 

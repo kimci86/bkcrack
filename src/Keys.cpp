@@ -8,6 +8,13 @@ Keys::Keys(uint32 x, uint32 y, uint32 z)
  : x(x), y(y), z(z)
 {}
 
+Keys::Keys(const std::string& password)
+ : Keys()
+{
+    for(char p : password)
+        update(p);
+}
+
 void Keys::update(byte p)
 {
     x = Crc32Tab::crc32(x, p);
