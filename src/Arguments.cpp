@@ -19,12 +19,27 @@ void Arguments::parse(int argc, const char* argv[])
         return;
 
     // check mandatory arguments
-    if(cipherfile.empty())
-        throw Error("-c parameter is missing");
-    if(!keysGiven && plainfile.empty())
-        throw Error("-p parameter is missing");
-    if(keysGiven && decipheredfile.empty())
-        throw Error("-d parameter is missing");
+    if(keysGiven)
+    {
+        if(decipheredfile.empty() && unlockedarchive.empty())
+            throw Error("-d or -U parameter is missing (required by -k)");
+    }
+    else
+    {
+        if(cipherfile.empty())
+            throw Error("-c parameter is missing");
+        if(plainfile.empty())
+            throw Error("-p parameter is missing");
+    }
+
+    if(!decipheredfile.empty() && cipherfile.empty())
+        throw Error("-c parameter is missing (required by -d)");
+    if(!decipheredfile.empty() && decipheredfile == cipherfile)
+        throw Error("-c and -d parameters should point to different files");
+    if(!unlockedarchive.empty() && cipherarchive.empty())
+        throw Error("-C parameter is missing (required by -U)");
+    if(!unlockedarchive.empty() && unlockedarchive == cipherarchive)
+        throw Error("-C and -U parameters should point to different files");
 
     // check that offset is not too small
     if(offset < -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE))
@@ -55,6 +70,10 @@ void Arguments::parseArgument()
             break;
         case 'P':
             plainarchive = readString("plainzip");
+            break;
+        case 'U':
+            unlockedarchive = readString("unlockedzip");
+            newPassword = readString("password");
             break;
         case 'd':
             decipheredfile = readString("decipheredfile");

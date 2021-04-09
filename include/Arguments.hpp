@@ -24,10 +24,11 @@ class Arguments
         void parse(int argc, const char* argv[]);
 
         std::string cipherfile, ///< File containing the ciphertext
-            cipherarchive, ///< Zip archive containing cipherfile
-            plainfile, ///< File containing the known plaintext
-            plainarchive, ///< Zip archive containing plainfile
-            decipheredfile; ///< File to write the deciphered text
+            cipherarchive,      ///< Zip archive containing cipherfile
+            plainfile,          ///< File containing the known plaintext
+            plainarchive,       ///< Zip archive containing plainfile
+            decipheredfile,     ///< File to write the deciphered text
+            unlockedarchive;    ///< File to write the encryped archive with the new password
 
         /// Plaintext offset relative to ciphertext without encryption header (may be negative)
         int offset = 0;
@@ -42,6 +43,8 @@ class Arguments
 
         Keys keys; ///< Internal password representation
         bool keysGiven = false; ///< Tell whether keys were given or not
+
+        std::string newPassword; ///< Password chosen to generate the unlocked archive
 
         bool help = false; ///< Tell whether help message is needed or not
 

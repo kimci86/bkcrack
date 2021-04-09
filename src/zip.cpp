@@ -1,5 +1,9 @@
 #include "zip.hpp"
+#include "KeystreamTab.hpp"
+#include "log.hpp"
 #include <algorithm>
+#include <map>
+#include <iterator>
 
 namespace
 {
@@ -21,6 +25,18 @@ std::istream& read(std::istream& is, std::string& string, std::size_t length)
 {
     string.resize(length);
     return is.read(reinterpret_cast<char*>(&string[0]), string.size());
+}
+
+template <typename T, std::size_t N = sizeof(T)>
+std::ostream& write(std::ostream& os, const T& x)
+{
+    static_assert(N <= sizeof(T), "write requires input type to have at least N bytes");
+
+    // We make no assumption about platform endianness.
+    for(std::size_t index = 0; index < N; index++)
+        os.put(lsb(x >> (8 * index)));
+
+    return os;
 }
 
 enum class Signature : uint32
@@ -269,4 +285,80 @@ bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEn
     std::size_t entrySize;
     std::ifstream is = openZipEntry(archive, entry, expected, entrySize);
     return loadStream(is, std::min(entrySize, size));
+}
+
+void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const Keys& newKeys)
+{
+    // Store encrypted entries local file header offset and packed size.
+    // Use std::map to sort them by local file header offset.
+    std::map<uint64, uint64> packedSizeByLocalOffset;
+    std::for_each(locateZipEntries(is), ZipIterator(),
+        [&packedSizeByLocalOffset](const ZipEntry& e)
+        {
+            if(e.encryption == ZipEntry::Encryption::Traditional)
+                packedSizeByLocalOffset.insert({e.offset, e.size});
+        });
+
+    // Rewind input stream and iterate on encrypted entries to change the keys, copy the rest.
+    is.seekg(0, std::ios::beg);
+    uint64 currentOffset = 0;
+
+    int index = 0;
+    if(!packedSizeByLocalOffset.empty())
+        std::cout << progress(index, packedSizeByLocalOffset.size()) << std::flush << "\r";
+
+    for(const std::pair<uint64, uint64>& pair : packedSizeByLocalOffset)
+    {
+        const uint64& localHeaderOffset = pair.first,
+                      packedSize = pair.second;
+
+        if(currentOffset < localHeaderOffset)
+        {
+            std::copy_n(std::istreambuf_iterator<char>(is), localHeaderOffset - currentOffset, std::ostreambuf_iterator<char>(os));
+            is.get();
+        }
+
+        if(!checkSignature(is, Signature::LOCAL_FILE_HEADER))
+        {
+            std::cout << std::endl;
+            throw ZipError("could not find local file header");
+        }
+        write(os, static_cast<uint32>(Signature::LOCAL_FILE_HEADER));
+
+        std::copy_n(std::istreambuf_iterator<char>(is), 22, std::ostreambuf_iterator<char>(os));
+        is.get();
+
+        uint16 filenameLength, extraSize;
+        read(is, filenameLength);
+        read(is, extraSize);
+        write(os, filenameLength);
+        write(os, extraSize);
+
+        if(0 < filenameLength + extraSize)
+        {
+            std::copy_n(std::istreambuf_iterator<char>(is), filenameLength + extraSize, std::ostreambuf_iterator<char>(os));
+            is.get();
+        }
+
+        Keys decrypt = oldKeys,
+             encrypt = newKeys;
+        std::istreambuf_iterator<char> in(is);
+        std::generate_n(std::ostreambuf_iterator<char>(os), packedSize,
+            [&in, &decrypt, &encrypt]() -> char
+            {
+                byte p = *in++ ^ KeystreamTab::getByte(decrypt.getZ());
+                byte c = p ^ KeystreamTab::getByte(encrypt.getZ());
+                decrypt.update(p);
+                encrypt.update(p);
+                return c;
+            });
+
+        currentOffset = localHeaderOffset + 30 + filenameLength + extraSize + packedSize;
+        std::cout << progress(++index, packedSizeByLocalOffset.size()) << std::flush << "\r";
+    }
+
+    std::copy(std::istreambuf_iterator<char>(is), std::istreambuf_iterator<char>(), std::ostreambuf_iterator<char>(os));
+
+    if(!packedSizeByLocalOffset.empty())
+        std::cout << std::endl;
 }

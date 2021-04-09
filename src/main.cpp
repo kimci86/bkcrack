@@ -13,20 +13,29 @@ Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
 Mandatory:
  -c cipherfile      File containing the ciphertext
  -p plainfile       File containing the known plaintext
+
     or
+
  -k X Y Z           Internal password representation as three 32-bits integers
-                      in hexadecimal (requires -d)
+                      in hexadecimal (requires -d or -U)
 
 Optional:
  -C encryptedzip    Zip archive containing cipherfile
+
  -P plainzip        Zip archive containing plainfile
  -o offset          Known plaintext offset relative to ciphertext
                       without encryption header (may be negative)
  -t size            Maximum number of bytes of plaintext to read
  -x offset data     Additional plaintext in hexadecimal starting
                       at the given offset (may be negative)
+
  -e                 Exhaustively try all the keys remaining after Z reduction
- -d decipheredfile  File to write the deciphered text
+
+ -d decipheredfile  File to write the deciphered text (requires -c)
+ -U unlockedzip password
+                    File to write the encryped zip with the password set
+                      to the given new password (requires -C)
+
  -h                 Show this help and exit)_";
 
 int main(int argc, char const *argv[])
@@ -176,6 +185,32 @@ int main(int argc, char const *argv[])
         }
 
         std::cout << "Wrote deciphered text." << std::endl;
+    }
+
+    // unlock
+    if(!keysvec.empty() && !args.unlockedarchive.empty())
+    {
+        std::cout << "[" << put_time << "] Writing unlocked archive " << args.unlockedarchive << " with password \"" << args.newPassword << "\"" << std::endl;
+
+        Keys keys = keysvec.front();
+        if(keysvec.size() > 1)
+            std::cout << "Unlocking archive using the keys " << keys << "\n"
+                      << "Use the command line option -k to provide other keys." << std::endl;
+
+        try
+        {
+            std::ifstream encrypted = openInput(args.cipherarchive);
+            std::ofstream unlocked = openOutput(args.unlockedarchive);
+
+            changeKeys(encrypted, unlocked, keys, Keys(args.newPassword));
+        }
+        catch(const BaseError& e)
+        {
+            std::cout << e.what() << std::endl;
+            return 1;
+        }
+
+        std::cout << "Wrote unlocked archive." << std::endl;
     }
 
     return 0;

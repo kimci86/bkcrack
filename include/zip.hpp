@@ -38,6 +38,7 @@
 /// \see \ref APPNOTE "APPNOTE.TXT"
 
 #include "file.hpp"
+#include "Keys.hpp"
 
 /// Exception thrown when parsing a zip file fails
 class ZipError : public BaseError
@@ -153,5 +154,9 @@ std::ifstream openZipEntry(const std::string& archive, const std::string& entry,
 ///
 /// \copydetails openZipEntry(const std::string&, const std::string&, ZipEntry::Encryption, std::size_t&)
 bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t size);
+
+/// \brief Copy a zip file from \a is into \a os changing the encrypted data using the given keys.
+/// \exception ZipError if the input stream does not contain a valid zip archive
+void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const Keys& newKeys);
 
 #endif // BKCRACK_ZIP_HPP
