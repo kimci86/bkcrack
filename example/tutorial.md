@@ -67,11 +67,11 @@ So we know the byte just before the plaintext (i.e. at offset -1) is 0xA9.
 
 Let us write the plaintext we guessed in a file.
 
-    $ echo -n -e '\xa9<?xml version="1.0" ' > plain.txt
+    $ echo -n -e '<?xml version="1.0" ' > plain.txt
 
 We are now ready to run the attack.
 
-    $ ../bkcrack -C secrets.zip -c spiral.svg -p plain.txt -o -1
+    $ ../bkcrack -C secrets.zip -c spiral.svg -p plain.txt -x -1 A9
 
 After a little while, the keys will appear!
 
@@ -87,8 +87,20 @@ After a little while, the keys will appear!
 
 # Recovering the original files
 
-Once we have the keys, we can decipher the files.
+Once we have the keys, we can recover the original files.
+
+## Choose a new password
+
 We assume that the same keys were used for all the files in the zip file.
+We can create a new encrypted archive based on `secret.zip`, but with a new password, `easy` in this example.
+
+    $ ../bkcrack -C secrets.zip -k c4038591 d5ff449d d3b0c696 -U secrets_with_new_password.zip easy
+
+Then, any zip file utility can extract the created archive. You will just have to type the chosen password when prompted.
+
+## Or decipher files
+
+Alternatively, we can decipher files one by one.
 
     $ ../bkcrack -C secrets.zip -c spiral.svg -k c4038591 d5ff449d d3b0c696 -d spiral_deciphered.svg
 
@@ -100,6 +112,6 @@ The file `advice.jpg` was compressed with the deflate algorithm in the zip file,
 
 A python script is provided for this purpose in the `tools` folder.
 
-    $ ../tools/inflate.py < advice_deciphered.deflate > very_good_advice.jpg
+    $ python3 ../tools/inflate.py < advice_deciphered.deflate > very_good_advice.jpg
 
 You can now open `very_good_advice.jpg` and enjoy it!
