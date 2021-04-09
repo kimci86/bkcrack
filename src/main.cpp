@@ -137,33 +137,31 @@ int main(int argc, char const *argv[])
     // decipher
     if(!keysvec.empty() && !args.decipheredfile.empty())
     {
+        std::cout << "[" << put_time << "] Writing deciphered data " << args.decipheredfile << " (maybe compressed)"<< std::endl;
+
         Keys keys = keysvec.front();
         if(keysvec.size() > 1)
             std::cout << "Deciphering data using the keys " << keys << "\n"
                       << "Use the command line option -k to provide other keys." << std::endl;
 
-        std::ifstream cipherstream;
-        std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
-        std::ofstream decipheredstream;
-
         try
         {
-            // fstreams are swapped instead of move-assigned to avoid
-            // a bug in some old versions of GCC (see issue #4 on github)
+            std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
+            std::ifstream cipherstream = args.cipherarchive.empty() ? openInput(args.cipherfile) : openZipEntry(args.cipherarchive, args.cipherfile, ZipEntry::Encryption::Traditional, ciphersize);
+            std::ofstream decipheredstream = openOutput(args.decipheredfile);
 
-            if(args.cipherarchive.empty())
-            {
-                std::ifstream stream = openInput(args.cipherfile);
-                cipherstream.swap(stream);
-            }
-            else
-            {
-                std::ifstream stream = openZipEntry(args.cipherarchive, args.cipherfile, ZipEntry::Encryption::Traditional, ciphersize);
-                cipherstream.swap(stream);
-            }
+            // discard the encryption header
+            std::istreambuf_iterator<char> cipher(cipherstream);
+            std::size_t i;
+            for(i = 0; i < Data::ENCRYPTION_HEADER_SIZE && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
+                keys.update(*cipher ^ KeystreamTab::getByte(keys.getZ()));
 
-            std::ofstream stream = openOutput(args.decipheredfile);
-            decipheredstream.swap(stream);
+            for(std::ostreambuf_iterator<char> plain(decipheredstream); i < ciphersize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)
+            {
+                byte p = *cipher ^ KeystreamTab::getByte(keys.getZ());
+                keys.update(p);
+                *plain = p;
+            }
         }
         catch(const BaseError& e)
         {
@@ -171,20 +169,7 @@ int main(int argc, char const *argv[])
             return 1;
         }
 
-        // discard the encryption header
-        std::istreambuf_iterator<char> cipher(cipherstream);
-        std::size_t i;
-        for(i = 0; i < Data::ENCRYPTION_HEADER_SIZE && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
-            keys.update(*cipher ^ KeystreamTab::getByte(keys.getZ()));
-
-        for(std::ostreambuf_iterator<char> plain(decipheredstream); i < ciphersize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)
-        {
-            byte p = *cipher ^ KeystreamTab::getByte(keys.getZ());
-            keys.update(p);
-            *plain = p;
-        }
-
-        std::cout << "Wrote deciphered text." << std::endl;
+        std::cout << "Wrote deciphered data." << std::endl;
     }
 
     // unlock
