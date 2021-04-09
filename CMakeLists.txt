@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # project definition
 project(bkcrack
-    VERSION 1.1.0
+    VERSION 1.2.0
     DESCRIPTION "Crack legacy zip encryption with Biham and Kocher's known plaintext attack."
     HOMEPAGE_URL "https://github.com/kimci86/bkcrack"
     LANGUAGES CXX)
