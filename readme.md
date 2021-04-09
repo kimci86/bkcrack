@@ -37,19 +37,19 @@ Install it with any AUR helpers you like.
 Usage
 -----
 
-### Data required
+### Recover internal keys
 
 The attack requires at least 12 bytes of known plaintext.
 At least 8 of them must be contiguous.
 The larger the contiguous known plaintext, the faster the attack.
 
-#### From zip archives
+#### Load data from zip archives
 
 Having a zip archive `encrypted.zip` with the entry `cipher` being the ciphertext and `plain.zip` with the entry `plain` as the known plaintext, bkcrack can be run like this:
 
     bkcrack -C encrypted.zip -c cipher -P plain.zip -p plain
 
-#### From files
+#### Load data from files
 
 Having a file `cipherfile` with the ciphertext (starting with the 12 bytes corresponding to the encryption header) and `plainfile` with the known plaintext, bkcrack can be run like this:
 
@@ -69,9 +69,13 @@ To do so, use the `-x` flag followed by an offset and bytes in hexadecimal.
 
     bkcrack -c cipherfile -p plainfile -x 25 4b4f -x 30 21
 
+#### Number of threads
+
+If bkcrack was built with parallel mode enabled, the number of threads used can be set through the environment variable `OMP_NUM_THREADS`.
+
 ### Decipher
 
-If the attack is successful, the deciphered text can be saved:
+If the attack is successful, the deciphered data associated to the ciphertext used for the attack can be saved:
 
     bkcrack -c cipherfile -p plainfile -d decipheredfile
 
@@ -79,16 +83,21 @@ If the keys are known from a previous attack, it is possible to use bkcrack to d
 
     bkcrack -c cipherfile -k 12345678 23456789 34567890 -d decipheredfile
 
-### Decompress
+#### Decompress
 
 The deciphered data might be compressed depending on whether compression was used or not when the zip file was created.
 If deflate compression was used, a Python 3 script provided in the `tools` folder may be used to decompress data.
 
-    tools/inflate.py < decipheredfile > decompressedfile
+    python3 tools/inflate.py < decipheredfile > decompressedfile
 
-### Number of threads
+### Unlock encrypted archive
 
-If bkcrack was built with parallel mode enabled, the number of threads used can be set through the environment variable `OMP_NUM_THREADS`.
+It is also possible to generate a new encrypted archive with the password of your choice:
+
+    bkcrack -C encrypted.zip -k 12345678 23456789 34567890 -U unlocked.zip password
+
+The archive generated this way can be extracted using any zip file utility with the new password.
+It assumes that every entry was originally encrypted with the same password.
 
 Learn
 -----
