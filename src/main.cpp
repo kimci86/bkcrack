@@ -80,17 +80,16 @@ int main(int argc, char const *argv[])
             return 1;
         }
 
-        // generate and reduce Zi[2,32) values
+        // generate and reduce Zi[10,32) values
         Zreduction zr(data.keystream);
-        zr.generate();
-        std::cout << "Generated " << zr.size() << " Z values." << std::endl;
-
         if(data.keystream.size() > Attack::CONTIGUOUS_SIZE)
         {
             std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::CONTIGUOUS_SIZE) << " bytes of known plaintext" << std::endl;
             zr.reduce();
-            std::cout << zr.size() << " values remaining." << std::endl;
         }
+
+        // generate Zi[2,32) values
+        zr.generate();
 
         // iterate over remaining Zi[2,32) values
         const uint32* candidates = zr.data();

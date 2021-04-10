@@ -3,18 +3,18 @@
 
 #include "types.hpp"
 
-/// Generate and reduce Zi[2,32) values
+/// Generate and reduce Z values
 class Zreduction
 {
     public:
-        /// Constructor
+        /// Constructor generating Zi[10,32) values from the last keystream byte
         Zreduction(const bytevec& keystream);
 
-        /// Generate 2^22 Zi[2,32) values from keystream
-        void generate();
-
-        /// Reduce Zi[2,32) number using extra information
+        /// Reduce Zi[10,32) number using extra contiguous keystream
         void reduce();
+
+        /// Extend Zi[10,32) values into Zi[2,32) values using keystream
+        void generate();
 
         /// \return the number of Zi[2,32) values
         std::size_t size() const;
@@ -33,7 +33,9 @@ class Zreduction
         };
 
         const bytevec& keystream;
-        u32vec zi_2_32_vector;
+        // After constructor or reduce(), contains Z[10,32) values.
+        // After generate(), contains Zi[2,32) values.
+        u32vec zi_vector;
         std::size_t index;
 };
 

@@ -4,22 +4,17 @@
 #include "Crc32Tab.hpp"
 #include "KeystreamTab.hpp"
 #include <algorithm>
-#include <pdqsort/pdqsort.h>
+#include <bitset>
 
 Zreduction::Zreduction(const bytevec& keystream)
  : keystream(keystream)
-{}
-
-void Zreduction::generate()
 {
     index = keystream.size() - 1;
+    zi_vector.reserve(1<<22);
 
-    zi_2_32_vector.clear();
-    zi_2_32_vector.reserve(1<<22);
-
-    for(uint32 zi_2_16 : KeystreamTab::getZi_2_16_array(keystream.back())) // get 64 Zi[2,16) values
-        for(int high = 0; high < 1 << 16; high++) // guess Zi[16,32)
-            zi_2_32_vector.push_back(high << 16 | zi_2_16);
+    for(uint32 zi_10_32_shifted = 0; zi_10_32_shifted < 1<<22; zi_10_32_shifted++)
+        if(KeystreamTab::hasZi_2_16(keystream[index], zi_10_32_shifted << 10))
+            zi_vector.push_back(zi_10_32_shifted << 10);
 }
 
 void Zreduction::reduce()
@@ -34,49 +29,44 @@ void Zreduction::reduce()
     std::size_t wait = 0;
 
     u32vec zim1_10_32_vector;
-    u32vec zim1_2_32_vector;
+    zim1_10_32_vector.reserve(1<<22);
+    std::bitset<1<<22> zim1_10_32_set;
 
     for(std::size_t i = index; i >= Attack::CONTIGUOUS_SIZE; i--)
     {
         zim1_10_32_vector.clear();
-        zim1_2_32_vector.clear();
+        zim1_10_32_set.reset();
+        std::size_t number_of_zim1_2_32 = 0;
 
         // generate the Z{i-1}[10,32) values
-        for(uint32 zi_2_32 : zi_2_32_vector)
-        {
-            // get Z{i-1}[10,32) from CRC32^-1
-            uint32 zim1_10_32 = Crc32Tab::getZim1_10_32(zi_2_32);
-            // collect only those that are compatible with keystream{i-1}
-            if(KeystreamTab::hasZi_2_16(keystream[i-1], zim1_10_32))
-                zim1_10_32_vector.push_back(zim1_10_32);
-        }
-
-        // remove duplicates
-        pdqsort(zim1_10_32_vector.begin(), zim1_10_32_vector.end());
-        zim1_10_32_vector.erase(
-            std::unique(zim1_10_32_vector.begin(), zim1_10_32_vector.end()),
-            zim1_10_32_vector.end());
-
-        // complete Z{i-1}[10,32) values up to Z{i-1}[2,32)
-        for(uint32 zim1_10_32 : zim1_10_32_vector)
-            // get Z{i-1}[2,16) values from keystream byte k{i-1} and Z{i-1}[10,16)
-            for(uint32 zim1_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i-1], zim1_10_32))
-                zim1_2_32_vector.push_back(zim1_10_32 | zim1_2_16);
+        for(uint32 zi_10_32 : zi_vector)
+            for(uint32 zi_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i], zi_10_32))
+            {
+                // get Z{i-1}[10,32) from CRC32^-1
+                uint32 zim1_10_32 = Crc32Tab::getZim1_10_32(zi_10_32 | zi_2_16);
+                // collect without duplicates only those that are compatible with keystream{i-1}
+                if(!zim1_10_32_set[zim1_10_32 >> 10] && KeystreamTab::hasZi_2_16(keystream[i-1], zim1_10_32))
+                {
+                    zim1_10_32_vector.push_back(zim1_10_32);
+                    zim1_10_32_set.set(zim1_10_32 >> 10);
+                    number_of_zim1_2_32 += KeystreamTab::getZi_2_16_vector(keystream[i-1], zim1_10_32).size();
+                }
+            }
 
         // update smallest vector tracking
-        if(zim1_2_32_vector.size() <= bestSize) // new smallest vector
+        if(number_of_zim1_2_32 <= bestSize) // new smallest number of Z[2,32) values
         {
             tracking = true;
             bestIndex = i-1;
-            bestSize = zim1_2_32_vector.size();
+            bestSize = number_of_zim1_2_32;
             waiting = false;
         }
-        else if(tracking) // vector is bigger than bestSize
+        else if(tracking) // number of Z{i-1}[2,32) values is bigger than bestSize
         {
             if(bestIndex == i) // hit a minimum
             {
                 // keep a copy of the vector because size is about to grow
-                std::swap(bestCopy, zi_2_32_vector);
+                std::swap(bestCopy, zi_vector);
 
                 if(bestSize <= WAIT_SIZE)
                 {
@@ -90,8 +80,8 @@ void Zreduction::reduce()
                 break;
         }
 
-        // put result in z_2_32_vector
-        std::swap(zi_2_32_vector, zim1_2_32_vector);
+        // put result in zi_vector
+        std::swap(zi_vector, zim1_10_32_vector);
 
         std::cout << progress(keystream.size() - i, keystream.size() - Attack::CONTIGUOUS_SIZE) << std::flush << "\r";
     }
@@ -100,23 +90,35 @@ void Zreduction::reduce()
 
     if(tracking)
     {
-        // put bestCopy in z_2_32_vector only if bestIndex is not the index of z_2_32_vector
+        // put bestCopy in zi_vector only if bestIndex is not the index of zi_vector
         if(bestIndex != Attack::CONTIGUOUS_SIZE - 1)
-            std::swap(zi_2_32_vector, bestCopy);
+            std::swap(zi_vector, bestCopy);
         index = bestIndex;
     }
     else
         index = Attack::CONTIGUOUS_SIZE - 1;
 }
 
+void Zreduction::generate()
+{
+    std::size_t number_of_zi_10_32 = zi_vector.size();
+    for(std::size_t i = 0; i < number_of_zi_10_32; i++)
+    {
+        const u32vec& zi_2_16_vector = KeystreamTab::getZi_2_16_vector(keystream[index], zi_vector[i]);
+        for(std::size_t j = 1; j < zi_2_16_vector.size(); j++)
+            zi_vector.push_back(zi_vector[i] | zi_2_16_vector[j]);
+        zi_vector[i] |= zi_2_16_vector[0];
+    }
+}
+
 std::size_t Zreduction::size() const
 {
-    return zi_2_32_vector.size();
+    return zi_vector.size();
 }
 
 const uint32* Zreduction::data() const
 {
-    return zi_2_32_vector.data();
+    return zi_vector.data();
 }
 
 std::size_t Zreduction::getIndex() const
