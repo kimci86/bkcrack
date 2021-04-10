@@ -104,7 +104,7 @@ void Attack::testXlist()
     if(((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
         return;
 
-    // decipher and filter by comparing with remaining contiguous plaintext
+    // decipher and filter by comparing with remaining contiguous plaintext forward
     Keys keysForward(xlist[7], ylist[7], zlist[7]);
     keysForward.update(data.plaintext[index+7]);
     for(bytevec::const_iterator p = data.plaintext.begin() + index + 8,
@@ -119,10 +119,22 @@ void Attack::testXlist()
 
     std::size_t indexForward = data.offset + data.plaintext.size();
 
-    // continue filtering with extra known plaintext
+    // and also backward
     Keys keysBackward(x, ylist[3], zlist[3]);
-    std::size_t indexBackward = data.offset + index + 3;
+    using rit = std::reverse_iterator<bytevec::const_iterator>;
+    for(rit p = rit(data.plaintext.begin() + index + 3),
+            c = rit(data.ciphertext.begin() + data.offset + index + 3);
+            p != data.plaintext.rend();
+            ++p, ++c)
+    {
+        keysBackward.updateBackward(*c);
+        if((*c ^ KeystreamTab::getByte(keysBackward.getZ())) != *p)
+            return;
+    }
 
+    std::size_t indexBackward = data.offset;
+
+    // continue filtering with extra known plaintext
     for(const std::pair<std::size_t, byte>& extra : data.extraPlaintext)
     {
         byte p;
@@ -144,14 +156,13 @@ void Attack::testXlist()
     }
 
     // all tests passed so the keys are found
-    Keys keys(xlist[7], ylist[7], zlist[7]);
 
     // get the keys associated with the initial state
-    keys.updateBackward(data.ciphertext, data.offset + index + 7, 0);
+    keysBackward.updateBackward(data.ciphertext, indexBackward, 0);
 
     #pragma omp critical
     {
-        std::cout << "Keys: " << keys << std::endl;
-        solutions.push_back(keys);
+        std::cout << "Keys: " << keysBackward << std::endl;
+        solutions.push_back(keysBackward);
     }
 }
