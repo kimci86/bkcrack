@@ -13,8 +13,7 @@ add_executable(${PROJECT_NAME} ${VERSION_HEADER_CONFIGURED} ${HEADERS} ${SOURCES
 # set include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
-    "${PROJECT_BINARY_DIR}/include"
-    "${PROJECT_SOURCE_DIR}/external")
+    "${PROJECT_BINARY_DIR}/include")
 
 # enable C++11
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
