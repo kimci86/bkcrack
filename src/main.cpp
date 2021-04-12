@@ -6,6 +6,7 @@
 #include "Zreduction.hpp"
 #include "Attack.hpp"
 #include "KeystreamTab.hpp"
+#include <limits>
 
 const char* usage = R"_(usage: bkcrack [options]
 Crack legacy zip encryption with Biham and Kocher's known plaintext attack.

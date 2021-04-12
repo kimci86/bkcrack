@@ -1,7 +1,6 @@
 #ifndef BKCRACK_ARGUMENTS_HPP
 #define BKCRACK_ARGUMENTS_HPP
 
-#include <limits>
 #include <map>
 
 #include "types.hpp"
@@ -32,8 +31,12 @@ class Arguments
 
         /// Plaintext offset relative to ciphertext without encryption header (may be negative)
         int offset = 0;
-        /// Maximum number of bytes of plaintext to read
-        std::size_t plainsize = std::numeric_limits<std::size_t>::max();
+
+        /// \brief Maximum number of bytes of plaintext to read
+        ///
+        /// Set to 1 MiB by default. Using more plaintext is possible,
+        /// but it uses more RAM and does not speed up the attack much.
+        std::size_t plainsize = 1<<20;
 
         /// Additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be negative)
         std::map<int, byte> extraPlaintext;
