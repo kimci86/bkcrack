@@ -24,7 +24,7 @@ std::istream& read(std::istream& is, T& x)
 std::istream& read(std::istream& is, std::string& string, std::size_t length)
 {
     string.resize(length);
-    return is.read(reinterpret_cast<char*>(&string[0]), string.size());
+    return is.read(&string[0], string.size());
 }
 
 template <typename T, std::size_t N = sizeof(T)>
