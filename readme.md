@@ -1,7 +1,8 @@
 bkcrack
 =======
 
-[![Badge](https://github.com/kimci86/bkcrack/workflows/Release/badge.svg)](https://github.com/kimci86/bkcrack/releases)
+[![CI badge](https://github.com/kimci86/bkcrack/actions/workflows/ci.yml/badge.svg)](https://github.com/kimci86/bkcrack/actions/workflows/ci.yml)
+[![release badge](https://img.shields.io/github/v/release/kimci86/bkcrack)](https://github.com/kimci86/bkcrack/releases)
 
 Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
 
