@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.os }}
+
+    strategy:
+      matrix:
+        platform:
+          - { name: Ubuntu,         os: ubuntu-latest }
+          - { name: MacOS,          os: macos-latest }
+          - { name: Windows 64-bit, os: windows-latest, cmake-config: -A x64 }
+          - { name: Windows 32-bit, os: windows-latest, cmake-config: -A Win32 }
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      if: runner.os == 'macOS'
+      run: brew install libomp
+
+    - name: Configure CMake
+      run: cmake -S . -B build ${{matrix.platform.cmake-config}}
+
+    - name: Build project
+      run: cmake --build build --config Release
+
+    - name: Create package
+      run: cmake --build build --config Release --target package
+
+    - name: Upload package
+      uses: actions/upload-artifact@v2
+      with:
+        name: packages
+        path: |
+          build/*.zip
+          build/*.tar.gz
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Download packages
+      uses: actions/download-artifact@v2
+      with:
+        name: packages
+        path: packages
+
+    - name: Get tag name
+      id: get_tag_name
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ steps.get_tag_name.outputs.tag }}
+        files: packages/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
