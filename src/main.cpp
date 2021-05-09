@@ -6,6 +6,7 @@
 #include "Zreduction.hpp"
 #include "Attack.hpp"
 #include "KeystreamTab.hpp"
+#include "password.hpp"
 #include <limits>
 
 const char* usage = R"_(usage: bkcrack [options]
@@ -209,6 +210,25 @@ int main(int argc, char const *argv[])
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;
+    }
+
+    // recover password
+    if(!keysvec.empty() && args.maxLength)
+    {
+        std::cout << "[" << put_time << "] Recovering password" << std::endl;
+        std::string password;
+        if(recoverPassword(keysvec.front(), args.maxLength, args.charset, password))
+        {
+            std::cout << "[" << put_time << "] Password" << std::endl;
+            std::cout << "as bytes: ";
+            std::cout << std::hex;
+            for(byte c : password)
+                std::cout << static_cast<int>(c) << ' ';
+            std::cout << std::dec << std::endl;
+            std::cout << "as text: " << password << std::endl;
+        }
+        else
+            std::cout << "[" << put_time << "] Could not recover password" << std::endl;
     }
 
     return 0;

@@ -3,7 +3,9 @@
 
 #include <iostream>
 
-#include "types.hpp"
+#include "Crc32Tab.hpp"
+#include "KeystreamTab.hpp"
+#include "MultTab.hpp"
 
 /// Keys defining the cipher state
 class Keys
@@ -16,25 +18,43 @@ class Keys
         Keys(const std::string& password);
 
         /// Update the state with a plaintext byte
-        void update(byte p);
+        inline void update(byte p)
+        {
+            x = Crc32Tab::crc32(x, p);
+            y = (y + lsb(x)) * MultTab::MULT + 1;
+            z = Crc32Tab::crc32(z, msb(y));
+        }
 
         /// Update the state forward to a target offset
         void update(const bytevec& ciphertext, std::size_t current, std::size_t target);
 
         /// Update the state backward with a ciphertext byte
-        void updateBackward(byte c);
+        inline void updateBackward(byte c)
+        {
+            z = Crc32Tab::crc32inv(z, msb(y));
+            y = (y - 1) * MultTab::MULTINV - lsb(x);
+            x = Crc32Tab::crc32inv(x, c ^ KeystreamTab::getByte(z));
+        }
+
+        /// Update the state backward with a plaintext byte
+        inline void updateBackwardPlaintext(byte p)
+        {
+            z = Crc32Tab::crc32inv(z, msb(y));
+            y = (y - 1) * MultTab::MULTINV - lsb(x);
+            x = Crc32Tab::crc32inv(x, p);
+        }
 
         /// Update the state backward to a target offset
         void updateBackward(const bytevec& ciphertext, std::size_t current, std::size_t target);
 
         /// \return X value
-        uint32 getX() const;
+        uint32 getX() const { return x; }
 
         /// \return Y value
-        uint32 getY() const;
+        uint32 getY() const { return y; }
 
         /// \return Z value
-        uint32 getZ() const;
+        uint32 getZ() const { return z; }
 
     private:
         uint32 x, y, z;
