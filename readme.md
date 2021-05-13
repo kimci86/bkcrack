@@ -100,6 +100,12 @@ It is also possible to generate a new encrypted archive with the password of you
 The archive generated this way can be extracted using any zip file utility with the new password.
 It assumes that every entry was originally encrypted with the same password.
 
+### Recover password
+
+Given the internal keys, bkcrack can try to find the original password up to a given length:
+
+    bkcrack -k 1ded830c 24454157 7213b8c5 -r 10 ?p
+
 Learn
 -----
 
