@@ -18,7 +18,7 @@ Mandatory:
     or
 
  -k X Y Z           Internal password representation as three 32-bits integers
-                      in hexadecimal (requires -d or -U)
+                      in hexadecimal (requires -d, -U, or -r)
 
 Optional:
  -C encryptedzip    Zip archive containing cipherfile
@@ -36,6 +36,19 @@ Optional:
  -U unlockedzip password
                     File to write the encryped zip with the password set
                       to the given new password (requires -C)
+
+ -r length charset  Try to recover the password up to the given length using
+                      characters in the given charset. The charset is a
+                      sequence of characters or shorcuts for predefined
+                      charsets listed below. Example: ?l?d-.@
+
+                      ?l lowercase letters
+                      ?u uppercase letters
+                      ?d decimal digits
+                      ?s punctuation
+                      ?a alpha-numerical characters (same as ?l?u?d)
+                      ?p printable characters (same as ?a?s)
+                      ?b all bytes (0x00 - 0xff)
 
  -h                 Show this help and exit)_";
 

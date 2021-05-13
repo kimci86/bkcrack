@@ -49,6 +49,9 @@ class Arguments
 
         std::string newPassword; ///< Password chosen to generate the unlocked archive
 
+        std::size_t maxLength = 0; ///< Maximum password length to try during password recovery
+        bytevec charset; ///< Characters to generate password candidates
+
         bool help = false; ///< Tell whether help message is needed or not
 
     private:
@@ -67,6 +70,7 @@ class Arguments
         bytevec readHex(const std::string& description);
         uint32 readKey(const std::string& description);
         Keys readKeys();
+        bytevec readCharset();
 };
 
 #endif // BKCRACK_ARGUMENTS_HPP
