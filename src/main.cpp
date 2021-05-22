@@ -6,6 +6,7 @@
 #include "Zreduction.hpp"
 #include "Attack.hpp"
 #include "KeystreamTab.hpp"
+#include "password.hpp"
 #include <limits>
 
 const char* usage = R"_(usage: bkcrack [options]
@@ -18,7 +19,7 @@ Mandatory:
     or
 
  -k X Y Z           Internal password representation as three 32-bits integers
-                      in hexadecimal (requires -d or -U)
+                      in hexadecimal (requires -d, -U, or -r)
 
 Optional:
  -C encryptedzip    Zip archive containing cipherfile
@@ -36,6 +37,19 @@ Optional:
  -U unlockedzip password
                     File to write the encryped zip with the password set
                       to the given new password (requires -C)
+
+ -r length charset  Try to recover the password up to the given length using
+                      characters in the given charset. The charset is a
+                      sequence of characters or shorcuts for predefined
+                      charsets listed below. Example: ?l?d-.@
+
+                      ?l lowercase letters
+                      ?u uppercase letters
+                      ?d decimal digits
+                      ?s punctuation
+                      ?a alpha-numerical characters (same as ?l?u?d)
+                      ?p printable characters (same as ?a?s)
+                      ?b all bytes (0x00 - 0xff)
 
  -h                 Show this help and exit)_";
 
@@ -196,6 +210,25 @@ int main(int argc, char const *argv[])
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;
+    }
+
+    // recover password
+    if(!keysvec.empty() && args.maxLength)
+    {
+        std::cout << "[" << put_time << "] Recovering password" << std::endl;
+        std::string password;
+        if(recoverPassword(keysvec.front(), args.maxLength, args.charset, password))
+        {
+            std::cout << "[" << put_time << "] Password" << std::endl;
+            std::cout << "as bytes: ";
+            std::cout << std::hex;
+            for(byte c : password)
+                std::cout << static_cast<int>(c) << ' ';
+            std::cout << std::dec << std::endl;
+            std::cout << "as text: " << password << std::endl;
+        }
+        else
+            std::cout << "[" << put_time << "] Could not recover password" << std::endl;
     }
 
     return 0;

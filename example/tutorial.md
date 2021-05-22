@@ -67,7 +67,7 @@ So we know the byte just before the plaintext (i.e. at offset -1) is 0xA9.
 
 Let us write the plaintext we guessed in a file.
 
-    $ echo -n -e '<?xml version="1.0" ' > plain.txt
+    $ echo -n '<?xml version="1.0" ' > plain.txt
 
 We are now ready to run the attack.
 
@@ -75,15 +75,13 @@ We are now ready to run the attack.
 
 After a little while, the keys will appear!
 
-    Generated 4194304 Z values.
-    [15:56:33] Z reduction using 13 bytes of known plaintext
+    [17:42:43] Z reduction using 13 bytes of known plaintext
     100.0 % (13 / 13)
-    521733 values remaining.
-    [15:56:34] Attack on 521733 Z values at index 6
-    Keys: c4038591 d5ff449d d3b0c696
-    44.5 % (231951 / 521733)
-    [16:03:28] Keys
-    c4038591 d5ff449d d3b0c696
+    [17:42:44] Attack on 542303 Z values at index 6
+    Keys: c4490e28 b414a23d 91404b31
+    33.9 % (183761 / 542303)
+    [17:48:03] Keys
+    c4490e28 b414a23d 91404b31
 
 # Recovering the original files
 
@@ -94,7 +92,7 @@ Once we have the keys, we can recover the original files.
 We assume that the same keys were used for all the files in the zip file.
 We can create a new encrypted archive based on `secret.zip`, but with a new password, `easy` in this example.
 
-    $ ../bkcrack -C secrets.zip -k c4038591 d5ff449d d3b0c696 -U secrets_with_new_password.zip easy
+    $ ../bkcrack -C secrets.zip -k c4490e28 b414a23d 91404b31 -U secrets_with_new_password.zip easy
 
 Then, any zip file utility can extract the created archive. You will just have to type the chosen password when prompted.
 
@@ -102,11 +100,11 @@ Then, any zip file utility can extract the created archive. You will just have t
 
 Alternatively, we can decipher files one by one.
 
-    $ ../bkcrack -C secrets.zip -c spiral.svg -k c4038591 d5ff449d d3b0c696 -d spiral_deciphered.svg
+    $ ../bkcrack -C secrets.zip -c spiral.svg -k c4490e28 b414a23d 91404b31 -d spiral_deciphered.svg
 
 The file `spiral.svg` was stored uncompressed so we are done.
 
-    $ ../bkcrack -C secrets.zip -c advice.jpg -k c4038591 d5ff449d d3b0c696 -d advice_deciphered.deflate
+    $ ../bkcrack -C secrets.zip -c advice.jpg -k c4490e28 b414a23d 91404b31 -d advice_deciphered.deflate
 
 The file `advice.jpg` was compressed with the deflate algorithm in the zip file, so we now have to uncompressed it.
 
@@ -115,3 +113,64 @@ A python script is provided for this purpose in the `tools` folder.
     $ python3 ../tools/inflate.py < advice_deciphered.deflate > very_good_advice.jpg
 
 You can now open `very_good_advice.jpg` and enjoy it!
+
+# Recovering the original password
+
+As shown above, the original password is not required to decrypt data.
+The internal keys are enough.
+However, we might also be interested in finding the original password.
+To do this, we need to choose a maximum length and a set of characters among which we hope to find those that constitute the password.
+To save time, we have to choose those parameters wisely.
+For a given maximal length, a small charset will be explored much faster than a big one, but making a wrong assumption by choosing a charset that is too small will not allow to recover the password.
+
+At first, we can try all candidates up to a given length without making any assumption about the character set. We use the charset `?b` which is the set containing all bytes (from 0 to 255), so we not miss any candidate up to length 9.
+
+    $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 9 ?b
+
+    [17:52:16] Recovering password
+    length 0-6...
+    length 7...
+    length 8...
+    length 9...
+    [17:52:16] Could not recover password
+
+It failed so we know the password has 10 characters or more.
+
+Now, let us assume the password is made of 11 or less printable ASCII characters, using the charset `?p`.
+
+    $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 11 ?p
+
+    [17:52:34] Recovering password
+    length 0-6...
+    length 7...
+    length 8...
+    length 9...
+    length 10...
+    100.0 % (9025 / 9025)
+    length 11...
+    100.0 % (9025 / 9025)
+    [17:52:38] Could not recover password
+
+It failed again so we know the password has non-printable ASCII characters or has 12 or more characters.
+
+Now, let us assume the password is made of 12 or less alpha-numerical characters.
+
+    $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 12 ?a
+
+    [17:54:37] Recovering password
+    length 0-6...
+    length 7...
+    length 8...
+    length 9...
+    length 10...
+    100.0 % (3844 / 3844)
+    length 11...
+    100.0 % (3844 / 3844)
+    length 12...
+    51.8 % (1993 / 3844)
+    [17:54:49] Password
+    as bytes: 57 34 73 46 30 72 67 6f 74 74 65 6e
+    as text: W4sF0rgotten
+
+Tada! We made the right assumption for this case.
+The password was recovered quickly from the keys.

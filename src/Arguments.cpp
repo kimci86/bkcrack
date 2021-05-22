@@ -1,6 +1,24 @@
 #include "Arguments.hpp"
 #include "Data.hpp"
 #include <algorithm>
+#include <bitset>
+
+namespace
+{
+
+std::bitset<256> charRange(char first, char last)
+{
+    std::bitset<256> bitset;
+
+    do
+    {
+        bitset.set(first);
+    } while(first++ != last);
+
+    return bitset;
+}
+
+} // namespace
 
 Arguments::Error::Error(const std::string& description)
  : BaseError("Arguments error", description)
@@ -21,8 +39,8 @@ void Arguments::parse(int argc, const char* argv[])
     // check mandatory arguments
     if(keysGiven)
     {
-        if(decipheredfile.empty() && unlockedarchive.empty())
-            throw Error("-d or -U parameter is missing (required by -k)");
+        if(decipheredfile.empty() && unlockedarchive.empty() && maxLength == 0)
+            throw Error("-d, -U or -r parameter is missing (required by -k)");
     }
     else
     {
@@ -95,11 +113,13 @@ void Arguments::parseArgument()
             exhaustive = true;
             break;
         case 'k':
-        {
             keys = readKeys();
             keysGiven = true;
             break;
-        }
+        case 'r':
+            maxLength = readSize("length");
+            charset = readCharset();
+            break;
         case 'h':
             help = true;
             break;
@@ -171,4 +191,57 @@ Keys Arguments::readKeys()
            y = readKey("Y"),
            z = readKey("Z");
     return Keys(x, y, z);
+}
+
+bytevec Arguments::readCharset()
+{
+    const std::bitset<256>
+        lowercase   = charRange('a', 'z'),
+        uppercase   = charRange('A', 'Z'),
+        digits      = charRange('0', '9'),
+        alphanum    = lowercase | uppercase | digits,
+        printable   = charRange(' ', '~'),
+        punctuation = printable & ~alphanum;
+
+    const std::string charsetArg = readString("charset");
+    if(charsetArg.empty())
+        throw Error("the charset for password recovery is empty");
+
+    std::bitset<256> charset;
+
+    for(auto it = charsetArg.begin(); it != charsetArg.end(); ++it)
+    {
+        if(*it == '?') // escape character for predefined charsets
+        {
+            if(++it == charsetArg.end())
+            {
+                charset.set('?');
+                break;
+            }
+
+            switch(*it)
+            {
+                case 'l': charset |= lowercase;   break;
+                case 'u': charset |= uppercase;   break;
+                case 'd': charset |= digits;      break;
+                case 's': charset |= punctuation; break;
+                case 'a': charset |= alphanum;    break;
+                case 'p': charset |= printable;   break;
+                case 'b': charset.set();          break;
+                case '?': charset.set('?');       break;
+
+                default:
+                    throw Error(std::string("unknown charset ?")+*it);
+            }
+        }
+        else
+            charset.set(*it);
+    }
+
+    bytevec result;
+    for(int c = 0; c < 256; c++)
+        if(charset[c])
+            result.push_back(c);
+
+    return result;
 }
