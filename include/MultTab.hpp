@@ -38,7 +38,6 @@ class MultTab
         MultTab();
 
         // lookup tables
-        u32arr<256> multtab;
         u32arr<256> multinvtab;
         std::array<bytevec, 256> msbprodfiber2;
         std::array<bytevec, 256> msbprodfiber3;
