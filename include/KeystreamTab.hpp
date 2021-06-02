@@ -16,13 +16,6 @@ class KeystreamTab
             return instance.keystreamtab[(zi & MASK_0_16) >> 2];
         }
 
-        /// \return a sorted array of 64 Zi[2,16) values such that
-        /// getByte(zi) is equal to ki
-        static inline const u32arr<64>& getZi_2_16_array(byte ki)
-        {
-            return instance.keystreaminvtab[ki];
-        }
-
         /// \return a vector of Zi[2,16) values having given [10,16) bits
         /// such that getByte(zi) is equal to ki
         /// \note the vector contains one element on average
@@ -44,7 +37,6 @@ class KeystreamTab
 
         // lookup tables
         bytearr<1<<14> keystreamtab;
-        std::array<u32arr<64>, 256> keystreaminvtab;
         std::array<std::array<u32vec, 64>, 256> keystreaminvfiltertab;
         std::array<std::bitset<64>, 256> keystreaminvexists;
 
