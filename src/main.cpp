@@ -139,7 +139,10 @@ int main(int argc, char const *argv[])
         // print the keys
         std::cout << "[" << put_time << "] ";
         if(keysvec.empty())
+        {
             std::cout << "Could not find the keys." << std::endl;
+            return 1;
+        }
         else
         {
             std::cout << "Keys" << std::endl;
@@ -148,8 +151,10 @@ int main(int argc, char const *argv[])
         }
     }
 
+    // From there, keysvec is not empty.
+
     // decipher
-    if(!keysvec.empty() && !args.decipheredfile.empty())
+    if(!args.decipheredfile.empty())
     {
         std::cout << "[" << put_time << "] Writing deciphered data " << args.decipheredfile << " (maybe compressed)"<< std::endl;
 
@@ -187,7 +192,7 @@ int main(int argc, char const *argv[])
     }
 
     // unlock
-    if(!keysvec.empty() && !args.unlockedarchive.empty())
+    if(!args.unlockedarchive.empty())
     {
         std::cout << "[" << put_time << "] Writing unlocked archive " << args.unlockedarchive << " with password \"" << args.newPassword << "\"" << std::endl;
 
@@ -213,7 +218,7 @@ int main(int argc, char const *argv[])
     }
 
     // recover password
-    if(!keysvec.empty() && args.maxLength)
+    if(args.maxLength)
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
         std::string password;
@@ -228,7 +233,10 @@ int main(int argc, char const *argv[])
             std::cout << "as text: " << password << std::endl;
         }
         else
+        {
             std::cout << "[" << put_time << "] Could not recover password" << std::endl;
+            return 1;
+        }
     }
 
     return 0;
