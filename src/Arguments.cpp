@@ -1,5 +1,6 @@
 #include "Arguments.hpp"
-#include "Data.hpp"
+#include "file.hpp"
+#include "zip.hpp"
 #include <algorithm>
 #include <bitset>
 
@@ -46,8 +47,10 @@ Arguments::Arguments(int argc, const char* argv[])
     {
         if(cipherfile.empty())
             throw Error("-c parameter is missing");
-        if(plainfile.empty())
-            throw Error("-p parameter is missing");
+        if(!plainarchive.empty() && plainfile.empty())
+            throw Error("-p parameter is missing (required by -P)");
+        if(plainfile.empty() && extraPlaintext.empty())
+            throw Error("-p or -x parameter is missing");
     }
 
     if(!decipheredfile.empty() && cipherfile.empty())
@@ -58,14 +61,31 @@ Arguments::Arguments(int argc, const char* argv[])
         throw Error("-C parameter is missing (required by -U)");
     if(!unlockedarchive.empty() && unlockedarchive == cipherarchive)
         throw Error("-C and -U parameters should point to different files");
+}
 
-    // check that offset is not too small
-    if(offset < -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE))
-        throw Error("plaintext offset "+std::to_string(offset)+" is too small");
+Data Arguments::loadData() const
+{
+    // load known plaintext
+    bytevec plaintext;
+    if(!plainarchive.empty())
+        plaintext = loadZipEntry(plainarchive, plainfile, ZipEntry::Encryption::None, plainsize);
+    else if(!plainfile.empty())
+        plaintext = loadFile(plainfile, plainsize);
 
-    // check that extra plaintext offsets are not too small
-    if(!extraPlaintext.empty() && extraPlaintext.begin()->first < -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE))
-        throw Error("extra plaintext offset "+std::to_string(extraPlaintext.begin()->first)+" is too small");
+    // load ciphertext needed by the attack
+    std::size_t needed = Data::ENCRYPTION_HEADER_SIZE;
+    if(!plaintext.empty())
+        needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + offset + plaintext.size());
+    if(!extraPlaintext.empty())
+        needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + extraPlaintext.rbegin()->first + 1);
+
+    bytevec ciphertext;
+    if(!cipherarchive.empty())
+        ciphertext = loadZipEntry(cipherarchive, cipherfile, ZipEntry::Encryption::Traditional, needed);
+    else
+        ciphertext = loadFile(cipherfile, needed);
+
+    return Data(std::move(ciphertext), std::move(plaintext), offset, extraPlaintext);
 }
 
 bool Arguments::finished() const
