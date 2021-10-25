@@ -18,9 +18,9 @@ class Arguments
                 Error(const std::string& description);
         };
 
-        /// \brief Parse command line arguments
+        /// \brief Constructor parsing command line arguments
         /// \exception Error if an argument is not valid
-        void parse(int argc, const char* argv[]);
+        Arguments(int argc, const char* argv[]);
 
         std::string cipherfile, ///< File containing the ciphertext
             cipherarchive,      ///< Zip archive containing cipherfile
