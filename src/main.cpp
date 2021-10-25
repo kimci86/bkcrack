@@ -54,22 +54,14 @@ Optional:
  -h                 Show this help and exit)_";
 
 int main(int argc, char const *argv[])
+try
 {
     // setup output stream
     std::cout << setupLog << std::endl;
 
     // parse arguments
     Arguments args;
-    try
-    {
-        args.parse(argc, argv);
-    }
-    catch(const Arguments::Error& e)
-    {
-        std::cout << e.what() << std::endl;
-        std::cout << "Run 'bkcrack -h' for help." << std::endl;
-        return 1;
-    }
+    args.parse(argc, argv);
 
     if(args.help)
     {
@@ -85,15 +77,7 @@ int main(int argc, char const *argv[])
     {
         // load data
         Data data;
-        try
-        {
-            data.load(args);
-        }
-        catch(const BaseError& e)
-        {
-            std::cout << e.what() << std::endl;
-            return 1;
-        }
+        data.load(args);
 
         // generate and reduce Zi[10,32) values
         Zreduction zr(data.keystream);
@@ -163,7 +147,6 @@ int main(int argc, char const *argv[])
             std::cout << "Deciphering data using the keys " << keys << "\n"
                       << "Use the command line option -k to provide other keys." << std::endl;
 
-        try
         {
             std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
             std::ifstream cipherstream = args.cipherarchive.empty() ? openInput(args.cipherfile) : openZipEntry(args.cipherarchive, args.cipherfile, ZipEntry::Encryption::Traditional, ciphersize);
@@ -182,11 +165,6 @@ int main(int argc, char const *argv[])
                 *plain = p;
             }
         }
-        catch(const BaseError& e)
-        {
-            std::cout << e.what() << std::endl;
-            return 1;
-        }
 
         std::cout << "Wrote deciphered data." << std::endl;
     }
@@ -201,17 +179,11 @@ int main(int argc, char const *argv[])
             std::cout << "Unlocking archive using the keys " << keys << "\n"
                       << "Use the command line option -k to provide other keys." << std::endl;
 
-        try
         {
             std::ifstream encrypted = openInput(args.cipherarchive);
             std::ofstream unlocked = openOutput(args.unlockedarchive);
 
             changeKeys(encrypted, unlocked, keys, Keys(args.newPassword));
-        }
-        catch(const BaseError& e)
-        {
-            std::cout << e.what() << std::endl;
-            return 1;
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;
@@ -240,4 +212,15 @@ int main(int argc, char const *argv[])
     }
 
     return 0;
+}
+catch(const Arguments::Error& e)
+{
+    std::cout << e.what() << std::endl;
+    std::cout << "Run 'bkcrack -h' for help." << std::endl;
+    return 1;
+}
+catch(const BaseError& e)
+{
+    std::cout << e.what() << std::endl;
+    return 1;
 }
