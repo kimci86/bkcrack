@@ -1,89 +1,159 @@
 #include "Data.hpp"
-#include "file.hpp"
-#include "zip.hpp"
 #include "Attack.hpp"
 #include <algorithm>
 #include <functional>
 #include <iterator>
 
+namespace
+{
+
+struct Range
+{
+    std::size_t size() const
+    {
+        return std::distance(begin, end);
+    }
+
+    bool operator<(const Range& other) const
+    {
+        return size() < other.size();
+    }
+
+    std::vector<std::pair<std::size_t, byte>>::iterator begin, end;
+};
+
+} // namespace
+
 Data::Error::Error(const std::string& description)
  : BaseError("Data error", description)
 {}
 
-void Data::load(const Arguments& args)
+Data::Data(bytevec ciphertextArg, bytevec plaintextArg, int offsetArg, const std::map<int, byte>& extraPlaintextArg)
+: ciphertext(std::move(ciphertextArg)), plaintext(std::move(plaintextArg))
 {
-    // load known plaintext
-    if(args.plainarchive.empty())
-        plaintext = loadFile(args.plainfile, args.plainsize);
-    else
-        plaintext = loadZipEntry(args.plainarchive, args.plainfile, ZipEntry::Encryption::None, args.plainsize);
-    std::size_t plaintextSizeBeforeExtra = plaintext.size();
+    // validate lengths
+    if(ciphertext.size() < Attack::ATTACK_SIZE)
+        throw Error("ciphertext is too small for an attack (minimum length is "+std::to_string(Attack::ATTACK_SIZE)+")");
+    if(ciphertext.size() < plaintext.size())
+        throw Error("ciphertext is smaller than plaintext");
 
-    // copy extra plaintext and shift offsets to absolute values
-    std::transform(args.extraPlaintext.begin(), args.extraPlaintext.end(),
+    // validate offsets
+    constexpr int minimumOffset = -static_cast<int>(ENCRYPTION_HEADER_SIZE);
+    if(offsetArg < minimumOffset)
+        throw Error("plaintext offset "+std::to_string(offsetArg)+" is too small (minimum is "+std::to_string(minimumOffset)+")");
+    if(ciphertext.size() < ENCRYPTION_HEADER_SIZE + offsetArg + plaintext.size())
+        throw Error("plaintext offset "+std::to_string(offsetArg)+" is too large");
+
+    if(!extraPlaintextArg.empty() && extraPlaintextArg.begin()->first < minimumOffset)
+        throw Error("extra plaintext offset "+std::to_string(extraPlaintextArg.begin()->first)+" is too small (minimum is "+std::to_string(minimumOffset)+")");
+    if(!extraPlaintextArg.empty() && ciphertext.size() <= extraPlaintextArg.rbegin()->first)
+        throw Error("extra plaintext offset "+std::to_string(extraPlaintextArg.rbegin()->first)+" is too large");
+
+    // shift offsets to absolute values
+    offset = ENCRYPTION_HEADER_SIZE + offsetArg;
+
+    std::transform(extraPlaintextArg.begin(), extraPlaintextArg.end(),
         std::back_inserter(extraPlaintext),
         [](const std::pair<int, byte>& extra)
         {
             return std::make_pair(ENCRYPTION_HEADER_SIZE + extra.first, extra.second);
         });
 
-    offset = ENCRYPTION_HEADER_SIZE + args.offset;
+    // merge contiguous plaintext with adjacent extra plaintext
+    {
+        // Split extra plaintext into three ranges:
+        // - [extraPlaintext.begin(), before) before contiguous plaintext
+        // - [before, after)                  overlapping contiguous plaintext
+        // - [after, extraPlaintext.end())    after contiguous plaintext
 
-    // merge extra plaintext with contiguous plaintext if possible
-    auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
-    auto after = std::lower_bound(before, extraPlaintext.end(), std::make_pair(offset + plaintext.size(), byte()));
+        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
+        auto after = std::lower_bound(before, extraPlaintext.end(), std::make_pair(offset + plaintext.size(), byte()));
 
-    std::for_each(before, after,
-        [this](const std::pair<std::size_t, byte>& a)
+        // overwrite overlapping plaintext
+        std::for_each(before, after,
+            [this](const std::pair<std::size_t, byte>& e)
+            {
+                plaintext[e.first - offset] = e.second;
+            });
+
+        // merge contiguous plaintext with extra plaintext immediately before
+        while(before != extraPlaintext.begin() && (before - 1)->first == offset - 1)
         {
-            plaintext[a.first - offset] = a.second;
-        });
+            plaintext.insert(plaintext.begin(), (--before)->second);
+            offset--;
+        }
 
-    while(before != extraPlaintext.begin() && (before - 1)->first == offset - 1)
-    {
-        plaintext.insert(plaintext.begin(), (--before)->second);
-        offset--;
+        // merge contiguous plaintext with extra plaintext immediately after
+        while(after != extraPlaintext.end() && after->first == offset + plaintext.size())
+            plaintext.push_back((after++)->second);
+
+        // discard merged extra plaintext
+        extraPlaintext.erase(before, after);
     }
 
-    while(after != extraPlaintext.end() && after->first == offset + plaintext.size())
+    // find the longest contiguous sequence in extra plaintext and use is as contiguous plaintext if sensible
     {
-        plaintext.push_back(after->second);
-        after++;
-    }
+        Range range = {extraPlaintext.begin(), extraPlaintext.begin()}; // empty
 
-    after = extraPlaintext.erase(before, after);
+        for(auto it = extraPlaintext.begin(); it != extraPlaintext.end();)
+        {
+            Range current = {it, ++it};
+            while(it != extraPlaintext.end() && it->first == (current.end - 1)->first + 1)
+                current.end = ++it;
+
+            range = std::max(range, current);
+        }
+
+        if(plaintext.size() < range.size())
+        {
+            const std::size_t plaintextSize = plaintext.size();
+            const std::size_t rangeOffset = range.begin->first;
+
+            // append last bytes from the range to contiguous plaintext
+            for(std::size_t i = plaintextSize; i < range.size(); i++)
+                plaintext.push_back(range.begin[i].second);
+
+            // remove those bytes from the range
+            range.end = extraPlaintext.erase(range.begin + plaintextSize, range.end);
+            if(plaintextSize == 0)
+                range.begin = range.end;
+
+            // rotate extra plaintext so that it will be sorted at the end of this scope
+            {
+                auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
+                if(offset < rangeOffset)
+                    range = {before, std::rotate(before, range.begin, range.end)};
+                else
+                    range = {std::rotate(range.begin, range.end, before), before};
+            }
+
+            // swap bytes between the former contiguous plaintext and the beginning of the range
+            for(std::size_t i = 0; i < plaintextSize; i++)
+            {
+                range.begin[i].first = offset + i;
+                std::swap(plaintext[i], range.begin[i].second);
+            }
+
+            offset = rangeOffset;
+        }
+    }
 
     // check that there is enough known plaintext
     if(plaintext.size() < Attack::CONTIGUOUS_SIZE)
-        throw Error("contiguous plaintext is too small");
+        throw Error("not enough contiguous plaintext ("+std::to_string(plaintext.size())+" bytes available, minimum is "+std::to_string(Attack::CONTIGUOUS_SIZE)+")");
     if(plaintext.size() + extraPlaintext.size() < Attack::ATTACK_SIZE)
-        throw Error("plaintext is too small");
-
-    // load ciphertext needed by the attack
-    std::size_t toRead = offset + plaintext.size();
-    if(!extraPlaintext.empty())
-        toRead = std::max(toRead, extraPlaintext.back().first + 1);
-
-    if(args.cipherarchive.empty())
-        ciphertext = loadFile(args.cipherfile, toRead);
-    else
-        ciphertext = loadZipEntry(args.cipherarchive, args.cipherfile, ZipEntry::Encryption::Traditional, toRead);
-
-    // check that ciphertext's size is valid
-    if(ciphertext.size() < plaintext.size())
-        throw Error("ciphertext is smaller than plaintext");
-    else if(ciphertext.size() < offset + plaintextSizeBeforeExtra)
-        throw Error("plaintext offset is too large");
-    else if(ciphertext.size() < toRead)
-        throw Error("extra plaintext offset is too large");
+        throw Error("not enough plaintext ("+std::to_string(plaintext.size() + extraPlaintext.size())+" bytes available, minimum is "+std::to_string(Attack::ATTACK_SIZE)+")");
 
     // reorder remaining extra plaintext for filtering
-    std::reverse(extraPlaintext.begin(), after);
-    std::inplace_merge(extraPlaintext.begin(), after, extraPlaintext.end(),
-        [this](const std::pair<std::size_t, byte>& a, const std::pair<std::size_t, byte>& b)
-        {
-            return absdiff(a.first, offset + Attack::CONTIGUOUS_SIZE) < absdiff(b.first, offset + Attack::CONTIGUOUS_SIZE);
-        });
+    {
+        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
+        std::reverse(extraPlaintext.begin(), before);
+        std::inplace_merge(extraPlaintext.begin(), before, extraPlaintext.end(),
+            [this](const std::pair<std::size_t, byte>& a, const std::pair<std::size_t, byte>& b)
+            {
+                return absdiff(a.first, offset + Attack::CONTIGUOUS_SIZE) < absdiff(b.first, offset + Attack::CONTIGUOUS_SIZE);
+            });
+    }
 
     // compute keystream
     std::transform(plaintext.begin(), plaintext.end(),

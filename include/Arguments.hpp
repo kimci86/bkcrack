@@ -5,6 +5,7 @@
 
 #include "types.hpp"
 #include "Keys.hpp"
+#include "Data.hpp"
 
 /// Parse and store arguments
 class Arguments
@@ -21,6 +22,12 @@ class Arguments
         /// \brief Constructor parsing command line arguments
         /// \exception Error if an argument is not valid
         Arguments(int argc, const char* argv[]);
+
+        /// \brief Load the data needed for an attack based on parsed arguments
+        /// \exception FileError if a file cannot be opened
+        /// \exception ZipError if a zip entry cannot be opened
+        /// \exception Data::Error if the loaded data cannot be used to carry out an attack
+        Data loadData() const;
 
         std::string cipherfile, ///< File containing the ciphertext
             cipherarchive,      ///< Zip archive containing cipherfile

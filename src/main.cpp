@@ -72,9 +72,7 @@ try
     else
     // find keys from known plaintext
     {
-        // load data
-        Data data;
-        data.load(args);
+        const Data data = args.loadData();
 
         // generate and reduce Zi[10,32) values
         Zreduction zr(data.keystream);
