@@ -24,7 +24,7 @@ Arguments::Error::Error(const std::string& description)
  : BaseError("Arguments error", description)
 {}
 
-void Arguments::parse(int argc, const char* argv[])
+Arguments::Arguments(int argc, const char* argv[])
 {
     // parse arguments
     this->argc = argc;

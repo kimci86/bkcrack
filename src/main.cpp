@@ -59,10 +59,7 @@ try
     // setup output stream
     std::cout << setupLog << std::endl;
 
-    // parse arguments
-    Arguments args;
-    args.parse(argc, argv);
-
+    const Arguments args(argc, argv);
     if(args.help)
     {
         std::cout << usage << std::endl;
