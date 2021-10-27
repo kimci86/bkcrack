@@ -361,3 +361,19 @@ void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const K
     if(!packedSizeByLocalOffset.empty())
         std::cout << std::endl;
 }
+
+void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys)
+{
+    std::istreambuf_iterator<char> cipher(is);
+    std::size_t i;
+
+    for(i = 0; i < discard && i < size && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
+       keys.update(*cipher ^ keys.getK());
+
+    for(std::ostreambuf_iterator<char> plain(os); i < size && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)
+    {
+        byte p = *cipher ^ keys.getK();
+        keys.update(p);
+        *plain = p;
+    }
+}
