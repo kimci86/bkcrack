@@ -31,7 +31,7 @@ class Keys
         {
             z = Crc32Tab::crc32inv(z, msb(y));
             y = (y - 1) * MultTab::MULTINV - lsb(x);
-            x = Crc32Tab::crc32inv(x, c ^ KeystreamTab::getByte(z));
+            x = Crc32Tab::crc32inv(x, c ^ getK());
         }
 
         /// Update the state backward with a plaintext byte
@@ -53,6 +53,9 @@ class Keys
 
         /// \return Z value
         uint32 getZ() const { return z; }
+
+        /// \return the keystream byte derived from the keys
+        byte getK() const { return KeystreamTab::getByte(z); }
 
     private:
         uint32 x, y, z;

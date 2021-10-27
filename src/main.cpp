@@ -5,7 +5,6 @@
 #include "Data.hpp"
 #include "Zreduction.hpp"
 #include "Attack.hpp"
-#include "KeystreamTab.hpp"
 #include "password.hpp"
 #include <limits>
 
@@ -151,11 +150,11 @@ try
             std::istreambuf_iterator<char> cipher(cipherstream);
             std::size_t i;
             for(i = 0; i < Data::ENCRYPTION_HEADER_SIZE && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
-                keys.update(*cipher ^ KeystreamTab::getByte(keys.getZ()));
+                keys.update(*cipher ^ keys.getK());
 
             for(std::ostreambuf_iterator<char> plain(decipheredstream); i < ciphersize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)
             {
-                byte p = *cipher ^ KeystreamTab::getByte(keys.getZ());
+                byte p = *cipher ^ keys.getK();
                 keys.update(p);
                 *plain = p;
             }
