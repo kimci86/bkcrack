@@ -159,4 +159,8 @@ bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEn
 /// \exception ZipError if the input stream does not contain a valid zip archive
 void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const Keys& newKeys);
 
+/// Decipher at most \a size bytes from \a is into \a os with the given keys.
+/// The first \a discard bytes are discarded.
+void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys);
+
 #endif // BKCRACK_ZIP_HPP

@@ -146,18 +146,7 @@ try
             std::ifstream cipherstream = args.cipherarchive.empty() ? openInput(args.cipherfile) : openZipEntry(args.cipherarchive, args.cipherfile, ZipEntry::Encryption::Traditional, ciphersize);
             std::ofstream decipheredstream = openOutput(args.decipheredfile);
 
-            // discard the encryption header
-            std::istreambuf_iterator<char> cipher(cipherstream);
-            std::size_t i;
-            for(i = 0; i < Data::ENCRYPTION_HEADER_SIZE && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
-                keys.update(*cipher ^ keys.getK());
-
-            for(std::ostreambuf_iterator<char> plain(decipheredstream); i < ciphersize && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)
-            {
-                byte p = *cipher ^ keys.getK();
-                keys.update(p);
-                *plain = p;
-            }
+            decipher(cipherstream, ciphersize, Data::ENCRYPTION_HEADER_SIZE, decipheredstream, keys);
         }
 
         std::cout << "Wrote deciphered data." << std::endl;
