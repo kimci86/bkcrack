@@ -112,7 +112,7 @@ void Attack::testXlist()
             p != data.plaintext.end();
             ++p, ++c)
     {
-        if((*c ^ KeystreamTab::getByte(keysForward.getZ())) != *p)
+        if((*c ^ keysForward.getK()) != *p)
             return;
         keysForward.update(*p);
     }
@@ -128,7 +128,7 @@ void Attack::testXlist()
             ++p, ++c)
     {
         keysBackward.updateBackward(*c);
-        if((*c ^ KeystreamTab::getByte(keysBackward.getZ())) != *p)
+        if((*c ^ keysBackward.getK()) != *p)
             return;
     }
 
@@ -142,13 +142,13 @@ void Attack::testXlist()
         {
             keysBackward.updateBackward(data.ciphertext, indexBackward, extra.first);
             indexBackward = extra.first;
-            p = data.ciphertext[indexBackward] ^ KeystreamTab::getByte(keysBackward.getZ());
+            p = data.ciphertext[indexBackward] ^ keysBackward.getK();
         }
         else
         {
             keysForward.update(data.ciphertext, indexForward, extra.first);
             indexForward = extra.first;
-            p = data.ciphertext[indexForward] ^ KeystreamTab::getByte(keysForward.getZ());
+            p = data.ciphertext[indexForward] ^ keysForward.getK();
         }
 
         if(p != extra.second)

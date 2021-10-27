@@ -1,5 +1,4 @@
 #include "zip.hpp"
-#include "KeystreamTab.hpp"
 #include "log.hpp"
 #include <algorithm>
 #include <map>
@@ -346,8 +345,8 @@ void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const K
         std::generate_n(std::ostreambuf_iterator<char>(os), packedSize,
             [&in, &decrypt, &encrypt]() -> char
             {
-                byte p = *in++ ^ KeystreamTab::getByte(decrypt.getZ());
-                byte c = p ^ KeystreamTab::getByte(encrypt.getZ());
+                byte p = *in++ ^ decrypt.getK();
+                byte c = p ^ encrypt.getK();
                 decrypt.update(p);
                 encrypt.update(p);
                 return c;

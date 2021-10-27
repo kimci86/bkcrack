@@ -14,7 +14,7 @@ Keys::Keys(const std::string& password)
 void Keys::update(const bytevec& ciphertext, std::size_t current, std::size_t target)
 {
     for(bytevec::const_iterator i = ciphertext.begin() + current; i != ciphertext.begin() + target; ++i)
-        update(*i ^ KeystreamTab::getByte(z));
+        update(*i ^ getK());
 }
 
 void Keys::updateBackward(const bytevec& ciphertext, std::size_t current, std::size_t target)
