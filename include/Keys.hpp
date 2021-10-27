@@ -1,8 +1,6 @@
 #ifndef BKCRACK_KEYS_HPP
 #define BKCRACK_KEYS_HPP
 
-#include <iostream>
-
 #include "Crc32Tab.hpp"
 #include "KeystreamTab.hpp"
 #include "MultTab.hpp"
@@ -59,9 +57,5 @@ class Keys
     private:
         uint32 x, y, z;
 };
-
-/// \brief Insert a representation of keys into the stream \a os
-/// \relates Keys
-std::ostream& operator<<(std::ostream& os, const Keys& keys);
 
 #endif // BKCRACK_KEYS_HPP

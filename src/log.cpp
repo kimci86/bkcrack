@@ -1,5 +1,6 @@
 #include "log.hpp"
 #include "version.hpp"
+#include "Keys.hpp"
 #include <ctime>
 #include <iomanip>
 
@@ -28,4 +29,13 @@ std::ostream& progress::operator()(std::ostream& os) const
 std::ostream& operator<<(std::ostream& os, const progress& p)
 {
     return p(os);
+}
+
+std::ostream& operator<<(std::ostream& os, const Keys& keys)
+{
+    return os << std::hex
+              << std::setw(8) << keys.getX() << " "
+              << std::setw(8) << keys.getY() << " "
+              << std::setw(8) << keys.getZ()
+              << std::dec;
 }
