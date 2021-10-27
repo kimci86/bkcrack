@@ -30,4 +30,10 @@ class progress
 /// \relates progress
 std::ostream& operator<<(std::ostream& os, const progress& p);
 
+class Keys; // forward declaration
+
+/// \brief Insert a representation of keys into the stream \a os
+/// \relates Keys
+std::ostream& operator<<(std::ostream& os, const Keys& keys);
+
 #endif // BKCRACK_LOG_HPP
