@@ -85,35 +85,10 @@ try
         zr.generate();
 
         // iterate over remaining Zi[2,32) values
-        const u32vec& zi_2_32_vector = zr.getCandidates();
-        const uint32* candidates = zi_2_32_vector.data();
-        const std::int32_t size = zi_2_32_vector.size();
-        std::int32_t done = 0;
-
-        std::cout << "[" << put_time << "] Attack on " << size << " Z values at index "
+        std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
-        Attack attack(data, zr.getIndex(), keysvec);
 
-        const bool canStop = !args.exhaustive;
-        bool shouldStop = false;
-
-        #pragma omp parallel for firstprivate(attack) schedule(dynamic)
-        for(std::int32_t i = 0; i < size; ++i) // OpenMP 2.0 requires signed index variable
-        {
-            if(shouldStop)
-                continue; // cannot break out of an OpenMP for loop
-
-            attack.carryout(candidates[i]);
-
-            #pragma omp critical
-            {
-                std::cout << progress(++done, size) << std::flush << "\r";
-                shouldStop = canStop && !keysvec.empty();
-            }
-        }
-
-        if(size)
-            std::cout << std::endl;
+        keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.exhaustive);
 
         // print the keys
         std::cout << "[" << put_time << "] ";
