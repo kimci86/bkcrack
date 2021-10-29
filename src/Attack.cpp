@@ -166,3 +166,35 @@ void Attack::testXlist()
         solutions.push_back(keysBackward);
     }
 }
+
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, const bool exhaustive)
+{
+    const uint32* candidates = zi_2_32_vector.data();
+    const std::int32_t size = zi_2_32_vector.size();
+    std::int32_t done = 0;
+
+    std::vector<Keys> solutions;
+    Attack worker(data, index, solutions);
+
+    bool shouldStop = false;
+
+    #pragma omp parallel for firstprivate(worker) schedule(dynamic)
+    for(std::int32_t i = 0; i < size; ++i) // OpenMP 2.0 requires signed index variable
+    {
+        if(shouldStop)
+            continue; // cannot break out of an OpenMP for loop
+
+        worker.carryout(candidates[i]);
+
+        #pragma omp critical
+        {
+            std::cout << progress(++done, size) << std::flush << "\r";
+            shouldStop = !exhaustive && !solutions.empty();
+        }
+    }
+
+    if(size)
+        std::cout << std::endl;
+
+    return solutions;
+}
