@@ -85,8 +85,9 @@ try
         zr.generate();
 
         // iterate over remaining Zi[2,32) values
-        const uint32* candidates = zr.data();
-        const std::int32_t size = zr.size();
+        const u32vec& zi_2_32_vector = zr.getCandidates();
+        const uint32* candidates = zi_2_32_vector.data();
+        const std::int32_t size = zi_2_32_vector.size();
         std::int32_t done = 0;
 
         std::cout << "[" << put_time << "] Attack on " << size << " Z values at index "
