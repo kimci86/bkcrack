@@ -157,7 +157,7 @@ bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEn
 
 /// \brief Copy a zip file from \a is into \a os changing the encrypted data using the given keys.
 /// \exception ZipError if the input stream does not contain a valid zip archive
-void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const Keys& newKeys);
+void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const Keys& newKeys, std::atomic<Progress>* progress = nullptr);
 
 /// Decipher at most \a size bytes from \a is into \a os with the given keys.
 /// The first \a discard bytes are discarded.

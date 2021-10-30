@@ -11,7 +11,7 @@ class Zreduction
         Zreduction(const bytevec& keystream);
 
         /// Reduce Zi[10,32) number using extra contiguous keystream
-        void reduce();
+        void reduce(std::atomic<Progress>* progress = nullptr);
 
         /// Extend Zi[10,32) values into Zi[2,32) values using keystream
         void generate();

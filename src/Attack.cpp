@@ -167,7 +167,7 @@ void Attack::testXlist()
     }
 }
 
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, const bool exhaustive)
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, const bool exhaustive, std::atomic<Progress>* progress)
 {
     const uint32* candidates = zi_2_32_vector.data();
     const std::int32_t size = zi_2_32_vector.size();
@@ -188,13 +188,11 @@ std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::si
 
         #pragma omp critical
         {
-            std::cout << progress(++done, size) << std::flush << "\r";
+            if(progress)
+                *progress = {++done, size};
             shouldStop = !exhaustive && !solutions.empty();
         }
     }
-
-    if(size)
-        std::cout << std::endl;
 
     return solutions;
 }

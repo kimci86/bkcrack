@@ -9,6 +9,7 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <atomic>
 
 /// Base exception type
 class BaseError : public std::runtime_error
@@ -24,6 +25,13 @@ using byte = std::uint8_t;    ///< Unsigned integer type with width of exactly 8
 using uint16 = std::uint16_t; ///< Unsigned integer type with width of exactly 16 bits
 using uint32 = std::uint32_t; ///< Unsigned integer type with width of exactly 32 bits
 using uint64 = std::uint64_t; ///< Unsigned integer type with width of exactly 64 bits
+
+/// Structure to report the progress of a long operation
+struct Progress
+{
+    int done,  ///< Number of steps already done
+        total; ///< Total number of steps
+};
 
 // container types
 

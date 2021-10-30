@@ -79,17 +79,22 @@ try
         if(data.keystream.size() > Attack::CONTIGUOUS_SIZE)
         {
             std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::CONTIGUOUS_SIZE) << " bytes of known plaintext" << std::endl;
-            zr.reduce();
+
+            ProgressPrinter printer(std::cout);
+            zr.reduce(&printer.progress);
         }
 
         // generate Zi[2,32) values
         zr.generate();
 
-        // iterate over remaining Zi[2,32) values
+        // carry out the attack on the remaining Zi[2,32) values
         std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
 
-        keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.exhaustive);
+        {
+            ProgressPrinter printer(std::cout);
+            keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.exhaustive, &printer.progress);
+        }
 
         // print the keys
         std::cout << "[" << put_time << "] ";
@@ -143,7 +148,8 @@ try
             std::ifstream encrypted = openInput(args.cipherarchive);
             std::ofstream unlocked = openOutput(args.unlockedarchive);
 
-            changeKeys(encrypted, unlocked, keys, Keys(args.newPassword));
+            ProgressPrinter printer(std::cout);
+            changeKeys(encrypted, unlocked, keys, Keys(args.newPassword), &printer.progress);
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;
@@ -154,7 +160,11 @@ try
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
 
-        std::vector<std::string> passwords = recoverPassword(keysvec.front(), args.charset, 0, args.maxLength, args.exhaustive);
+        std::vector<std::string> passwords;
+        {
+            ProgressPrinter printer(std::cout);
+            passwords = recoverPassword(keysvec.front(), args.charset, 0, args.maxLength, args.exhaustive, &printer.progress);
+        }
 
         std::cout << "[" << put_time << "] ";
         if(passwords.empty())

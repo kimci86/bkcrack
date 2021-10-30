@@ -3,7 +3,6 @@
 
 #include "Keys.hpp"
 #include <bitset>
-#include <atomic>
 
 /// \file password.hpp
 
@@ -55,10 +54,11 @@ class Recovery
 /// \param max_length The greatest password length to try
 /// \param exhaustive True to try and find all valid passwords,
 ///                   false to stop searching after the first one is found
+/// \param progress Pointer to report progress
 /// \return A vector of passwords associated with the given keys.
 ///         A vector is needed instead of a single string because there can be
 ///         collisions (i.e. several passwords for the same keys).
 std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset,
-    std::size_t min_length, std::size_t max_length, bool exhaustive);
+    std::size_t min_length, std::size_t max_length, bool exhaustive, std::atomic<Progress>* progress = nullptr);
 
 #endif // BKCRACK_PASSWORD_HPP

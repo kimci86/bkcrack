@@ -56,6 +56,8 @@ class Attack
 /// \param index Index of the Zi[2,32) values relative to keystream
 /// \param exhaustive True to try and find all valid keys,
 ///                   false to stop searching after the first one is found
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, bool exhaustive);
+/// \param progress Pointer to report progress
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index,
+    bool exhaustive, std::atomic<Progress>* progress = nullptr);
 
 #endif // BKCRACK_ATTACK_HPP

@@ -3,6 +3,8 @@
 #include "Crc32Tab.hpp"
 #include "MultTab.hpp"
 
+static const char* erase_line = "\33[2K";
+
 Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions,
                    bool exhaustive, std::atomic<bool>& stop)
 : charset(charset), solutions(solutions), exhaustive(exhaustive), stop(stop)
@@ -171,7 +173,7 @@ void Recovery::recursion(int i)
 
             #pragma omp critical
             {
-                std::cout << "Password: " << password << std::endl;
+                std::cout << erase_line << "Password: " << password << std::endl;
                 solutions.push_back(password);
             }
 
@@ -181,7 +183,7 @@ void Recovery::recursion(int i)
 }
 
 std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset,
-    std::size_t min_length, std::size_t max_length, bool exhaustive)
+    std::size_t min_length, std::size_t max_length, bool exhaustive, std::atomic<Progress>* progress)
 {
     std::vector<std::string> solutions;
     std::atomic<bool> stop(false);
@@ -191,7 +193,7 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
 
     for(std::size_t length = min_length; length <= max_length && !stop; length++)
     {
-        std::cout << "length " << length << std::endl;
+        std::cout << erase_line << "length " << length << std::endl;
         if(length <= 6)
             worker.recoverShortPassword(length);
         else if(length < 10)
@@ -201,6 +203,9 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
             int done = 0;
 
             std::string prefix(2, charset.front());
+
+            if(progress)
+                *progress = {0, charsetSize * charsetSize};
 
             // bruteforce two characters to have many tasks for each CPU thread and share work evenly
             #pragma omp parallel for firstprivate(worker, prefix) schedule(dynamic)
@@ -214,11 +219,10 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
 
                 worker.recoverLongPassword(prefix, length);
 
-                #pragma omp critical
-                std::cout << progress(++done, charsetSize * charsetSize) << std::flush << '\r';
+                if(progress)
+                    #pragma omp critical
+                    *progress = {++done, charsetSize * charsetSize};
             }
-
-            std::cout << std::endl;
         }
     }
 

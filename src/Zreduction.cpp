@@ -1,5 +1,4 @@
 #include "Zreduction.hpp"
-#include "log.hpp"
 #include "Attack.hpp"
 #include "Crc32Tab.hpp"
 #include "KeystreamTab.hpp"
@@ -17,7 +16,7 @@ Zreduction::Zreduction(const bytevec& keystream)
             zi_vector.push_back(zi_10_32_shifted << 10);
 }
 
-void Zreduction::reduce()
+void Zreduction::reduce(std::atomic<Progress>* progress)
 {
     // variables to keep track of the smallest Zi[2,32) vector
     bool tracking = false;
@@ -83,10 +82,9 @@ void Zreduction::reduce()
         // put result in zi_vector
         std::swap(zi_vector, zim1_10_32_vector);
 
-        std::cout << progress(keystream.size() - i, keystream.size() - Attack::CONTIGUOUS_SIZE) << std::flush << "\r";
+        if(progress)
+            *progress = {static_cast<int>(keystream.size() - i), static_cast<int>(keystream.size() - Attack::CONTIGUOUS_SIZE)};
     }
-
-    std::cout << std::endl;
 
     if(tracking)
     {
