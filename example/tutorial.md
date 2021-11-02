@@ -128,10 +128,16 @@ At first, we can try all candidates up to a given length without making any assu
     $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 9 ?b
 
     [17:52:16] Recovering password
-    length 0-6...
-    length 7...
-    length 8...
-    length 9...
+    length 0
+    length 1
+    length 2
+    length 3
+    length 4
+    length 5
+    length 6
+    length 7
+    length 8
+    length 9
     [17:52:16] Could not recover password
 
 It failed so we know the password has 10 characters or more.
@@ -141,13 +147,18 @@ Now, let us assume the password is made of 11 or less printable ASCII characters
     $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 11 ?p
 
     [17:52:34] Recovering password
-    length 0-6...
-    length 7...
-    length 8...
-    length 9...
-    length 10...
-    100.0 % (9025 / 9025)
-    length 11...
+    length 0
+    length 1
+    length 2
+    length 3
+    length 4
+    length 5
+    length 6
+    length 7
+    length 8
+    length 9
+    length 10
+    length 11
     100.0 % (9025 / 9025)
     [17:52:38] Could not recover password
 
@@ -158,16 +169,21 @@ Now, let us assume the password is made of 12 or less alpha-numerical characters
     $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 12 ?a
 
     [17:54:37] Recovering password
-    length 0-6...
-    length 7...
-    length 8...
-    length 9...
-    length 10...
-    100.0 % (3844 / 3844)
-    length 11...
-    100.0 % (3844 / 3844)
-    length 12...
-    51.8 % (1993 / 3844)
+    length 0
+    length 1
+    length 2
+    length 3
+    length 4
+    length 5
+    length 6
+    length 7
+    length 8
+    length 9
+    length 10
+    length 11
+    length 12
+    Password: W4sF0rgotten
+    51.9 % (1996 / 3844)
     [17:54:49] Password
     as bytes: 57 34 73 46 30 72 67 6f 74 74 65 6e
     as text: W4sF0rgotten
