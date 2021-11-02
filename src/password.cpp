@@ -3,8 +3,9 @@
 #include "Crc32Tab.hpp"
 #include "MultTab.hpp"
 
-Recovery::Recovery(const Keys& keys, const bytevec& charset, bool& shouldStop)
-: charset(charset), shouldStop(shouldStop)
+Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions,
+                   bool exhaustive, std::atomic<bool>& stop)
+: charset(charset), solutions(solutions), exhaustive(exhaustive), stop(stop)
 {
     // initialize target X, Y and Z values
     x[6] = keys.getX();
@@ -39,74 +40,72 @@ Recovery::Recovery(const Keys& keys, const bytevec& charset, bool& shouldStop)
     }
 }
 
-bool Recovery::recoverShortPassword()
+void Recovery::recoverShortPassword(std::size_t length)
 {
     Keys initial;
 
-    for(int length = 6; length >= 0; length--)
-    {
-        if(recover(initial))
-        {
-            password.erase(0, 6 - length);
-            return true;
-        }
-
+    for(int i = 0; i < 6 - length; i++)
         initial.updateBackwardPlaintext(charset.front());
-    }
 
-    return false;
+    prefix.clear();
+    erase = 6 - length;
+
+    recover(initial);
 }
 
-bool Recovery::recoverLongPassword(const Keys& initial, std::size_t length)
+void Recovery::recoverLongPassword(const std::string& prefix, std::size_t length)
+{
+    this->prefix = prefix;
+    erase = 0;
+
+    recoverLongPassword(Keys(prefix), length - prefix.size());
+}
+
+void Recovery::recoverLongPassword(const Keys& initial, std::size_t length)
 {
     if(length == 7)
     {
         if(!zm1_24_32[initial.getZ() >> 24])
-            return false;
+            return;
+
+        prefix.push_back(charset.front());
 
         for(byte pi : charset)
         {
             Keys init = initial;
             init.update(pi);
 
-            if(recover(init))
-            {
-                password.insert(password.begin(), pi);
-                return true;
-            }
+            prefix.back() = pi;
+            recover(init);
         }
+
+        prefix.pop_back();
     }
     else
     {
-        if(shouldStop)
-            return false;
+        if(stop)
+            return;
+
+        prefix.push_back(charset.front());
 
         for(byte pi : charset)
         {
             Keys init = initial;
             init.update(pi);
 
-            if(recoverLongPassword(init, length-1))
-            {
-                password.insert(password.begin(), pi);
-                return true;
-            }
+            prefix.back() = pi;
+            recoverLongPassword(init, length-1);
         }
+
+        prefix.pop_back();
     }
-
-    return false;
 }
 
-const std::string& Recovery::getPassword() const
-{
-    return password;
-}
-
-bool Recovery::recover(const Keys& initial)
+void Recovery::recover(const Keys& initial)
 {
     // check compatible Z0[16,32)
     if(!z0_16_32[initial.getZ() >> 16])
-        return false;
+        return;
 
     // initialize starting X, Y and Z values
     x[0] = x0 = initial.getX();
@@ -121,10 +120,10 @@ bool Recovery::recover(const Keys& initial)
     }
 
     // recursively complete Y values and derive password
-    return recursion(5);
+    recursion(5);
 }
 
-bool Recovery::recursion(int i)
+void Recovery::recursion(int i)
 {
     if(i != 1) // the Y-list is not complete so generate Y{i-1} values
     {
@@ -147,8 +146,7 @@ bool Recovery::recursion(int i)
                 // set Xi value
                 x[i] = xi_0_8;
 
-                if(recursion(i-1))
-                    return true;
+                recursion(i-1);
             }
         }
     }
@@ -157,7 +155,7 @@ bool Recovery::recursion(int i)
         // only the X1 LSB was not set yet, so do it here
         x[1] = (y[1] - 1) * MultTab::MULTINV - y[0];
         if(x[1] > 0xff)
-            return false;
+            return;
 
         // complete X values and derive password
         for(int i = 5; 0 <= i; i--)
@@ -169,77 +167,60 @@ bool Recovery::recursion(int i)
 
         if(x[0] == x0) // the password is successfully recovered
         {
-            password.assign(p.begin(), p.end());
-            shouldStop = true;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password)
-{
-    bool found = false;
-    Recovery worker(keys, charset, found);
-
-    // look for a password of length between 0 and 6
-    std::cout << "length 0-6..." << std::endl;
-
-    if(worker.recoverShortPassword())
-    {
-        password = worker.getPassword();
-        return true;
-    }
-
-    // look for a password of length between 7 and 9
-    for(std::size_t length = 7; length < 10 && length <= max_length; length++)
-    {
-        std::cout << "length " << length << "..." << std::endl;
-
-        if(worker.recoverLongPassword(Keys{}, length))
-        {
-            password = worker.getPassword();
-            return true;
-        }
-    }
-
-    // look for a password of length between 10 and max_length
-    // same as above, but in a parallel loop
-    for(std::size_t length = 10; length <= max_length; length++)
-    {
-        std::cout << "length " << length << "..." << std::endl;
-
-        const int charsetSize = charset.size();
-        int done = 0;
-
-        // bruteforce two characters to have many tasks for each CPU thread and share work evenly
-        #pragma omp parallel for firstprivate(worker) schedule(dynamic)
-        for(std::int32_t i = 0; i < charsetSize * charsetSize; i++)
-        {
-            if(found)
-                continue; // cannot break out of an OpenMP for loop
-
-            Keys init;
-            init.update(charset[i / charsetSize]);
-            init.update(charset[i % charsetSize]);
-
-            if(worker.recoverLongPassword(init, length - 2))
-            {
-                password = worker.getPassword();
-                password.insert(password.begin(), charset[i % charsetSize]);
-                password.insert(password.begin(), charset[i / charsetSize]);
-            }
+            std::string password = (prefix + std::string(p.begin(), p.end())).erase(0, erase);
 
             #pragma omp critical
-            std::cout << progress(++done, charsetSize * charsetSize) << std::flush << "\r";
+            {
+                std::cout << "Password: " << password << std::endl;
+                solutions.push_back(password);
+            }
+
+            stop = !exhaustive;
         }
+    }
+}
 
-        std::cout << std::endl;
+std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset,
+    std::size_t min_length, std::size_t max_length, bool exhaustive)
+{
+    std::vector<std::string> solutions;
+    std::atomic<bool> stop(false);
+    Recovery worker(keys, charset, solutions, exhaustive, stop);
 
-        if(found)
-            return true;
+    const int charsetSize = charset.size();
+
+    for(std::size_t length = min_length; length <= max_length && !stop; length++)
+    {
+        std::cout << "length " << length << std::endl;
+        if(length <= 6)
+            worker.recoverShortPassword(length);
+        else if(length < 10)
+            worker.recoverLongPassword("", length);
+        else
+        {
+            int done = 0;
+
+            std::string prefix(2, charset.front());
+
+            // bruteforce two characters to have many tasks for each CPU thread and share work evenly
+            #pragma omp parallel for firstprivate(worker, prefix) schedule(dynamic)
+            for(std::int32_t i = 0; i < charsetSize * charsetSize; i++)
+            {
+                if(stop)
+                    continue; // cannot break out of an OpenMP for loop
+
+                prefix[0] = charset[i / charsetSize];
+                prefix[1] = charset[i % charsetSize];
+
+                worker.recoverLongPassword(prefix, length);
+
+                #pragma omp critical
+                std::cout << progress(++done, charsetSize * charsetSize) << std::flush << '\r';
+            }
+
+            std::cout << std::endl;
+        }
     }
 
-    return false;
+    return solutions;
 }

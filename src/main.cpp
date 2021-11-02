@@ -30,7 +30,8 @@ Optional:
  -x offset data     Additional plaintext in hexadecimal starting
                       at the given offset (may be negative)
 
- -e                 Exhaustively try all the keys remaining after Z reduction
+ -e                 Exhaustively look for all solutions (keys or passwords)
+                      instead of stopping after the first solution is found
 
  -d decipheredfile  File to write the deciphered text (requires -c)
  -U unlockedzip password
@@ -152,21 +153,27 @@ try
     if(args.maxLength)
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
-        std::string password;
-        if(recoverPassword(keysvec.front(), args.maxLength, args.charset, password))
+
+        std::vector<std::string> passwords = recoverPassword(keysvec.front(), args.charset, 0, args.maxLength, args.exhaustive);
+
+        std::cout << "[" << put_time << "] ";
+        if(passwords.empty())
         {
-            std::cout << "[" << put_time << "] Password" << std::endl;
-            std::cout << "as bytes: ";
-            std::cout << std::hex;
-            for(byte c : password)
-                std::cout << static_cast<int>(c) << ' ';
-            std::cout << std::dec << std::endl;
-            std::cout << "as text: " << password << std::endl;
+            std::cout << "Could not recover password" << std::endl;
+            return 1;
         }
         else
         {
-            std::cout << "[" << put_time << "] Could not recover password" << std::endl;
-            return 1;
+            std::cout << "Password" << std::endl;
+            for(const std::string& password : passwords)
+            {
+                std::cout << "as bytes: ";
+                std::cout << std::hex;
+                for(byte c : password)
+                    std::cout << static_cast<int>(c) << ' ';
+                std::cout << std::dec << std::endl;
+                std::cout << "as text: " << password << std::endl;
+            }
         }
     }
 

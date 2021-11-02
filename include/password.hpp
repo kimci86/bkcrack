@@ -3,29 +3,34 @@
 
 #include "Keys.hpp"
 #include <bitset>
+#include <atomic>
+
+/// \file password.hpp
 
 /// Class to recover a password from internal keys
 class Recovery
 {
     public:
         /// Constructor
-        Recovery(const Keys& keys, const bytevec& charset, bool& shouldStop);
+        Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions,
+                 bool exhaustive, std::atomic<bool>& stop);
 
-        /// Look for a password of length 6 or less
-        bool recoverShortPassword();
+        /// Look for a password of the given length (at most 6)
+        void recoverShortPassword(std::size_t length);
 
-        /// Look for a password of given length (at least 7)
-        bool recoverLongPassword(const Keys& initial, std::size_t length);
-
-        /// \return the password after a successful recovery
-        const std::string& getPassword() const;
+        /// \brief Look for a password of given length starting with a given prefix
+        /// \param prefix The beginning of the password we are trying to complete
+        /// \param length Length of the password (at least 7 + prefix's length)
+        void recoverLongPassword(const std::string& prefix, std::size_t length);
 
     private:
+        void recoverLongPassword(const Keys& initial, std::size_t length);
+
         // try to recover a password of length 6
-        bool recover(const Keys& initial);
+        void recover(const Keys& initial);
 
         // iterate recursively on possible Y values
-        bool recursion(int i);
+        void recursion(int i);
 
         u32arr<7> x, y, z;
         bytearr<6> p;
@@ -35,12 +40,25 @@ class Recovery
         uint32 x0;
 
         const bytevec& charset;
-        std::string password;
+        std::vector<std::string>& solutions;
+        std::string prefix;
+        std::size_t erase = 0;
 
-        bool& shouldStop;
+        const bool exhaustive;
+        std::atomic<bool>& stop;
 };
 
-/// Try to recover the password associated with the given keys
-bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password);
+/// \brief Try to recover the password associated with the given keys
+/// \param keys Internal keys for which a password is wanted
+/// \param charset The set of characters with which to constitute candidate passwords
+/// \param min_length The smallest password length to try
+/// \param max_length The greatest password length to try
+/// \param exhaustive True to try and find all valid passwords,
+///                   false to stop searching after the first one is found
+/// \return A vector of passwords associated with the given keys.
+///         A vector is needed instead of a single string because there can be
+///         collisions (i.e. several passwords for the same keys).
+std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset,
+    std::size_t min_length, std::size_t max_length, bool exhaustive);
 
 #endif // BKCRACK_PASSWORD_HPP
