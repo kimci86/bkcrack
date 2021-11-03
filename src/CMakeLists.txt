@@ -15,9 +15,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
     "${PROJECT_BINARY_DIR}/include")
 
-# enable C++11
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+# enable C++17
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # enable OpenMP if wanted
 if(BKCRACK_PARALLEL_MODE)
