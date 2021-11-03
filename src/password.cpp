@@ -3,7 +3,7 @@
 #include "Crc32Tab.hpp"
 #include "MultTab.hpp"
 
-static const char* erase_line = "\33[2K";
+static const char* erase_line = "                       \r";
 
 Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions,
                    bool exhaustive, std::atomic<bool>& stop)
