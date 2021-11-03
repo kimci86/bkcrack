@@ -48,7 +48,7 @@ class Arguments
         /// Additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be negative)
         std::map<int, byte> extraPlaintext;
 
-        /// Tell whether to try all candidate keys exhaustively or stop after the first success
+        /// Tell whether to try all candidate (keys or passwords) exhaustively or stop after the first success
         bool exhaustive = false;
 
         Keys keys; ///< Internal password representation
