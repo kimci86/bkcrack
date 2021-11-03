@@ -2,6 +2,7 @@
 #include "log.hpp"
 #include "Crc32Tab.hpp"
 #include "MultTab.hpp"
+#include <csignal>
 
 static const char* erase_line = "                       \r";
 
@@ -182,34 +183,57 @@ void Recovery::recursion(int i)
     }
 }
 
+static std::atomic<bool> stop(false);
+
+extern "C" void handle_sigint(int)
+{
+    static_assert(std::atomic<bool>::is_always_lock_free, "atomics must be lock-free to be signal-safe");
+    stop = true;
+}
+
 std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset,
-    std::size_t min_length, std::size_t max_length, bool exhaustive, std::atomic<Progress>* progress)
+    std::size_t min_length, std::size_t max_length, int& start, bool exhaustive, std::atomic<Progress>* progress)
 {
     std::vector<std::string> solutions;
-    std::atomic<bool> stop(false);
+    stop = false;
     Recovery worker(keys, charset, solutions, exhaustive, stop);
 
     const int charsetSize = charset.size();
+    const int charsetSize_2 = charsetSize * charsetSize;
 
-    for(std::size_t length = min_length; length <= max_length && !stop; length++)
+    int restart = std::numeric_limits<int>::max();
+
+    std::signal(SIGINT, handle_sigint);
+    for(int length = min_length; length <= max_length && !stop; length++)
     {
+        if(std::max(length + 1, 10 + (length + 1 - 10) * charsetSize_2) <= start)
+            continue;
+
         std::cout << erase_line << "length " << length << std::endl;
         if(length <= 6)
+        {
             worker.recoverShortPassword(length);
+            if(stop)
+                restart = length;
+        }
         else if(length < 10)
+        {
             worker.recoverLongPassword("", length);
+            if(stop)
+                restart = length;
+        }
         else
         {
-            int done = 0;
+            int done = std::max(0, start - 10 - (length - 10) * charsetSize_2);
 
             std::string prefix(2, charset.front());
 
             if(progress)
-                *progress = {0, charsetSize * charsetSize};
+                *progress = {done, charsetSize_2};
 
             // bruteforce two characters to have many tasks for each CPU thread and share work evenly
             #pragma omp parallel for firstprivate(worker, prefix) schedule(dynamic)
-            for(std::int32_t i = 0; i < charsetSize * charsetSize; i++)
+            for(std::int32_t i = done; i < charsetSize_2; i++)
             {
                 if(stop)
                     continue; // cannot break out of an OpenMP for loop
@@ -221,10 +245,17 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
 
                 if(progress)
                     #pragma omp critical
-                    *progress = {++done, charsetSize * charsetSize};
+                    *progress = {++done, charsetSize_2};
+
+                if(stop)
+                    #pragma omp critical
+                    restart = std::min(restart, 10 + (length - 10) * charsetSize_2 + i);
             }
         }
     }
+    std::signal(SIGINT, SIG_DFL);
+
+    start = restart;
 
     return solutions;
 }

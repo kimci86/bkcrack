@@ -51,6 +51,9 @@ class Arguments
         /// Tell whether to try all candidate (keys or passwords) exhaustively or stop after the first success
         bool exhaustive = false;
 
+        /// Starting point to resume a cancelled password recovery
+        int start = 0;
+
         Keys keys; ///< Internal password representation
         bool keysGiven = false; ///< Tell whether keys were given or not
 

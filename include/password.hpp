@@ -52,6 +52,7 @@ class Recovery
 /// \param charset The set of characters with which to constitute candidate passwords
 /// \param min_length The smallest password length to try
 /// \param max_length The greatest password length to try
+/// \param start Starting point of the recovery. Also used to output the starting point to resume this recovery.
 /// \param exhaustive True to try and find all valid passwords,
 ///                   false to stop searching after the first one is found
 /// \param progress Pointer to report progress
@@ -59,6 +60,6 @@ class Recovery
 ///         A vector is needed instead of a single string because there can be
 ///         collisions (i.e. several passwords for the same keys).
 std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset,
-    std::size_t min_length, std::size_t max_length, bool exhaustive, std::atomic<Progress>* progress = nullptr);
+    std::size_t min_length, std::size_t max_length, int& start, bool exhaustive, std::atomic<Progress>* progress = nullptr);
 
 #endif // BKCRACK_PASSWORD_HPP

@@ -51,6 +51,8 @@ Optional:
                       ?p printable characters (same as ?a?s)
                       ?b all bytes (0x00 - 0xff)
 
+ -s value           Starting point of the password recovery
+
  -h                 Show this help and exit)_";
 
 int main(int argc, char const *argv[])
@@ -160,16 +162,19 @@ try
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
 
+        int start = args.start;
         std::vector<std::string> passwords;
         {
             ProgressPrinter printer(std::cout);
-            passwords = recoverPassword(keysvec.front(), args.charset, 0, args.maxLength, args.exhaustive, &printer.progress);
+            passwords = recoverPassword(keysvec.front(), args.charset, 0, args.maxLength, start, args.exhaustive, &printer.progress);
         }
 
         std::cout << "[" << put_time << "] ";
         if(passwords.empty())
         {
             std::cout << "Could not recover password" << std::endl;
+            if(start != std::numeric_limits<int>::max())
+                std::cout << "You can continue searching with options '-s " << start << "'" << std::endl;
             return 1;
         }
         else
@@ -184,6 +189,9 @@ try
                 std::cout << std::dec << std::endl;
                 std::cout << "as text: " << password << std::endl;
             }
+
+            if(start != std::numeric_limits<int>::max())
+                std::cout << "You can continue searching with options '-e -s " << start << "'" << std::endl;
         }
     }
 
