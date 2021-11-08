@@ -46,7 +46,7 @@ Data::Data(bytevec ciphertextArg, bytevec plaintextArg, int offsetArg, const std
 
     if(!extraPlaintextArg.empty() && extraPlaintextArg.begin()->first < minimumOffset)
         throw Error("extra plaintext offset "+std::to_string(extraPlaintextArg.begin()->first)+" is too small (minimum is "+std::to_string(minimumOffset)+")");
-    if(!extraPlaintextArg.empty() && ciphertext.size() <= extraPlaintextArg.rbegin()->first)
+    if(!extraPlaintextArg.empty() && ciphertext.size() <= ENCRYPTION_HEADER_SIZE + extraPlaintextArg.rbegin()->first)
         throw Error("extra plaintext offset "+std::to_string(extraPlaintextArg.rbegin()->first)+" is too large");
 
     // shift offsets to absolute values
