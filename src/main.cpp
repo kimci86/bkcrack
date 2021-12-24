@@ -1,3 +1,4 @@
+#include "VirtualTerminalSupport.hpp"
 #include "log.hpp"
 #include "file.hpp"
 #include "zip.hpp"
@@ -55,6 +56,9 @@ Optional:
 int main(int argc, char const *argv[])
 try
 {
+    // enable virtual terminal support on Windows, no-op on other platforms
+    VirtualTerminalSupport vtSupport;
+
     // setup output stream
     std::cout << setupLog << std::endl;
 
