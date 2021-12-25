@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "Data.hpp"
 #include "Keys.hpp"
+#include "Progress.hpp"
 
 /// \file Attack.hpp
 
@@ -15,7 +16,10 @@ class Attack
         /// \param data Data used to carry out the attack
         /// \param index Index of Z[2,32) values passed to carry out the attack
         /// \param solutions Shared output vector for valid keys
-        Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions);
+        /// \param exhaustive True to try and find all valid keys,
+        ///                   false to stop searching after the first one is found
+        /// \param progress Object to report progress
+        Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, bool exhaustive, Progress& progress);
 
         /// Carry out the attack for the given Z[2,32) value
         void carryout(uint32 z7_2_32);
@@ -44,6 +48,8 @@ class Attack
         const std::size_t index; // starting index of the used plaintext and keystream
 
         std::vector<Keys>& solutions; // shared output vector of valid keys
+        const bool exhaustive;
+        Progress& progress;
 
         u32arr<CONTIGUOUS_SIZE> zlist;
         u32arr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
@@ -56,6 +62,7 @@ class Attack
 /// \param index Index of the Zi[2,32) values relative to keystream
 /// \param exhaustive True to try and find all valid keys,
 ///                   false to stop searching after the first one is found
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, bool exhaustive);
+/// \param progress Object to report progress
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, bool exhaustive, Progress& progress);
 
 #endif // BKCRACK_ATTACK_HPP

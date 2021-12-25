@@ -2,6 +2,7 @@
 #define BKCRACK_ZREDUCTION_HPP
 
 #include "types.hpp"
+#include "Progress.hpp"
 
 /// Generate and reduce Z values
 class Zreduction
@@ -11,7 +12,7 @@ class Zreduction
         Zreduction(const bytevec& keystream);
 
         /// Reduce Zi[10,32) number using extra contiguous keystream
-        void reduce();
+        void reduce(Progress& progress);
 
         /// Extend Zi[10,32) values into Zi[2,32) values using keystream
         void generate();

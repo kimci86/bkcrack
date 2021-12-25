@@ -1,5 +1,4 @@
 #include "zip.hpp"
-#include "log.hpp"
 #include <algorithm>
 #include <map>
 #include <iterator>
@@ -286,7 +285,7 @@ bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEn
     return loadStream(is, std::min(entrySize, size));
 }
 
-void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const Keys& newKeys)
+void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const Keys& newKeys, Progress& progress)
 {
     // Store encrypted entries local file header offset and packed size.
     // Use std::map to sort them by local file header offset.
@@ -302,9 +301,8 @@ void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const K
     is.seekg(0, std::ios::beg);
     uint64 currentOffset = 0;
 
-    int index = 0;
-    if(!packedSizeByLocalOffset.empty())
-        std::cout << progress(index, packedSizeByLocalOffset.size()) << std::flush << "\r";
+    progress.done = 0;
+    progress.total = packedSizeByLocalOffset.size();
 
     for(const std::pair<uint64, uint64>& pair : packedSizeByLocalOffset)
     {
@@ -318,10 +316,8 @@ void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const K
         }
 
         if(!checkSignature(is, Signature::LOCAL_FILE_HEADER))
-        {
-            std::cout << std::endl;
             throw ZipError("could not find local file header");
-        }
+
         write(os, static_cast<uint32>(Signature::LOCAL_FILE_HEADER));
 
         std::copy_n(std::istreambuf_iterator<char>(is), 22, std::ostreambuf_iterator<char>(os));
@@ -353,13 +349,11 @@ void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const K
             });
 
         currentOffset = localHeaderOffset + 30 + filenameLength + extraSize + packedSize;
-        std::cout << progress(++index, packedSizeByLocalOffset.size()) << std::flush << "\r";
+
+        progress.done++;
     }
 
     std::copy(std::istreambuf_iterator<char>(is), std::istreambuf_iterator<char>(), std::ostreambuf_iterator<char>(os));
-
-    if(!packedSizeByLocalOffset.empty())
-        std::cout << std::endl;
 }
 
 void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys)

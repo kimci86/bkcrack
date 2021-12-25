@@ -12,24 +12,6 @@ std::ostream& setupLog(std::ostream& os);
 /// Insert the current local time into the output stream
 std::ostream& put_time(std::ostream& os);
 
-/// Manipulator to insert a progress representation
-class progress
-{
-    public:
-        /// Constructor
-        progress(int num, int den);
-
-        /// Insert the progress into the output stream
-        std::ostream& operator()(std::ostream& os) const;
-
-    private:
-        int num, den;
-};
-
-/// \brief Insert a progress manipulator into the output stream
-/// \relates progress
-std::ostream& operator<<(std::ostream& os, const progress& p);
-
 class Keys; // forward declaration
 
 /// \brief Insert a representation of keys into the stream \a os

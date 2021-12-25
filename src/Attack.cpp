@@ -4,14 +4,14 @@
 #include "KeystreamTab.hpp"
 #include "MultTab.hpp"
 
-Attack::Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions)
- : data(data), index(index + 1 - Attack::CONTIGUOUS_SIZE), solutions(solutions)
+Attack::Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, bool exhaustive, Progress& progress)
+ : data(data), index(index + 1 - Attack::CONTIGUOUS_SIZE), solutions(solutions), exhaustive(exhaustive), progress(progress)
 {}
 
 void Attack::carryout(uint32 z7_2_32)
 {
     zlist[7] = z7_2_32;
-    return exploreZlists(7);
+    exploreZlists(7);
 }
 
 void Attack::exploreZlists(int i)
@@ -161,40 +161,38 @@ void Attack::testXlist()
     keysBackward.updateBackward(data.ciphertext, indexBackward, 0);
 
     #pragma omp critical
+    solutions.push_back(keysBackward);
+
+    progress.log([&keysBackward](std::ostream& os)
     {
-        std::cout << "Keys: " << keysBackward << std::endl;
-        solutions.push_back(keysBackward);
-    }
+        os << "Keys: " << keysBackward << std::endl;
+    });
+
+    if(!exhaustive)
+        progress.state = Progress::State::EarlyExit;
 }
 
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, const bool exhaustive)
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, const bool exhaustive, Progress& progress)
 {
     const uint32* candidates = zi_2_32_vector.data();
     const std::int32_t size = zi_2_32_vector.size();
-    std::int32_t done = 0;
 
     std::vector<Keys> solutions;
-    Attack worker(data, index, solutions);
+    Attack worker(data, index, solutions, exhaustive, progress);
 
-    bool shouldStop = false;
+    progress.done = 0;
+    progress.total = size;
 
     #pragma omp parallel for firstprivate(worker) schedule(dynamic)
     for(std::int32_t i = 0; i < size; ++i) // OpenMP 2.0 requires signed index variable
     {
-        if(shouldStop)
+        if(progress.state != Progress::State::Normal)
             continue; // cannot break out of an OpenMP for loop
 
         worker.carryout(candidates[i]);
 
-        #pragma omp critical
-        {
-            std::cout << progress(++done, size) << std::flush << "\r";
-            shouldStop = !exhaustive && !solutions.empty();
-        }
+        progress.done++;
     }
-
-    if(size)
-        std::cout << std::endl;
 
     return solutions;
 }

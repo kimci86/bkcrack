@@ -1,5 +1,6 @@
 #include "VirtualTerminalSupport.hpp"
 #include "log.hpp"
+#include "ConsoleProgress.hpp"
 #include "file.hpp"
 #include "zip.hpp"
 #include "Arguments.hpp"
@@ -82,17 +83,22 @@ try
         if(data.keystream.size() > Attack::CONTIGUOUS_SIZE)
         {
             std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::CONTIGUOUS_SIZE) << " bytes of known plaintext" << std::endl;
-            zr.reduce();
+
+            ConsoleProgress progress(std::cout);
+            zr.reduce(progress);
         }
 
         // generate Zi[2,32) values
         zr.generate();
 
-        // iterate over remaining Zi[2,32) values
+        // carry out the attack on the remaining Zi[2,32) values
         std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
 
-        keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.exhaustive);
+        {
+            ConsoleProgress progress(std::cout);
+            keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.exhaustive, progress);
+        }
 
         // print the keys
         std::cout << "[" << put_time << "] ";
@@ -146,7 +152,8 @@ try
             std::ifstream encrypted = openInput(args.cipherarchive);
             std::ofstream unlocked = openOutput(args.unlockedarchive);
 
-            changeKeys(encrypted, unlocked, keys, Keys(args.newPassword));
+            ConsoleProgress progress(std::cout);
+            changeKeys(encrypted, unlocked, keys, Keys(args.newPassword), progress);
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;
@@ -157,7 +164,14 @@ try
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
         std::string password;
-        if(recoverPassword(keysvec.front(), args.maxLength, args.charset, password))
+        bool success;
+
+        {
+            ConsoleProgress progress(std::cout);
+            success = recoverPassword(keysvec.front(), args.maxLength, args.charset, password, progress);
+        }
+
+        if(success)
         {
             std::cout << "[" << put_time << "] Password" << std::endl;
             std::cout << "as bytes: ";
