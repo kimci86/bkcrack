@@ -38,19 +38,19 @@ Recovery::Recovery(const Keys& keys, const bytevec& charset, Progress& progress)
     }
 }
 
-bool Recovery::recoverShortPassword()
+bool Recovery::recoverShortPassword(const Keys& initial)
 {
-    Keys initial;
+    Keys init = initial;
 
     for(int length = 6; length >= 0; length--)
     {
-        if(recover(initial))
+        if(recover(init))
         {
             password.erase(0, 6 - length);
             return true;
         }
 
-        initial.updateBackwardPlaintext(charset.front());
+        init.updateBackwardPlaintext(charset.front());
     }
 
     return false;
@@ -176,16 +176,17 @@ bool Recovery::recursion(int i)
     return false;
 }
 
-bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password, Progress& progress)
+bool recoverPassword(const std::string& prefix, const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password, Progress& progress)
 {
     Recovery worker(keys, charset, progress);
+    const Keys initial{prefix};
 
     // look for a password of length between 0 and 6
     progress.log([](std::ostream& os) { os << "length 0-6..." << std::endl; });
 
-    if(worker.recoverShortPassword())
+    if(worker.recoverShortPassword(initial))
     {
-        password = worker.getPassword();
+        password = prefix + worker.getPassword();
         progress.state = Progress::State::EarlyExit;
         return true;
     }
@@ -195,9 +196,9 @@ bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& ch
     {
         progress.log([length](std::ostream& os) { os << "length " << length << "..." << std::endl; });
 
-        if(worker.recoverLongPassword(Keys{}, length))
+        if(worker.recoverLongPassword(initial, length))
         {
-            password = worker.getPassword();
+            password = prefix + worker.getPassword();
             progress.state = Progress::State::EarlyExit;
             return true;
         }
@@ -222,15 +223,13 @@ bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& ch
             if(progress.state != Progress::State::Normal)
                 continue; // cannot break out of an OpenMP for loop
 
-            Keys init;
+            Keys init = initial;
             init.update(charset[i / charsetSize]);
             init.update(charset[i % charsetSize]);
 
             if(worker.recoverLongPassword(init, length - 2))
             {
-                password = worker.getPassword();
-                password.insert(password.begin(), charset[i % charsetSize]);
-                password.insert(password.begin(), charset[i / charsetSize]);
+                password = prefix + static_cast<char>(charset[i / charsetSize]) + static_cast<char>(charset[i % charsetSize]) + worker.getPassword();
                 found = true;
                 progress.state = Progress::State::EarlyExit;
             }

@@ -14,7 +14,7 @@ class Recovery
         Recovery(const Keys& keys, const bytevec& charset, Progress& progress);
 
         /// Look for a password of length 6 or less
-        bool recoverShortPassword();
+        bool recoverShortPassword(const Keys& initial);
 
         /// Look for a password of given length (at least 7)
         bool recoverLongPassword(const Keys& initial, std::size_t length);
@@ -43,6 +43,6 @@ class Recovery
 };
 
 /// Try to recover the password associated with the given keys
-bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password, Progress& progress);
+bool recoverPassword(const std::string& prefix, const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password, Progress& progress);
 
 #endif // BKCRACK_PASSWORD_HPP

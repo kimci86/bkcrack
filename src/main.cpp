@@ -51,6 +51,7 @@ Optional:
                       ?a alpha-numerical characters (same as ?l?u?d)
                       ?p printable characters (same as ?a?s)
                       ?b all bytes (0x00 - 0xff)
+ -m prefix          The expected starting characters of the password to recover
 
  -h                 Show this help and exit)_";
 
@@ -168,7 +169,7 @@ try
 
         {
             ConsoleProgress progress(std::cout);
-            success = recoverPassword(keysvec.front(), args.maxLength, args.charset, password, progress);
+            success = recoverPassword(args.prefix, keysvec.front(), args.maxLength, args.charset, password, progress);
         }
 
         if(success)
