@@ -113,7 +113,7 @@ ZipIterator& ZipIterator::operator++()
         uint16 size;
         read(*m_is, id);
         read(*m_is, size);
-        remaining -= 4;
+        remaining -= 4 + size;
 
         if(id == 0x0001) // Zip64 extended information
         {
@@ -121,31 +121,38 @@ ZipIterator& ZipIterator::operator++()
             if(8 <= size && uncompressedSize == MASK_0_32)
             {
                 m_is->seekg(8, std::ios::cur);
-                remaining -= 8;
                 size -= 8;
             }
             if(8 <= size && m_entry.size == MASK_0_32)
             {
                 read(*m_is, m_entry.size);
-                remaining -= 8;
                 size -= 8;
             }
             if(8 <= size && m_entry.offset == MASK_0_32)
             {
                 read(*m_is, m_entry.offset);
-                remaining -= 8;
                 size -= 8;
             }
+        }
+        else if(id == 0x7075) // Info-ZIP Unicode Path
+        {
+            uint32 nameCrc32 = MASK_0_32;
+            for (byte b : m_entry.name)
+                nameCrc32 = Crc32Tab::crc32(nameCrc32, b);
+            nameCrc32 ^= MASK_0_32;
 
-            // skip the remaining extra field bytes
-            m_is->seekg(remaining, std::ios::cur);
-            remaining = 0;
+            uint32 expectedNameCrc32;
+            m_is->seekg(1, std::ios::cur);
+            read(*m_is, expectedNameCrc32);
+            size -= 5;
+
+            if (nameCrc32 == expectedNameCrc32)
+                read(*m_is, m_entry.name, size);
         }
         else
         {
             // skip this data block
             m_is->seekg(size, std::ios::cur);
-            remaining -= size;
         }
     }
 
@@ -239,10 +246,11 @@ std::istream& openZipEntry(std::istream& is, const ZipEntry& entry)
         throw ZipError("could not find local file header");
 
     // skip local file header
-    uint16 extraSize;
-    is.seekg(24, std::ios::cur);
+    uint16 nameSize, extraSize;
+    is.seekg(22, std::ios::cur);
+    read(is, nameSize);
     read(is, extraSize);
-    is.seekg(entry.name.size() + extraSize, std::ios::cur);
+    is.seekg(nameSize + extraSize, std::ios::cur);
 
     return is;
 }
