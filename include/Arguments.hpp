@@ -58,6 +58,7 @@ class Arguments
 
         std::size_t maxLength = 0; ///< Maximum password length to try during password recovery
         bytevec charset; ///< Characters to generate password candidates
+        std::string prefix; ///< Expected recovered password prefix
 
         bool help = false; ///< Tell whether help message is needed or not
 

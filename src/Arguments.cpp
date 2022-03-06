@@ -140,6 +140,9 @@ void Arguments::parseArgument()
             maxLength = readSize("length");
             charset = readCharset();
             break;
+        case 'm':
+            prefix = readString("prefix");
+            break;
         case 'h':
             help = true;
             break;
