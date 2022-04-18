@@ -72,7 +72,6 @@ ZipIterator& ZipIterator::operator++()
     uint16 flags;
     uint16 method;
 
-    uint32 uncompressedSize;
     uint16 filenameLength;
     uint16 extraFieldLength;
     uint16 fileCommentLength;
@@ -97,8 +96,8 @@ ZipIterator& ZipIterator::operator++()
 
     m_is->seekg(4, std::ios::cur);
     read(*m_is, m_entry.crc32);
-    read<uint64, 4>(*m_is, m_entry.size);
-    read(*m_is, uncompressedSize);
+    read<uint64, 4>(*m_is, m_entry.packedSize);
+    read<uint64, 4>(*m_is, m_entry.uncompressedSize);
     read(*m_is, filenameLength);
     read(*m_is, extraFieldLength);
     read(*m_is, fileCommentLength);
@@ -118,14 +117,14 @@ ZipIterator& ZipIterator::operator++()
         if(id == 0x0001) // Zip64 extended information
         {
             // process data block
-            if(8 <= size && uncompressedSize == MASK_0_32)
+            if(8 <= size && m_entry.uncompressedSize == MASK_0_32)
             {
-                m_is->seekg(8, std::ios::cur);
+                read(*m_is, m_entry.uncompressedSize);
                 size -= 8;
             }
-            if(8 <= size && m_entry.size == MASK_0_32)
+            if(8 <= size && m_entry.packedSize == MASK_0_32)
             {
-                read(*m_is, m_entry.size);
+                read(*m_is, m_entry.packedSize);
                 size -= 8;
             }
             if(8 <= size && m_entry.offset == MASK_0_32)
@@ -281,7 +280,7 @@ std::ifstream openZipEntry(const std::string& archive, const std::string& entry,
     }
 
     openZipEntry(is, *it);
-    size = it->size;
+    size = it->packedSize;
 
     return is;
 }
@@ -302,7 +301,7 @@ void changeKeys(std::istream& is, std::ostream& os, const Keys& oldKeys, const K
         [&packedSizeByLocalOffset](const ZipEntry& e)
         {
             if(e.encryption == ZipEntry::Encryption::Traditional)
-                packedSizeByLocalOffset.insert({e.offset, e.size});
+                packedSizeByLocalOffset.insert({e.offset, e.packedSize});
         });
 
     // Rewind input stream and iterate on encrypted entries to change the keys, copy the rest.

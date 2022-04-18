@@ -73,7 +73,8 @@ struct ZipEntry
     Compression compression; ///< Compression method
     uint32 crc32;            ///< CRC-32
     uint64 offset;           ///< Offset of local file header
-    uint64 size;             ///< Packed data size
+    uint64 packedSize;       ///< Packed data size
+    uint64 uncompressedSize; ///< Uncompressed data size
 };
 
 /// \brief Single-pass input iterator that reads successive ZipEntry objects from a stream
