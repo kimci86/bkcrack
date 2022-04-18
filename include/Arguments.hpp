@@ -36,6 +36,8 @@ class Arguments
             decipheredfile,     ///< File to write the deciphered text
             unlockedarchive;    ///< File to write the encryped archive with the new password
 
+        std::string infoarchive; ///< Zip archive about which to display information
+
         /// Plaintext offset relative to ciphertext without encryption header (may be negative)
         int offset = 0;
 

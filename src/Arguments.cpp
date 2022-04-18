@@ -37,6 +37,9 @@ Arguments::Arguments(int argc, const char* argv[])
     if(help)
         return;
 
+    if(!infoarchive.empty())
+        return;
+
     // check mandatory arguments
     if(keysGiven)
     {
@@ -139,6 +142,9 @@ void Arguments::parseArgument()
         case 'r':
             maxLength = readSize("length");
             charset = readCharset();
+            break;
+        case 'L':
+            infoarchive = readString("zipfile");
             break;
         case 'h':
             help = true;

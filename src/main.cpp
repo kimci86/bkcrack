@@ -9,8 +9,12 @@
 #include "Attack.hpp"
 #include "password.hpp"
 #include "version.hpp"
+#include <cassert>
 #include <iomanip>
 #include <limits>
+
+namespace
+{
 
 const char* usage = R"_(usage: bkcrack [options]
 Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
@@ -54,7 +58,13 @@ Optional:
                       ?p printable characters (same as ?a?s)
                       ?b all bytes (0x00 - 0xff)
 
+ -L zipfile         List entries in a zip archive and exit
+
  -h                 Show this help and exit)_";
+
+void listEntries(const std::string& archive);
+
+} // namespace
 
 int main(int argc, char const *argv[])
 try
@@ -69,6 +79,12 @@ try
     if(args.help)
     {
         std::cout << usage << std::endl;
+        return 0;
+    }
+
+    if(!args.infoarchive.empty())
+    {
+        listEntries(args.infoarchive);
         return 0;
     }
 
@@ -210,3 +226,79 @@ catch(const BaseError& e)
     std::cout << e.what() << std::endl;
     return 1;
 }
+
+namespace
+{
+
+std::string getEncryptionDescription(ZipEntry::Encryption encryption)
+{
+    switch(encryption)
+    {
+        case ZipEntry::Encryption::None:        return "None";
+        case ZipEntry::Encryption::Traditional: return "ZipCrypto";
+        case ZipEntry::Encryption::Unsupported: return "Other";
+    }
+    assert(false);
+
+    return "";
+}
+
+std::string getCompressionDescription(ZipEntry::Compression compression)
+{
+    switch(compression)
+    {
+        #define CASE(c) case ZipEntry::Compression::c: return #c
+        CASE(Store);
+        CASE(Shrink);
+        CASE(Implode);
+        CASE(Deflate);
+        CASE(Deflate64);
+        CASE(BZip2);
+        CASE(LZMA);
+        CASE(Zstandard);
+        CASE(MP3);
+        CASE(XZ);
+        CASE(JPEG);
+        CASE(WavPack);
+        CASE(PPMd);
+        #undef CASE
+    }
+
+    return "Other (" + std::to_string(static_cast<int>(compression)) + ")";
+}
+
+void listEntries(const std::string& archive)
+{
+    std::ifstream is = openInput(archive);
+    auto it = locateZipEntries(is);
+
+    std::cout << "Archive: " << archive << "\n"
+                 "Index Encryption Compression CRC32    Uncompressed  Packed size Name\n"
+                 "----- ---------- ----------- -------- ------------ ------------ ----------------\n";
+
+    const auto flagsBefore = std::cout.setf(std::ios::right | std::ios::dec, std::ios::adjustfield | std::ios::basefield);
+    const auto fillBefore = std::cout.fill(' ');
+
+    for(std::size_t index = 0; it != ZipIterator(); ++it, index++)
+    {
+        std::cout << std::setw(5) << index << ' '
+
+                  << std::left
+                  << std::setw(10) << getEncryptionDescription(it->encryption) << ' '
+                  << std::setw(11) << getCompressionDescription(it->compression) << ' '
+                  << std::right
+
+                  << std::setfill('0') << std::hex
+                  << std::setw(8) << it->crc32 << ' '
+                  << std::setfill(' ') << std::dec
+
+                  << std::setw(12) << it->uncompressedSize << ' '
+                  << std::setw(12) << it->packedSize << ' '
+                  << it->name << '\n';
+    }
+
+    std::cout.fill(fillBefore);
+    std::cout.flags(flagsBefore);
+}
+
+} // namespace
