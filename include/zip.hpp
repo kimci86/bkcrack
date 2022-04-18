@@ -60,17 +60,27 @@ struct ZipEntry
         Unsupported  ///< Other encryption (DES, RC2, 3DES, AES, Blowfish, Twofish, RC4)
     };
 
-    /// Compression algorithm
+    /// Compression algorithm. \note This enumeration is not exhaustive.
     enum class Compression
     {
-        Stored,
-        Deflate,
-        Unknown
+        Store     =  0,
+        Shrink    =  1,
+        Implode   =  6,
+        Deflate   =  8,
+        Deflate64 =  9,
+        BZip2     = 12,
+        LZMA      = 14,
+        Zstandard = 93,
+        MP3       = 94,
+        XZ        = 95,
+        JPEG      = 96,
+        WavPack   = 97,
+        PPMd      = 98,
     };
 
     std::string name;        ///< File name
     Encryption encryption;   ///< Encryption method
-    Compression compression; ///< Compression method
+    Compression compression; ///< Compression method. \note It may take a value not listed in ZipEntry::Compression
     uint32 crc32;            ///< CRC-32
     uint64 offset;           ///< Offset of local file header
     uint64 packedSize;       ///< Packed data size

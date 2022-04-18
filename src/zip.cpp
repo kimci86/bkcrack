@@ -87,12 +87,7 @@ ZipIterator& ZipIterator::operator++()
                 ZipEntry::Encryption::Traditional :
             ZipEntry::Encryption::None;
 
-    m_entry.compression =
-        method == 0 ?
-            ZipEntry::Compression::Stored :
-            method == 8 ?
-                ZipEntry::Compression::Deflate :
-                ZipEntry::Compression::Unknown;
+    m_entry.compression = static_cast<ZipEntry::Compression>(method);
 
     m_is->seekg(4, std::ios::cur);
     read(*m_is, m_entry.crc32);
@@ -114,45 +109,65 @@ ZipIterator& ZipIterator::operator++()
         read(*m_is, size);
         remaining -= 4 + size;
 
-        if(id == 0x0001) // Zip64 extended information
+        switch(id)
         {
-            // process data block
-            if(8 <= size && m_entry.uncompressedSize == MASK_0_32)
-            {
-                read(*m_is, m_entry.uncompressedSize);
-                size -= 8;
-            }
-            if(8 <= size && m_entry.packedSize == MASK_0_32)
-            {
-                read(*m_is, m_entry.packedSize);
-                size -= 8;
-            }
-            if(8 <= size && m_entry.offset == MASK_0_32)
-            {
-                read(*m_is, m_entry.offset);
-                size -= 8;
-            }
-        }
-        else if(id == 0x7075) // Info-ZIP Unicode Path
-        {
-            uint32 nameCrc32 = MASK_0_32;
-            for (byte b : m_entry.name)
-                nameCrc32 = Crc32Tab::crc32(nameCrc32, b);
-            nameCrc32 ^= MASK_0_32;
+            case 0x0001: // Zip64 extended information
+                if(8 <= size && m_entry.uncompressedSize == MASK_0_32)
+                {
+                    read(*m_is, m_entry.uncompressedSize);
+                    size -= 8;
+                }
+                if(8 <= size && m_entry.packedSize == MASK_0_32)
+                {
+                    read(*m_is, m_entry.packedSize);
+                    size -= 8;
+                }
+                if(8 <= size && m_entry.offset == MASK_0_32)
+                {
+                    read(*m_is, m_entry.offset);
+                    size -= 8;
+                }
+                break;
 
-            uint32 expectedNameCrc32;
-            m_is->seekg(1, std::ios::cur);
-            read(*m_is, expectedNameCrc32);
-            size -= 5;
+            case 0x7075: // Info-ZIP Unicode Path
+                if(5 <= size)
+                {
+                    uint32 nameCrc32 = MASK_0_32;
+                    for (byte b : m_entry.name)
+                        nameCrc32 = Crc32Tab::crc32(nameCrc32, b);
+                    nameCrc32 ^= MASK_0_32;
 
-            if (nameCrc32 == expectedNameCrc32)
-                read(*m_is, m_entry.name, size);
+                    uint32 expectedNameCrc32;
+                    m_is->seekg(1, std::ios::cur);
+                    read(*m_is, expectedNameCrc32);
+                    size -= 5;
+
+                    if (nameCrc32 == expectedNameCrc32)
+                    {
+                        read(*m_is, m_entry.name, size);
+                        size = 0;
+                    }
+                }
+                break;
+
+            case 0x9901: // AE-x encryption structure
+                if(7 <= size)
+                {
+                    uint16 method;
+                    m_is->seekg(5, std::ios::cur);
+                    read(*m_is, method);
+                    size -= 7;
+
+                    m_entry.compression = static_cast<ZipEntry::Compression>(method);
+                }
+                break;
+
+            default:
+                break;
         }
-        else
-        {
-            // skip this data block
-            m_is->seekg(size, std::ios::cur);
-        }
+
+        // jump to the end of this data block
+        m_is->seekg(size, std::ios::cur);
     }
 
     m_is->seekg(fileCommentLength, std::ios::cur);
