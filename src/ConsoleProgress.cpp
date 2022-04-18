@@ -32,7 +32,13 @@ void ConsoleProgress::printerFunction()
         if(int total = this->total.load())
             log([done = done.load(), total](std::ostream& os)
             {
-                os << (100.0 * done / (total ? total : 1)) << " % (" << done << " / " << total << ")" << std::flush << "\033[1K\r";
+                const auto flagsBefore = os.setf(std::ios::fixed, std::ios::floatfield);
+                const auto precisionBefore = os.precision(1);
+
+                os << (100.0 * done / total) << " % (" << done << " / " << total << ")" << std::flush << "\033[1K\r";
+
+                os.precision(precisionBefore);
+                os.flags(flagsBefore);
             });
 
         std::unique_lock<std::mutex> lock(m_in_destructor_mutex);
@@ -42,6 +48,12 @@ void ConsoleProgress::printerFunction()
     if(int total = this->total.load())
         log([done = done.load(), total](std::ostream& os)
         {
-            os << (100.0 * done / (total ? total : 1)) << " % (" << done << " / " << total << ")" << std::endl;
+            const auto flagsBefore = os.setf(std::ios::fixed, std::ios::floatfield);
+            const auto precisionBefore = os.precision(1);
+
+            os << (100.0 * done / total) << " % (" << done << " / " << total << ")" << std::endl;
+
+            os.precision(precisionBefore);
+            os.flags(flagsBefore);
         });
 }

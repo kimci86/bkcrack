@@ -8,6 +8,8 @@
 #include "Zreduction.hpp"
 #include "Attack.hpp"
 #include "password.hpp"
+#include "version.hpp"
+#include <iomanip>
 #include <limits>
 
 const char* usage = R"_(usage: bkcrack [options]
@@ -60,8 +62,8 @@ try
     // enable virtual terminal support on Windows, no-op on other platforms
     VirtualTerminalSupport vtSupport;
 
-    // setup output stream
-    std::cout << setupLog << std::endl;
+    // version information
+    std::cout << "bkcrack " BKCRACK_VERSION " - " BKCRACK_COMPILATION_DATE << std::endl;
 
     const Arguments args(argc, argv);
     if(args.help)
@@ -175,10 +177,17 @@ try
         {
             std::cout << "[" << put_time << "] Password" << std::endl;
             std::cout << "as bytes: ";
-            std::cout << std::hex;
-            for(byte c : password)
-                std::cout << static_cast<int>(c) << ' ';
-            std::cout << std::dec << std::endl;
+            {
+                const auto flagsBefore = std::cout.setf(std::ios::hex, std::ios::basefield);
+                const auto fillBefore = std::cout.fill('0');
+
+                for(byte c : password)
+                    std::cout << std::setw(2) << static_cast<int>(c) << ' ';
+                std::cout << std::endl;
+
+                std::cout.fill(fillBefore);
+                std::cout.flags(flagsBefore);
+            }
             std::cout << "as text: " << password << std::endl;
         }
         else
