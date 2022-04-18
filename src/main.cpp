@@ -36,7 +36,7 @@ Optional:
 
  -d decipheredfile  File to write the deciphered text (requires -c)
  -U unlockedzip password
-                    File to write the encryped zip with the password set
+                    File to write the encrypted zip with the password set
                       to the given new password (requires -C)
 
  -r length charset  Try to recover the password up to the given length using
