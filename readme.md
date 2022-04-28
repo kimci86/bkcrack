@@ -38,6 +38,14 @@ Install it with any AUR helpers you like.
 Usage
 -----
 
+### List entries
+
+You can see a list of entry names and metadata in an archive named `archive.zip` like this:
+
+    bkcrack -L archive.zip
+
+Entries using ZipCrypto encryption are vulnerable to a known-plaintext attack.
+
 ### Recover internal keys
 
 The attack requires at least 12 bytes of known plaintext.

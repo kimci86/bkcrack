@@ -9,20 +9,20 @@ Its content is probably of great interest!
 # What is inside
 
 Let us see what is inside.
-Open a terminal in the `example` folder and ask `unzip` to give us information about it.
+Open a terminal in the `example` folder and run this command.
 
-    $ unzip -Z secrets.zip
+    $ ../bkcrack -L secrets.zip
 
 We get the following output.
 
-    Archive:  secrets.zip
-    Zip file size: 56263 bytes, number of entries: 2
-    -rw-rw-r--  6.3 unx    54799 Bx defN 12-Aug-14 14:51 advice.jpg
-    -rw-rw-r--  6.3 unx     1265 Bx stor 18-Dec-20 13:33 spiral.svg
-    2 files, 56064 bytes uncompressed, 55953 bytes compressed:  0.2%
+    Archive: secrets.zip
+    Index Encryption Compression CRC32    Uncompressed  Packed size Name
+    ----- ---------- ----------- -------- ------------ ------------ ----------------
+        0 ZipCrypto  Deflate     7ca9f10a        54799        54700 advice.jpg
+        1 ZipCrypto  Store       a99f1d0d         1265         1277 spiral.svg
 
-The zip file contains two files: `advice.jpg` and `spiral.svg`.
-The capital letter in the fifth field shows the files are encrypted.
+So the zip file contains two entries: `advice.jpg` and `spiral.svg`.
+They are both encrypted with traditional PKWARE encryption denoted as ZipCrypto.
 We also see that `advice.jpg` is deflated whereas `spiral.svg` is stored uncompressed.
 
 # Guessing plaintext
@@ -55,17 +55,12 @@ In this example, we guessed the first 20 bytes of `spiral.svg`.
 
 In addition, as explained in the ZIP file format specification, a 12-byte encryption header in prepended to the data in the archive.
 The last byte of the encryption header is the most significant byte of the file's CRC.
-
-We can get the CRC with `unzip`.
-
-    $ unzip -Z -v secrets.zip spiral.svg | grep CRC
-      32-bit CRC value (hex):                         a99f1d0d
-
-So we know the byte just before the plaintext (i.e. at offset -1) is 0xA9.
+We already know from the first command we ran that the CRC is A99F1D0D (hexadecimal) for this file. The most significant byte is A9.
+So we know the byte just before the plaintext (i.e. at offset -1) is A9.
 
 # Running the attack
 
-Let us write the plaintext we guessed in a file.
+Let us write the plaintext we guessed in a file. Notice the `-n` flag not to output a trailing newline character.
 
     $ echo -n '<?xml version="1.0" ' > plain.txt
 
@@ -123,7 +118,7 @@ To do this, we need to choose a maximum length and a set of characters among whi
 To save time, we have to choose those parameters wisely.
 For a given maximal length, a small charset will be explored much faster than a big one, but making a wrong assumption by choosing a charset that is too small will not allow to recover the password.
 
-At first, we can try all candidates up to a given length without making any assumption about the character set. We use the charset `?b` which is the set containing all bytes (from 0 to 255), so we not miss any candidate up to length 9.
+At first, we can try all candidates up to a given length without making any assumption about the character set. We use the charset `?b` which is the set containing all bytes (from 0 to 255), so we do not miss any candidate up to length 9.
 
     $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 9 ?b
 
