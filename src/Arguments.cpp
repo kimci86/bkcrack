@@ -40,7 +40,7 @@ Arguments::Arguments(int argc, const char* argv[])
     if(!infoarchive.empty())
         return;
 
-    // check mandatory arguments
+    // check constraints on arguments
     if(keysGiven)
     {
         if(decipheredfile.empty() && unlockedarchive.empty() && maxLength == 0)
@@ -54,6 +54,10 @@ Arguments::Arguments(int argc, const char* argv[])
             throw Error("-p parameter is missing (required by -P)");
         if(plainfile.empty() && extraPlaintext.empty())
             throw Error("-p or -x parameter is missing");
+
+        constexpr int minimumOffset = -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE);
+        if(offset < minimumOffset)
+            throw Error("plaintext offset "+std::to_string(offset)+" is too small (minimum is "+std::to_string(minimumOffset)+")");
     }
 
     if(!decipheredfile.empty() && cipherfile.empty())
