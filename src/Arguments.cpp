@@ -22,37 +22,35 @@ std::bitset<256> charRange(char first, char last)
 } // namespace
 
 Arguments::Error::Error(const std::string& description)
- : BaseError("Arguments error", description)
+: BaseError("Arguments error", description)
 {}
 
 Arguments::Arguments(int argc, const char* argv[])
+: m_current{argv + 1}, m_end{argv + argc}
 {
     // parse arguments
-    this->argc = argc;
-    this->argv = argv;
-    this->current = argv + 1;
     while(!finished())
         parseArgument();
 
     if(help)
         return;
 
-    if(!infoarchive.empty())
+    if(infoArchive)
         return;
 
     // check constraints on arguments
-    if(keysGiven)
+    if(keys)
     {
-        if(decipheredfile.empty() && unlockedarchive.empty() && maxLength == 0)
+        if(!decipheredFile && !changePassword && !recoverPassword)
             throw Error("-d, -U or -r parameter is missing (required by -k)");
     }
     else
     {
-        if(cipherfile.empty())
+        if(!cipherFile)
             throw Error("-c parameter is missing");
-        if(!plainarchive.empty() && plainfile.empty())
+        if(plainArchive && !plainFile)
             throw Error("-p parameter is missing (required by -P)");
-        if(plainfile.empty() && extraPlaintext.empty())
+        if(!plainFile && extraPlaintext.empty())
             throw Error("-p or -x parameter is missing");
 
         constexpr int minimumOffset = -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE);
@@ -60,24 +58,24 @@ Arguments::Arguments(int argc, const char* argv[])
             throw Error("plaintext offset "+std::to_string(offset)+" is too small (minimum is "+std::to_string(minimumOffset)+")");
     }
 
-    if(!decipheredfile.empty() && cipherfile.empty())
+    if(decipheredFile && !cipherFile)
         throw Error("-c parameter is missing (required by -d)");
-    if(!decipheredfile.empty() && decipheredfile == cipherfile)
-        throw Error("-c and -d parameters should point to different files");
-    if(!unlockedarchive.empty() && cipherarchive.empty())
+    if(decipheredFile && !cipherArchive && decipheredFile == cipherFile)
+        throw Error("-c and -d parameters must point to different files");
+    if(changePassword && !cipherArchive)
         throw Error("-C parameter is missing (required by -U)");
-    if(!unlockedarchive.empty() && unlockedarchive == cipherarchive)
-        throw Error("-C and -U parameters should point to different files");
+    if(changePassword && changePassword->unlockedArchive == cipherArchive)
+        throw Error("-C and -U parameters must point to different files");
 }
 
 Data Arguments::loadData() const
 {
     // load known plaintext
     bytevec plaintext;
-    if(!plainarchive.empty())
-        plaintext = loadZipEntry(plainarchive, plainfile, ZipEntry::Encryption::None, plainsize);
-    else if(!plainfile.empty())
-        plaintext = loadFile(plainfile, plainsize);
+    if(plainArchive)
+        plaintext = loadZipEntry(*plainArchive, *plainFile, ZipEntry::Encryption::None, plainFilePrefix);
+    else if(plainFile)
+        plaintext = loadFile(*plainFile, plainFilePrefix);
 
     // load ciphertext needed by the attack
     std::size_t needed = Data::ENCRYPTION_HEADER_SIZE;
@@ -87,74 +85,77 @@ Data Arguments::loadData() const
         needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + extraPlaintext.rbegin()->first + 1);
 
     bytevec ciphertext;
-    if(!cipherarchive.empty())
-        ciphertext = loadZipEntry(cipherarchive, cipherfile, ZipEntry::Encryption::Traditional, needed);
+    if(cipherArchive)
+        ciphertext = loadZipEntry(*cipherArchive, *cipherFile, ZipEntry::Encryption::Traditional, needed);
     else
-        ciphertext = loadFile(cipherfile, needed);
+        ciphertext = loadFile(*cipherFile, needed);
 
     return Data(std::move(ciphertext), std::move(plaintext), offset, extraPlaintext);
 }
 
 bool Arguments::finished() const
 {
-    return current == argv + argc;
+    return m_current == m_end;
 }
 
 void Arguments::parseArgument()
 {
-    switch(char flag = readFlag("a flag"))
+    switch(readOption("an option"))
     {
-        case 'c':
-            cipherfile = readString("ciphertext");
+        case Option::cipherFile:
+            cipherFile = readString("ciphertext");
             break;
-        case 'p':
-            plainfile = readString("plaintext");
+        case Option::cipherArchive:
+            cipherArchive = readString("encryptedzip");
             break;
-        case 'C':
-            cipherarchive = readString("encryptedzip");
+        case Option::plainFile:
+            plainFile = readString("plaintext");
             break;
-        case 'P':
-            plainarchive = readString("plainzip");
+        case Option::plainArchive:
+            plainArchive = readString("plainzip");
             break;
-        case 'U':
-            unlockedarchive = readString("unlockedzip");
-            newPassword = readString("password");
+        case Option::plainFilePrefix:
+            plainFilePrefix = readSize("size");
             break;
-        case 'd':
-            decipheredfile = readString("decipheredfile");
-            break;
-        case 'o':
+        case Option::offset:
             offset = readInt("offset");
             break;
-        case 't':
-            plainsize = readSize("size");
-            break;
-        case 'x':
+        case Option::extraPlaintext:
         {
             int i = readInt("offset");
             for(byte b : readHex("data"))
                 extraPlaintext[i++] = b;
             break;
         }
-        case 'e':
+        case Option::exhaustive:
             exhaustive = true;
             break;
-        case 'k':
+        case Option::keys:
             keys = readKeys();
-            keysGiven = true;
             break;
-        case 'r':
-            maxLength = readSize("length");
-            charset = readCharset();
+        case Option::decipheredFile:
+            decipheredFile = readString("decipheredfile");
             break;
-        case 'L':
-            infoarchive = readString("zipfile");
+        case Option::changePassword:
+        {
+            std::string unlockedArchive = readString("unlockedzip");
+            std::string newPassword = readString("password");
+            changePassword = {std::move(unlockedArchive), std::move(newPassword)};
             break;
-        case 'h':
+        }
+        case Option::recoverPassword:
+        {
+            std::size_t maxLength = readSize("length");
+            bytevec charset = readCharset();
+            recoverPassword = {maxLength, std::move(charset)};
+            break;
+        }
+        case Option::infoArchive:
+            infoArchive = readString("zipfile");
+            break;
+        case Option::help:
             help = true;
             break;
-        default:
-            throw Error(std::string("unknown flag ")+flag);
     }
 }
 
@@ -163,17 +164,35 @@ std::string Arguments::readString(const std::string& description)
     if(finished())
         throw Error("expected "+description+", got nothing");
 
-    return std::string(*current++);
+    return *m_current++;
 }
 
-char Arguments::readFlag(const std::string& description)
+Arguments::Option Arguments::readOption(const std::string& description)
 {
-    const std::string& flag = readString(description);
+    #define PAIRS(short, long, option) {#short, Option::option}, {#long, Option::option}
+    static const std::map<std::string, Option> stringToOption = {
+        PAIRS(-c, --cipher-file,      cipherFile),
+        PAIRS(-C, --cipher-zip,       cipherArchive),
+        PAIRS(-p, --plain-file,       plainFile),
+        PAIRS(-P, --plain-zip,        plainArchive),
+        PAIRS(-t, --truncate,         plainFilePrefix),
+        PAIRS(-o, --offset,           offset),
+        PAIRS(-x, --extra,            extraPlaintext),
+        PAIRS(-e, --exhaustive,       exhaustive),
+        PAIRS(-k, --keys,             keys),
+        PAIRS(-d, --decipher,         decipheredFile),
+        PAIRS(-U, --change-password,  changePassword),
+        PAIRS(-r, --recover-password, recoverPassword),
+        PAIRS(-L, --list,             infoArchive),
+        PAIRS(-h, --help,             help)
+    };
+    #undef PAIRS
 
-    if(flag.size() != 2 || flag.front() != '-')
-        throw Error("expected "+description+", got "+flag);
-
-    return flag[1];
+    std::string str = readString(description);
+    if(auto it = stringToOption.find(str); it == stringToOption.end())
+        throw Error("unknown option "+str);
+    else
+        return it->second;
 }
 
 int Arguments::readInt(const std::string& description)

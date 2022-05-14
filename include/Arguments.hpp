@@ -2,6 +2,7 @@
 #define BKCRACK_ARGUMENTS_HPP
 
 #include <map>
+#include <optional>
 
 #include "types.hpp"
 #include "Keys.hpp"
@@ -29,23 +30,19 @@ class Arguments
         /// \exception Data::Error if the loaded data cannot be used to carry out an attack
         Data loadData() const;
 
-        std::string cipherfile, ///< File containing the ciphertext
-            cipherarchive,      ///< Zip archive containing cipherfile
-            plainfile,          ///< File containing the known plaintext
-            plainarchive,       ///< Zip archive containing plainfile
-            decipheredfile,     ///< File to write the deciphered text
-            unlockedarchive;    ///< File to write the encryped archive with the new password
+        std::optional<std::string> cipherFile;    ///< File containing the ciphertext
+        std::optional<std::string> cipherArchive; ///< Zip archive containing \ref cipherFile
+        std::optional<std::string> plainFile;     ///< File containing the known plaintext
+        std::optional<std::string> plainArchive;  ///< Zip archive containing \ref plainFile
 
-        std::string infoarchive; ///< Zip archive about which to display information
-
-        /// Plaintext offset relative to ciphertext without encryption header (may be negative)
-        int offset = 0;
-
-        /// \brief Maximum number of bytes of plaintext to read
+        /// \brief Maximum number of bytes of plaintext to read from \ref plainFile
         ///
         /// Set to 1 MiB by default. Using more plaintext is possible,
         /// but it uses more RAM and does not speed up the attack much.
-        std::size_t plainsize = 1<<20;
+        std::size_t plainFilePrefix = 1 << 20;
+
+        /// Plaintext offset relative to ciphertext without encryption header (may be negative)
+        int offset = 0;
 
         /// Additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be negative)
         std::map<int, byte> extraPlaintext;
@@ -53,27 +50,64 @@ class Arguments
         /// Tell whether to try all candidate keys exhaustively or stop after the first success
         bool exhaustive = false;
 
-        Keys keys; ///< Internal password representation
-        bool keysGiven = false; ///< Tell whether keys were given or not
+        /// Internal password representation
+        std::optional<Keys> keys;
 
-        std::string newPassword; ///< Password chosen to generate the unlocked archive
+        /// File to write the deciphered text corresponding to \ref cipherFile
+        std::optional<std::string> decipheredFile;
 
-        std::size_t maxLength = 0; ///< Maximum password length to try during password recovery
-        bytevec charset; ///< Characters to generate password candidates
+        /// Arguments needed to change an archive's password
+        struct ChangePassword
+        {
+            std::string unlockedArchive; ///< File to write the encryped archive with the new password
+            std::string newPassword;     ///< Password chosen to generate the unlocked archive
+        };
+        /// \copydoc ChangePassword
+        std::optional<ChangePassword> changePassword;
 
-        bool help = false; ///< Tell whether help message is needed or not
+        /// Arguments needed to attempt a password recovery
+        struct PasswordRecovery
+        {
+            std::size_t maxLength; ///< Maximum password length to try during password recovery
+            bytevec charset;       ///< Characters to generate password candidates
+        };
+        /// \copydoc PasswordRecovery
+        std::optional<PasswordRecovery> recoverPassword;
+
+        /// Zip archive about which to display information
+        std::optional<std::string> infoArchive;
+
+        /// Tell whether help message is needed or not
+        bool help = false;
 
     private:
-        int argc;
-        const char** argv;
-        const char** current;
+        const char** m_current;
+        const char** const m_end;
 
         bool finished() const;
 
         void parseArgument();
 
+        enum class Option
+        {
+            cipherFile,
+            cipherArchive,
+            plainFile,
+            plainArchive,
+            plainFilePrefix,
+            offset,
+            extraPlaintext,
+            exhaustive,
+            keys,
+            decipheredFile,
+            changePassword,
+            recoverPassword,
+            infoArchive,
+            help
+        };
+
         std::string readString(const std::string& description);
-        char readFlag(const std::string& description);
+        Option readOption(const std::string& description);
         int readInt(const std::string& description);
         std::size_t readSize(const std::string& description);
         bytevec readHex(const std::string& description);

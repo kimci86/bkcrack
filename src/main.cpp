@@ -19,48 +19,49 @@ namespace
 const char* usage = R"_(usage: bkcrack [options]
 Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
 
-Mandatory:
- -c cipherfile      File containing the ciphertext
- -p plainfile       File containing the known plaintext
+Options to get the internal password representation:
+ -c, --cipher-file <file>    Zip entry or file on disk containing ciphertext
+ -C, --cipher-zip <archive>  Zip archive containing the ciphertext entry
 
-    or
+ -p, --plain-file <file>     Zip entry or file on disk containing plaintext
+ -P, --plain-zip <archive>   Zip archive containing the plaintext entry
+ -t, --truncate <size>       Maximum number of bytes of plaintext to load
+ -o, --offset <offset>       Known plaintext offset relative to ciphertext
+                              without encryption header (may be negative)
+ -x, --extra <offset> <data> Additional plaintext in hexadecimal starting
+                              at the given offset (may be negative)
 
- -k X Y Z           Internal password representation as three 32-bits integers
-                      in hexadecimal (requires -d, -U, or -r)
+ -e, --exhaustive            Try all the keys remaining after Z reduction
 
-Optional:
- -C encryptedzip    Zip archive containing cipherfile
+Options to use the internal password representation:
+ -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
+                              integers in hexadecimal (requires -d, -U or -r)
 
- -P plainzip        Zip archive containing plainfile
- -o offset          Known plaintext offset relative to ciphertext
-                      without encryption header (may be negative)
- -t size            Maximum number of bytes of plaintext to read
- -x offset data     Additional plaintext in hexadecimal starting
-                      at the given offset (may be negative)
+ -d, --decipher <file>       File to write the deciphered data (requires -c)
 
- -e                 Exhaustively try all the keys remaining after Z reduction
+ -U, --change-password <archive> <password>
+        Create a copy of the encrypted zip archive with the password set to the
+        given new password (requires -C)
 
- -d decipheredfile  File to write the deciphered text (requires -c)
- -U unlockedzip password
-                    File to write the encrypted zip with the password set
-                      to the given new password (requires -C)
+ -r, --recover-password <length> <charset>
+        Try to recover the password or an equivalent one up to the given length
+        using characters in the given charset. The charset is a sequence of
+        characters or shortcuts for predefined charsets listed below.
+        Example: ?l?d-.@
+          ?l lowercase letters
+          ?u uppercase letters
+          ?d decimal digits
+          ?s punctuation
+          ?a alpha-numerical characters (same as ?l?u?d)
+          ?p printable characters (same as ?a?s)
+          ?b all bytes (0x00 - 0xff)
 
- -r length charset  Try to recover the password up to the given length using
-                      characters in the given charset. The charset is a
-                      sequence of characters or shorcuts for predefined
-                      charsets listed below. Example: ?l?d-.@
+Other options:
+ -L, --list <archive>        List entries in a zip archive and exit
+ -h, --help                  Show this help and exit
 
-                      ?l lowercase letters
-                      ?u uppercase letters
-                      ?d decimal digits
-                      ?s punctuation
-                      ?a alpha-numerical characters (same as ?l?u?d)
-                      ?p printable characters (same as ?a?s)
-                      ?b all bytes (0x00 - 0xff)
-
- -L zipfile         List entries in a zip archive and exit
-
- -h                 Show this help and exit)_";
+Environment variables:
+ OMP_NUM_THREADS             Number of threads to use for parallel computations)_";
 
 void listEntries(const std::string& archive);
 
@@ -82,15 +83,15 @@ try
         return 0;
     }
 
-    if(!args.infoarchive.empty())
+    if(args.infoArchive)
     {
-        listEntries(args.infoarchive);
+        listEntries(*args.infoArchive);
         return 0;
     }
 
     std::vector<Keys> keysvec;
-    if(args.keysGiven)
-        keysvec.push_back(args.keys);
+    if(args.keys)
+        keysvec.push_back(*args.keys);
     else
     // find keys from known plaintext
     {
@@ -136,9 +137,9 @@ try
     // From there, keysvec is not empty.
 
     // decipher
-    if(!args.decipheredfile.empty())
+    if(args.decipheredFile)
     {
-        std::cout << "[" << put_time << "] Writing deciphered data " << args.decipheredfile << " (maybe compressed)"<< std::endl;
+        std::cout << "[" << put_time << "] Writing deciphered data " << *args.decipheredFile << " (maybe compressed)"<< std::endl;
 
         Keys keys = keysvec.front();
         if(keysvec.size() > 1)
@@ -147,8 +148,8 @@ try
 
         {
             std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
-            std::ifstream cipherstream = args.cipherarchive.empty() ? openInput(args.cipherfile) : openZipEntry(args.cipherarchive, args.cipherfile, ZipEntry::Encryption::Traditional, ciphersize);
-            std::ofstream decipheredstream = openOutput(args.decipheredfile);
+            std::ifstream cipherstream = args.cipherArchive ? openZipEntry(*args.cipherArchive, *args.cipherFile, ZipEntry::Encryption::Traditional, ciphersize) : openInput(*args.cipherFile);
+            std::ofstream decipheredstream = openOutput(*args.decipheredFile);
 
             decipher(cipherstream, ciphersize, Data::ENCRYPTION_HEADER_SIZE, decipheredstream, keys);
         }
@@ -157,9 +158,11 @@ try
     }
 
     // unlock
-    if(!args.unlockedarchive.empty())
+    if(args.changePassword)
     {
-        std::cout << "[" << put_time << "] Writing unlocked archive " << args.unlockedarchive << " with password \"" << args.newPassword << "\"" << std::endl;
+        const auto& [unlockedArchive, newPassword] = *args.changePassword;
+
+        std::cout << "[" << put_time << "] Writing unlocked archive " << unlockedArchive << " with password \"" << newPassword << "\"" << std::endl;
 
         Keys keys = keysvec.front();
         if(keysvec.size() > 1)
@@ -167,26 +170,28 @@ try
                       << "Use the command line option -k to provide other keys." << std::endl;
 
         {
-            std::ifstream encrypted = openInput(args.cipherarchive);
-            std::ofstream unlocked = openOutput(args.unlockedarchive);
+            std::ifstream encrypted = openInput(*args.cipherArchive);
+            std::ofstream unlocked = openOutput(unlockedArchive);
 
             ConsoleProgress progress(std::cout);
-            changeKeys(encrypted, unlocked, keys, Keys(args.newPassword), progress);
+            changeKeys(encrypted, unlocked, keys, Keys(newPassword), progress);
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;
     }
 
     // recover password
-    if(args.maxLength)
+    if(args.recoverPassword)
     {
+        const auto& [maxLength, charset] = *args.recoverPassword;
+
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
         std::string password;
         bool success;
 
         {
             ConsoleProgress progress(std::cout);
-            success = recoverPassword(keysvec.front(), args.maxLength, args.charset, password, progress);
+            success = recoverPassword(keysvec.front(), maxLength, charset, password, progress);
         }
 
         if(success)
