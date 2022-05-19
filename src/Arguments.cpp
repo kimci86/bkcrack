@@ -19,6 +19,23 @@ std::bitset<256> charRange(char first, char last)
     return bitset;
 }
 
+template <typename F>
+auto translateIntParseError(F&& f, const std::string& value)
+{
+    try
+    {
+        return f(value);
+    }
+    catch(const std::invalid_argument&)
+    {
+        throw Arguments::Error("expected an integer, got \""+value+"\"");
+    }
+    catch(const std::out_of_range&)
+    {
+        throw Arguments::Error("integer value "+value+" is out of range");
+    }
+}
+
 } // namespace
 
 Arguments::Error::Error(const std::string& description)
@@ -227,12 +244,18 @@ Arguments::Option Arguments::readOption(const std::string& description)
 
 int Arguments::readInt(const std::string& description)
 {
-    return std::stoi(readString(description), nullptr, 0);
+    return translateIntParseError([](const std::string& value)
+        {
+            return std::stoi(value, nullptr, 0);
+        }, readString(description));
 }
 
 std::size_t Arguments::readSize(const std::string& description)
 {
-    return std::stoull(readString(description), nullptr, 0);
+    return translateIntParseError([](const std::string& value)
+        {
+            return std::stoull(value, nullptr, 0);
+        }, readString(description));
 }
 
 bytevec Arguments::readHex(const std::string& description)
