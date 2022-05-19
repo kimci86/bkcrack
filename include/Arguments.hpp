@@ -31,8 +31,11 @@ class Arguments
         Data loadData() const;
 
         std::optional<std::string> cipherFile;    ///< File containing the ciphertext
+        std::optional<std::size_t> cipherIndex;   ///< Index of the zip entry containing ciphertext
         std::optional<std::string> cipherArchive; ///< Zip archive containing \ref cipherFile
+
         std::optional<std::string> plainFile;     ///< File containing the known plaintext
+        std::optional<std::size_t> plainIndex;    ///< Index of the zip entry containing plaintext
         std::optional<std::string> plainArchive;  ///< Zip archive containing \ref plainFile
 
         /// \brief Maximum number of bytes of plaintext to read from \ref plainFile
@@ -91,8 +94,10 @@ class Arguments
         enum class Option
         {
             cipherFile,
+            cipherIndex,
             cipherArchive,
             plainFile,
+            plainIndex,
             plainArchive,
             plainFilePrefix,
             offset,

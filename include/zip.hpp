@@ -10,7 +10,7 @@
 ///     node [ fontsize=10 ];
 ///     edge [ fontsize=10 ];
 ///
-///     filename [ label="archive and entry names" ];
+///     filename [ label="archive name and entry name or index" ];
 ///     filestream [ label="std::ifstream" ];
 ///     ZipIterator [ URL="\ref ZipIterator" ];
 ///     ZipEntry [ URL="\ref ZipEntry" ];
@@ -21,7 +21,7 @@
 ///     filestream -> ZipIterator [ label="locateZipEntries", URL="\ref locateZipEntries"];
 ///     ZipIterator -> ZipIterator [ label="operator++", URL="\ref ZipIterator::operator++()"];
 ///     ZipIterator -> ZipEntry [ label="operator*", URL="\ref ZipIterator::operator*"];
-///     ZipEntry -> entrystream [ label="openZipEntry", URL="\ref openZipEntry"];
+///     ZipEntry -> entrystream [ label="seekZipEntry", URL="\ref openZipEntry"];
 ///     entrystream -> bytevec [ label="loadStream", URL="\ref loadStream"];
 ///
 ///     filename -> entrystream [ label="openZipEntry", URL="\ref openZipEntry"];
@@ -149,23 +149,37 @@ ZipIterator locateZipEntries(std::istream& is);
 
 /// \brief Set the input position indicator at the beginning of \a entry data
 /// \exception ZipError if the input stream does not contain \a entry at the expected offset
-std::istream& openZipEntry(std::istream& is, const ZipEntry& entry);
+std::istream& seekZipEntry(std::istream& is, const ZipEntry& entry);
 
 /// \brief Open an input file stream, find a zip entry with the given name and
 /// set the input position indicator at the beginning the corresponding data.
 ///
 /// \exception FileError if the archive file cannot be opened
 /// \exception ZipError if the opened file is not a valid zip archive
-/// \exception ZipError if the opened file does not contain an entry with the given name
+/// \exception ZipError if the opened file does not contain the specified entry
 /// \exception ZipError if the given entry does not use the expected encryption algorithm
 /// \exception ZipError if the opened file does not contain the entry at the expected offset
-std::ifstream openZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t& size);
+///
+/// \return the opened file stream and the entry's data size
+std::pair<std::ifstream, std::size_t> openZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected);
+
+/// \brief Open an input file stream, find the zip entry at the given index and
+/// set the input position indicator at the beginning the corresponding data.
+///
+/// \copydetails openZipEntry(const std::string&, const std::string&, ZipEntry::Encryption)
+std::pair<std::ifstream, std::size_t> openZipEntry(const std::string& archive, std::size_t index, ZipEntry::Encryption expected);
 
 /// \brief Open an input file stream, find a zip entry with the given name and
 /// load at most \a size bytes of the corresponding data.
 ///
-/// \copydetails openZipEntry(const std::string&, const std::string&, ZipEntry::Encryption, std::size_t&)
+/// \copydetails openZipEntry(const std::string&, const std::string&, ZipEntry::Encryption)
 bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t size);
+
+/// \brief Open an input file stream, find a zip entry at the given index and
+/// load at most \a size bytes of the corresponding data.
+///
+/// \copydetails openZipEntry(const std::string&, std::size_t, ZipEntry::Encryption)
+bytevec loadZipEntry(const std::string& archive, std::size_t index, ZipEntry::Encryption expected, std::size_t size);
 
 /// \brief Copy a zip file from \a is into \a os changing the encrypted data using the given keys.
 /// \exception ZipError if the input stream does not contain a valid zip archive

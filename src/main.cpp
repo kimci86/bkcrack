@@ -21,9 +21,11 @@ Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
 
 Options to get the internal password representation:
  -c, --cipher-file <file>    Zip entry or file on disk containing ciphertext
+     --cipher-index <index>  Index of the zip entry containing ciphertext
  -C, --cipher-zip <archive>  Zip archive containing the ciphertext entry
 
  -p, --plain-file <file>     Zip entry or file on disk containing plaintext
+     --plain-index <index>   Index of the zip entry containing plaintext
  -P, --plain-zip <archive>   Zip archive containing the plaintext entry
  -t, --truncate <size>       Maximum number of bytes of plaintext to load
  -o, --offset <offset>       Known plaintext offset relative to ciphertext
@@ -147,8 +149,13 @@ try
                       << "Use the command line option -k to provide other keys." << std::endl;
 
         {
-            std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
-            std::ifstream cipherstream = args.cipherArchive ? openZipEntry(*args.cipherArchive, *args.cipherFile, ZipEntry::Encryption::Traditional, ciphersize) : openInput(*args.cipherFile);
+            auto [cipherstream, ciphersize] =
+                args.cipherArchive
+                    ? args.cipherFile
+                        ? openZipEntry(*args.cipherArchive, *args.cipherFile, ZipEntry::Encryption::Traditional)
+                        : openZipEntry(*args.cipherArchive, *args.cipherIndex, ZipEntry::Encryption::Traditional)
+                    : std::pair{openInput(*args.cipherFile), std::numeric_limits<std::size_t>::max()};
+
             std::ofstream decipheredstream = openOutput(*args.decipheredFile);
 
             decipher(cipherstream, ciphersize, Data::ENCRYPTION_HEADER_SIZE, decipheredstream, keys);

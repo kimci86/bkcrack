@@ -253,7 +253,7 @@ ZipIterator locateZipEntries(std::istream& is)
     return ZipIterator(is);
 }
 
-std::istream& openZipEntry(std::istream& is, const ZipEntry& entry)
+std::istream& seekZipEntry(std::istream& is, const ZipEntry& entry)
 {
     is.seekg(entry.offset, std::ios::beg);
     if(!checkSignature(is, Signature::LOCAL_FILE_HEADER))
@@ -269,7 +269,7 @@ std::istream& openZipEntry(std::istream& is, const ZipEntry& entry)
     return is;
 }
 
-std::ifstream openZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t& size)
+std::pair<std::ifstream, std::size_t> openZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected)
 {
     std::ifstream is = openInput(archive);
 
@@ -281,29 +281,64 @@ std::ifstream openZipEntry(const std::string& archive, const std::string& entry,
         });
 
     if(it == ZipIterator())
-        throw ZipError("found no entry "+entry+" in archive "+archive);
+        throw ZipError("found no entry named \""+entry+"\" in archive \""+archive+"\"");
 
     // check encryption algorithm
     if(it->encryption != expected)
     {
         if(it->encryption == ZipEntry::Encryption::None)
-            throw ZipError("entry "+entry+" in archive "+archive+" is not encrypted");
+            throw ZipError("entry \""+entry+"\" in archive \""+archive+"\" is not encrypted");
         else if(expected == ZipEntry::Encryption::None)
-            throw ZipError("entry "+entry+" in archive "+archive+" is encrypted");
+            throw ZipError("entry \""+entry+"\" in archive \""+archive+"\" is encrypted");
         else
-            throw ZipError("entry "+entry+" in archive "+archive+" is encrypted with an unsupported algorithm");
+            throw ZipError("entry \""+entry+"\" in archive \""+archive+"\" is encrypted with an unsupported algorithm");
     }
 
-    openZipEntry(is, *it);
-    size = it->packedSize;
+    seekZipEntry(is, *it);
 
-    return is;
+    return {std::move(is), it->packedSize};
+}
+
+std::pair<std::ifstream, std::size_t> openZipEntry(const std::string& archive, std::size_t index, ZipEntry::Encryption expected)
+{
+    std::ifstream is = openInput(archive);
+
+    // find the entry at the given index
+    std::size_t nextIndex = 0;
+    ZipIterator it = std::find_if(locateZipEntries(is), ZipIterator(),
+        [&nextIndex, index](const ZipEntry&) mutable
+        {
+            return nextIndex++ == index;
+        });
+
+    if(it == ZipIterator())
+        throw ZipError("found no entry at index "+std::to_string(index)+" in archive \""+archive+"\" (maximum index is "+std::to_string(nextIndex - 1)+")");
+
+    // check encryption algorithm
+    if(it->encryption != expected)
+    {
+        if(it->encryption == ZipEntry::Encryption::None)
+            throw ZipError("entry at index "+std::to_string(index)+" named \""+it->name+"\" in archive \""+archive+"\" is not encrypted");
+        else if(expected == ZipEntry::Encryption::None)
+            throw ZipError("entry at index "+std::to_string(index)+" named \""+it->name+"\" in archive \""+archive+"\" is encrypted");
+        else
+            throw ZipError("entry at index "+std::to_string(index)+" named \""+it->name+"\" in archive \""+archive+"\" is encrypted with an unsupported algorithm");
+    }
+
+    seekZipEntry(is, *it);
+
+    return {std::move(is), it->packedSize};
 }
 
 bytevec loadZipEntry(const std::string& archive, const std::string& entry, ZipEntry::Encryption expected, std::size_t size)
 {
-    std::size_t entrySize;
-    std::ifstream is = openZipEntry(archive, entry, expected, entrySize);
+    auto [is, entrySize] = openZipEntry(archive, entry, expected);
+    return loadStream(is, std::min(entrySize, size));
+}
+
+bytevec loadZipEntry(const std::string& archive, std::size_t index, ZipEntry::Encryption expected, std::size_t size)
+{
+    auto [is, entrySize] = openZipEntry(archive, index, expected);
     return loadStream(is, std::min(entrySize, size));
 }
 

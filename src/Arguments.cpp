@@ -46,22 +46,34 @@ Arguments::Arguments(int argc, const char* argv[])
     }
     else
     {
-        if(!cipherFile)
-            throw Error("-c parameter is missing");
-        if(plainArchive && !plainFile)
-            throw Error("-p parameter is missing (required by -P)");
-        if(!plainFile && extraPlaintext.empty())
-            throw Error("-p or -x parameter is missing");
+        if(cipherFile && cipherIndex)
+            throw Error("-c and --cipher-index cannot be used at the same time");
+        if(plainFile && plainIndex)
+            throw Error("-p and --plain-index cannot be used at the same time");
+
+        if(!cipherFile && !cipherIndex)
+            throw Error("-c or --cipher-index parameter is missing");
+        if(!plainFile && !plainIndex && extraPlaintext.empty())
+            throw Error("-p, --plain-index or -x parameter is missing");
+
+        if(plainArchive && !plainFile && !plainIndex)
+            throw Error("-p or --plain-index parameter is missing (required by -P)");
+
+        if(cipherIndex && !cipherArchive)
+            throw Error("-C parameter is missing (required by --cipher-index)");
+        if(plainIndex && !plainArchive)
+            throw Error("-P parameter is missing (required by --plain-index)");
 
         constexpr int minimumOffset = -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE);
         if(offset < minimumOffset)
             throw Error("plaintext offset "+std::to_string(offset)+" is too small (minimum is "+std::to_string(minimumOffset)+")");
     }
 
-    if(decipheredFile && !cipherFile)
-        throw Error("-c parameter is missing (required by -d)");
+    if(decipheredFile && !cipherFile && !cipherIndex)
+        throw Error("-c or --cipher-index parameter is missing (required by -d)");
     if(decipheredFile && !cipherArchive && decipheredFile == cipherFile)
         throw Error("-c and -d parameters must point to different files");
+
     if(changePassword && !cipherArchive)
         throw Error("-C parameter is missing (required by -U)");
     if(changePassword && changePassword->unlockedArchive == cipherArchive)
@@ -73,7 +85,12 @@ Data Arguments::loadData() const
     // load known plaintext
     bytevec plaintext;
     if(plainArchive)
-        plaintext = loadZipEntry(*plainArchive, *plainFile, ZipEntry::Encryption::None, plainFilePrefix);
+    {
+        if(plainFile)
+            plaintext = loadZipEntry(*plainArchive, *plainFile, ZipEntry::Encryption::None, plainFilePrefix);
+        else
+            plaintext = loadZipEntry(*plainArchive, *plainIndex, ZipEntry::Encryption::None, plainFilePrefix);
+    }
     else if(plainFile)
         plaintext = loadFile(*plainFile, plainFilePrefix);
 
@@ -86,7 +103,12 @@ Data Arguments::loadData() const
 
     bytevec ciphertext;
     if(cipherArchive)
-        ciphertext = loadZipEntry(*cipherArchive, *cipherFile, ZipEntry::Encryption::Traditional, needed);
+    {
+        if(cipherFile)
+            ciphertext = loadZipEntry(*cipherArchive, *cipherFile, ZipEntry::Encryption::Traditional, needed);
+        else
+            ciphertext = loadZipEntry(*cipherArchive, *cipherIndex, ZipEntry::Encryption::Traditional, needed);
+    }
     else
         ciphertext = loadFile(*cipherFile, needed);
 
@@ -105,11 +127,17 @@ void Arguments::parseArgument()
         case Option::cipherFile:
             cipherFile = readString("ciphertext");
             break;
+        case Option::cipherIndex:
+            cipherIndex = readSize("index");
+            break;
         case Option::cipherArchive:
             cipherArchive = readString("encryptedzip");
             break;
         case Option::plainFile:
             plainFile = readString("plaintext");
+            break;
+        case Option::plainIndex:
+            plainIndex = readSize("index");
             break;
         case Option::plainArchive:
             plainArchive = readString("plainzip");
@@ -172,8 +200,10 @@ Arguments::Option Arguments::readOption(const std::string& description)
     #define PAIRS(short, long, option) {#short, Option::option}, {#long, Option::option}
     static const std::map<std::string, Option> stringToOption = {
         PAIRS(-c, --cipher-file,      cipherFile),
+        {"--cipher-index", Option::cipherIndex},
         PAIRS(-C, --cipher-zip,       cipherArchive),
         PAIRS(-p, --plain-file,       plainFile),
+        {"--plain-index", Option::plainIndex},
         PAIRS(-P, --plain-zip,        plainArchive),
         PAIRS(-t, --truncate,         plainFilePrefix),
         PAIRS(-o, --offset,           offset),
