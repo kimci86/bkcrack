@@ -85,6 +85,7 @@ struct ZipEntry
     uint64 offset;           ///< Offset of local file header
     uint64 packedSize;       ///< Packed data size
     uint64 uncompressedSize; ///< Uncompressed data size
+    byte   checkByte;        ///< Last byte of the encryption header after decryption
 };
 
 /// \brief Single-pass input iterator that reads successive ZipEntry objects from a stream

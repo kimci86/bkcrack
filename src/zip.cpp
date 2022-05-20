@@ -71,6 +71,8 @@ ZipIterator& ZipIterator::operator++()
 
     uint16 flags;
     uint16 method;
+    uint16 lastModTime;
+    uint16 lastModDate;
 
     uint16 filenameLength;
     uint16 extraFieldLength;
@@ -79,17 +81,8 @@ ZipIterator& ZipIterator::operator++()
     m_is->seekg(4, std::ios::cur);
     read(*m_is, flags);
     read(*m_is, method);
-
-    m_entry.encryption =
-        flags & 1 ?
-            method == 99 || (flags >> 6) & 1 ?
-                ZipEntry::Encryption::Unsupported :
-                ZipEntry::Encryption::Traditional :
-            ZipEntry::Encryption::None;
-
-    m_entry.compression = static_cast<ZipEntry::Compression>(method);
-
-    m_is->seekg(4, std::ios::cur);
+    read(*m_is, lastModTime);
+    read(*m_is, lastModDate);
     read(*m_is, m_entry.crc32);
     read<uint64, 4>(*m_is, m_entry.packedSize);
     read<uint64, 4>(*m_is, m_entry.uncompressedSize);
@@ -99,6 +92,20 @@ ZipIterator& ZipIterator::operator++()
     m_is->seekg(8, std::ios::cur);
     read<uint64, 4>(*m_is, m_entry.offset);
     read(*m_is, m_entry.name, filenameLength);
+
+    m_entry.encryption =
+        flags & 1
+            ? method == 99 || (flags >> 6) & 1
+                ? ZipEntry::Encryption::Unsupported
+                : ZipEntry::Encryption::Traditional
+            : ZipEntry::Encryption::None;
+
+    m_entry.compression = static_cast<ZipEntry::Compression>(method);
+
+    m_entry.checkByte =
+        (flags >> 3) & 1
+            ? static_cast<byte>(lastModTime >> 8)
+            : msb(m_entry.crc32);
 
     for(int remaining = extraFieldLength; remaining > 0; )
     {
