@@ -117,7 +117,6 @@ class Arguments
         std::size_t readSize(const std::string& description);
         bytevec readHex(const std::string& description);
         uint32 readKey(const std::string& description);
-        Keys readKeys();
         bytevec readCharset();
 };
 

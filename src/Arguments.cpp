@@ -176,25 +176,17 @@ void Arguments::parseArgument()
             exhaustive = true;
             break;
         case Option::keys:
-            keys = readKeys();
+            keys = {readKey("X"), readKey("Y"), readKey("Z")};
             break;
         case Option::decipheredFile:
             decipheredFile = readString("decipheredfile");
             break;
         case Option::changePassword:
-        {
-            std::string unlockedArchive = readString("unlockedzip");
-            std::string newPassword = readString("password");
-            changePassword = {std::move(unlockedArchive), std::move(newPassword)};
+            changePassword = {readString("unlockedzip"), readString("password")};
             break;
-        }
         case Option::recoverPassword:
-        {
-            std::size_t maxLength = readSize("length");
-            bytevec charset = readCharset();
-            recoverPassword = {maxLength, std::move(charset)};
+            recoverPassword = {readSize("length"), readCharset()};
             break;
-        }
         case Option::infoArchive:
             infoArchive = readString("zipfile");
             break;
@@ -284,15 +276,6 @@ uint32 Arguments::readKey(const std::string& description)
         throw Error("expected "+description+" in hexadecimal, got "+str);
 
     return static_cast<uint32>(std::stoul(str, nullptr, 16));
-}
-
-Keys Arguments::readKeys()
-{
-    // read x, y and z before calling Keys constructor to guarantee evaluation order
-    uint32 x = readKey("X"),
-           y = readKey("Y"),
-           z = readKey("Z");
-    return Keys(x, y, z);
 }
 
 bytevec Arguments::readCharset()
