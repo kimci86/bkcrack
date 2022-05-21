@@ -1,6 +1,6 @@
 #include "Arguments.hpp"
 #include "file.hpp"
-#include "zip.hpp"
+#include "Zip.hpp"
 #include <algorithm>
 #include <bitset>
 
@@ -103,10 +103,10 @@ Data Arguments::loadData() const
     bytevec plaintext;
     if(plainArchive)
     {
-        if(plainFile)
-            plaintext = loadZipEntry(*plainArchive, *plainFile, ZipEntry::Encryption::None, plainFilePrefix);
-        else
-            plaintext = loadZipEntry(*plainArchive, *plainIndex, ZipEntry::Encryption::None, plainFilePrefix);
+        const auto archive = Zip{*plainArchive};
+        const auto entry = plainFile ? archive[*plainFile] : archive[*plainIndex];
+        Zip::checkEncryption(entry, Zip::Encryption::None);
+        plaintext = archive.load(entry, plainFilePrefix);
     }
     else if(plainFile)
         plaintext = loadFile(*plainFile, plainFilePrefix);
@@ -121,10 +121,10 @@ Data Arguments::loadData() const
     bytevec ciphertext;
     if(cipherArchive)
     {
-        if(cipherFile)
-            ciphertext = loadZipEntry(*cipherArchive, *cipherFile, ZipEntry::Encryption::Traditional, needed);
-        else
-            ciphertext = loadZipEntry(*cipherArchive, *cipherIndex, ZipEntry::Encryption::Traditional, needed);
+        const auto archive = Zip{*cipherArchive};
+        const auto entry = cipherFile ? archive[*cipherFile] : archive[*cipherIndex];
+        Zip::checkEncryption(entry, Zip::Encryption::Traditional);
+        ciphertext = archive.load(entry, needed);
     }
     else
         ciphertext = loadFile(*cipherFile, needed);

@@ -7,6 +7,7 @@ set(DOXYGEN_STRIP_FROM_INC_PATH "${PROJECT_SOURCE_DIR}/include")
 set(DOXYGEN_QUIET "YES")
 set(DOXYGEN_SEARCHENGINE "NO")
 set(DOXYGEN_ALIASES [[limitation=\xrefitem limitations \"Known limitations\" \"Known limitations\"]])
+set(DOXYGEN_DISTRIBUTE_GROUP_DOC "YES")
 
 # add target
 doxygen_add_docs(doc ALL

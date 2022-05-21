@@ -2,7 +2,7 @@
 #include "log.hpp"
 #include "ConsoleProgress.hpp"
 #include "file.hpp"
-#include "zip.hpp"
+#include "Zip.hpp"
 #include "Arguments.hpp"
 #include "Data.hpp"
 #include "Zreduction.hpp"
@@ -65,7 +65,8 @@ Other options:
 Environment variables:
  OMP_NUM_THREADS             Number of threads to use for parallel computations)_";
 
-void listEntries(const std::string& archive);
+void listEntries(const std::string& archiveFilename);
+void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys);
 
 } // namespace
 
@@ -149,12 +150,18 @@ try
                       << "Use the command line option -k to provide other keys." << std::endl;
 
         {
-            auto [cipherstream, ciphersize] =
-                args.cipherArchive
-                    ? args.cipherFile
-                        ? openZipEntry(*args.cipherArchive, *args.cipherFile, ZipEntry::Encryption::Traditional)
-                        : openZipEntry(*args.cipherArchive, *args.cipherIndex, ZipEntry::Encryption::Traditional)
-                    : std::pair{openInput(*args.cipherFile), std::numeric_limits<std::size_t>::max()};
+            std::ifstream cipherstream = openInput(args.cipherArchive ? *args.cipherArchive : *args.cipherFile);
+            std::size_t ciphersize = std::numeric_limits<std::size_t>::max();
+
+            if(args.cipherArchive)
+            {
+                const auto archive = Zip{cipherstream};
+                const auto entry = args.cipherFile ? archive[*args.cipherFile] : archive[*args.cipherIndex];
+                Zip::checkEncryption(entry, Zip::Encryption::Traditional);
+
+                archive.seek(entry);
+                ciphersize = entry.packedSize;
+            }
 
             std::ofstream decipheredstream = openOutput(*args.decipheredFile);
 
@@ -177,11 +184,11 @@ try
                       << "Use the command line option -k to provide other keys." << std::endl;
 
         {
-            std::ifstream encrypted = openInput(*args.cipherArchive);
+            const auto archive = Zip{*args.cipherArchive};
             std::ofstream unlocked = openOutput(unlockedArchive);
 
             ConsoleProgress progress(std::cout);
-            changeKeys(encrypted, unlocked, keys, Keys(newPassword), progress);
+            archive.changeKeys(unlocked, keys, Keys{newPassword}, progress);
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;
@@ -242,24 +249,24 @@ catch(const BaseError& e)
 namespace
 {
 
-std::string getEncryptionDescription(ZipEntry::Encryption encryption)
+std::string getEncryptionDescription(Zip::Encryption encryption)
 {
     switch(encryption)
     {
-        case ZipEntry::Encryption::None:        return "None";
-        case ZipEntry::Encryption::Traditional: return "ZipCrypto";
-        case ZipEntry::Encryption::Unsupported: return "Other";
+        case Zip::Encryption::None:        return "None";
+        case Zip::Encryption::Traditional: return "ZipCrypto";
+        case Zip::Encryption::Unsupported: return "Other";
     }
     assert(false);
 
     return "";
 }
 
-std::string getCompressionDescription(ZipEntry::Compression compression)
+std::string getCompressionDescription(Zip::Compression compression)
 {
     switch(compression)
     {
-        #define CASE(c) case ZipEntry::Compression::c: return #c
+        #define CASE(c) case Zip::Compression::c: return #c
         CASE(Store);
         CASE(Shrink);
         CASE(Implode);
@@ -279,38 +286,54 @@ std::string getCompressionDescription(ZipEntry::Compression compression)
     return "Other (" + std::to_string(static_cast<int>(compression)) + ")";
 }
 
-void listEntries(const std::string& archive)
+void listEntries(const std::string& archiveFilename)
 {
-    std::ifstream is = openInput(archive);
-    auto it = locateZipEntries(is);
+    auto archive = Zip{archiveFilename};
 
-    std::cout << "Archive: " << archive << "\n"
+    std::cout << "Archive: " << archiveFilename << "\n"
                  "Index Encryption Compression CRC32    Uncompressed  Packed size Name\n"
                  "----- ---------- ----------- -------- ------------ ------------ ----------------\n";
 
     const auto flagsBefore = std::cout.setf(std::ios::right | std::ios::dec, std::ios::adjustfield | std::ios::basefield);
     const auto fillBefore = std::cout.fill(' ');
 
-    for(std::size_t index = 0; it != ZipIterator(); ++it, index++)
+    std::size_t index = 0;
+    for(const auto& entry : archive)
     {
-        std::cout << std::setw(5) << index << ' '
+        std::cout << std::setw(5) << index++ << ' '
 
                   << std::left
-                  << std::setw(10) << getEncryptionDescription(it->encryption) << ' '
-                  << std::setw(11) << getCompressionDescription(it->compression) << ' '
+                  << std::setw(10) << getEncryptionDescription(entry.encryption) << ' '
+                  << std::setw(11) << getCompressionDescription(entry.compression) << ' '
                   << std::right
 
                   << std::setfill('0') << std::hex
-                  << std::setw(8) << it->crc32 << ' '
+                  << std::setw(8) << entry.crc32 << ' '
                   << std::setfill(' ') << std::dec
 
-                  << std::setw(12) << it->uncompressedSize << ' '
-                  << std::setw(12) << it->packedSize << ' '
-                  << it->name << '\n';
+                  << std::setw(12) << entry.uncompressedSize << ' '
+                  << std::setw(12) << entry.packedSize << ' '
+                  << entry.name << '\n';
     }
 
     std::cout.fill(fillBefore);
     std::cout.flags(flagsBefore);
+}
+
+void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys)
+{
+    std::istreambuf_iterator<char> cipher(is);
+    std::size_t i;
+
+    for(i = 0; i < discard && i < size && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
+       keys.update(*cipher ^ keys.getK());
+
+    for(std::ostreambuf_iterator<char> plain(os); i < size && cipher != std::istreambuf_iterator<char>(); i++, ++cipher, ++plain)
+    {
+        byte p = *cipher ^ keys.getK();
+        keys.update(p);
+        *plain = p;
+    }
 }
 
 } // namespace
