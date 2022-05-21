@@ -49,14 +49,14 @@ In this example, this approach is not practical.
 It can be practical if the original file can easily be found online, like a .dll file for example.
 Then, one would compress it using various compression software and compression levels to try and generate the correct plaintext.
 
-## Free additional byte from CRC
+## Free additional check byte
 
-In this example, we guessed the first 20 bytes of `spiral.svg`.
+As explained in the ZIP file format specification, each entry's data is prepended by a 12-byte header before encryption.
+This encryption header starts with random bytes, but the last byte can be inferred from the entry's metadata.
+The purpose of this check byte is to test if the password supplied appears to be correct or not when trying to extract an encrypted entry without having to process the encrypted and potentially compressed data further.
 
-In addition, as explained in the ZIP file format specification, a 12-byte encryption header in prepended to the data in the archive.
-The last byte of the encryption header is the most significant byte of the file's CRC.
-We already know from the first command we ran that the CRC is A99F1D0D (hexadecimal) for this file. The most significant byte is A9.
-So we know the byte just before the plaintext (i.e. at offset -1) is A9.
+This check byte is automatically added to the known plaintext when bkcrack loads ciphertext from an archive.
+So overall, we know 21 bytes of plaintext in this example: we guessed 20 bytes and the check byte is added automatically.
 
 # Running the attack
 
@@ -66,7 +66,7 @@ Let us write the plaintext we guessed in a file. Notice the `-n` flag not to out
 
 We are now ready to run the attack.
 
-    $ ../bkcrack -C secrets.zip -c spiral.svg -p plain.txt -x -1 A9
+    $ ../bkcrack -C secrets.zip -c spiral.svg -p plain.txt
 
 After a little while, the keys will appear!
 

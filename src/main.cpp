@@ -32,6 +32,8 @@ Options to get the internal password representation:
                               without encryption header (may be negative)
  -x, --extra <offset> <data> Additional plaintext in hexadecimal starting
                               at the given offset (may be negative)
+     --ignore-check-byte     Do not automatically use ciphertext's check byte
+                              as known plaintext
 
  -e, --exhaustive            Try all the keys remaining after Z reduction
 

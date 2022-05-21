@@ -50,6 +50,9 @@ class Arguments
         /// Additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be negative)
         std::map<int, byte> extraPlaintext;
 
+        /// Tell not to use the check byte derived from ciphertext entry metadata as known plaintext
+        bool ignoreCheckByte = false;
+
         /// Tell whether to try all candidate keys exhaustively or stop after the first success
         bool exhaustive = false;
 
@@ -102,6 +105,7 @@ class Arguments
             plainFilePrefix,
             offset,
             extraPlaintext,
+            ignoreCheckByte,
             exhaustive,
             keys,
             decipheredFile,

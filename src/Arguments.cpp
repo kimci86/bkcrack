@@ -119,17 +119,24 @@ Data Arguments::loadData() const
         needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + extraPlaintext.rbegin()->first + 1);
 
     bytevec ciphertext;
+    std::optional<std::map<int, byte>> extraPlaintextWithCheckByte;
     if(cipherArchive)
     {
         const auto archive = Zip{*cipherArchive};
         const auto entry = cipherFile ? archive[*cipherFile] : archive[*cipherIndex];
         Zip::checkEncryption(entry, Zip::Encryption::Traditional);
         ciphertext = archive.load(entry, needed);
+
+        if(!ignoreCheckByte && !extraPlaintext.count(-1))
+        {
+            extraPlaintextWithCheckByte = extraPlaintext;
+            (*extraPlaintextWithCheckByte)[-1] = entry.checkByte;
+        }
     }
     else
         ciphertext = loadFile(*cipherFile, needed);
 
-    return Data(std::move(ciphertext), std::move(plaintext), offset, extraPlaintext);
+    return Data(std::move(ciphertext), std::move(plaintext), offset, extraPlaintextWithCheckByte.value_or(extraPlaintext));
 }
 
 bool Arguments::finished() const
@@ -172,6 +179,9 @@ void Arguments::parseArgument()
                 extraPlaintext[i++] = b;
             break;
         }
+        case Option::ignoreCheckByte:
+            ignoreCheckByte = true;
+            break;
         case Option::exhaustive:
             exhaustive = true;
             break;
@@ -217,6 +227,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-t, --truncate,         plainFilePrefix),
         PAIRS(-o, --offset,           offset),
         PAIRS(-x, --extra,            extraPlaintext),
+        {"--ignore-check-byte", Option::ignoreCheckByte},
         PAIRS(-e, --exhaustive,       exhaustive),
         PAIRS(-k, --keys,             keys),
         PAIRS(-d, --decipher,         decipheredFile),
