@@ -61,7 +61,7 @@ Arguments::Arguments(int argc, const char* argv[])
         if(!decipheredFile && !changePassword && !changeKeys && !recoverPassword)
             throw Error("-d, -U, --change-keys or -r parameter is missing (required by -k)");
     }
-    else
+    else if(!password)
     {
         if(cipherFile && cipherIndex)
             throw Error("-c and --cipher-index cannot be used at the same time");
@@ -190,6 +190,9 @@ void Arguments::parseArgument()
         case Option::exhaustive:
             exhaustive = true;
             break;
+        case Option::password:
+            password = readString("password");
+            break;
         case Option::keys:
             keys = {readKey("X"), readKey("Y"), readKey("Z")};
             break;
@@ -237,6 +240,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-x, --extra,            extraPlaintext),
         {"--ignore-check-byte", Option::ignoreCheckByte},
         PAIRS(-e, --exhaustive,       exhaustive),
+        {"--password", Option::password},
         PAIRS(-k, --keys,             keys),
         PAIRS(-d, --decipher,         decipheredFile),
         PAIRS(-U, --change-password,  changePassword),

@@ -37,6 +37,11 @@ Options to get the internal password representation:
 
  -e, --exhaustive            Try all the keys remaining after Z reduction
 
+     --password <password>   Password from which to derive the internal password
+                              representation. Useful for testing purposes and
+                              advanced scenarios such as reverting the effect of
+                              the --change-password command.
+
 Options to use the internal password representation:
  -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
                               integers in hexadecimal (requires -d, -U,
@@ -102,6 +107,11 @@ try
     std::vector<Keys> keysvec;
     if(args.keys)
         keysvec.push_back(*args.keys);
+    else if(args.password)
+    {
+        keysvec.emplace_back(*args.password);
+        std::cout << "Internal representation for password \"" << *args.password << "\": " << keysvec.back() << std::endl;
+    }
     else
     // find keys from known plaintext
     {

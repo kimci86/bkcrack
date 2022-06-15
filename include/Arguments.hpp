@@ -56,6 +56,9 @@ class Arguments
         /// Tell whether to try all candidate keys exhaustively or stop after the first success
         bool exhaustive = false;
 
+        /// Password from which to derive the internal password representation
+        std::optional<std::string> password;
+
         /// Internal password representation
         std::optional<Keys> keys;
 
@@ -119,6 +122,7 @@ class Arguments
             extraPlaintext,
             ignoreCheckByte,
             exhaustive,
+            password,
             keys,
             decipheredFile,
             changePassword,
