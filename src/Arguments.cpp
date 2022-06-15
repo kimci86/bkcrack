@@ -58,8 +58,8 @@ Arguments::Arguments(int argc, const char* argv[])
     // check constraints on arguments
     if(keys)
     {
-        if(!decipheredFile && !changePassword && !recoverPassword)
-            throw Error("-d, -U or -r parameter is missing (required by -k)");
+        if(!decipheredFile && !changePassword && !changeKeys && !recoverPassword)
+            throw Error("-d, -U, --change-keys or -r parameter is missing (required by -k)");
     }
     else
     {
@@ -95,6 +95,11 @@ Arguments::Arguments(int argc, const char* argv[])
         throw Error("-C parameter is missing (required by -U)");
     if(changePassword && changePassword->unlockedArchive == cipherArchive)
         throw Error("-C and -U parameters must point to different files");
+
+    if(changeKeys && !cipherArchive)
+        throw Error("-C parameter is missing (required by --change-keys)");
+    if(changeKeys && changeKeys->unlockedArchive == cipherArchive)
+        throw Error("-C and --change-keys parameters must point to different files");
 }
 
 Data Arguments::loadData() const
@@ -194,6 +199,9 @@ void Arguments::parseArgument()
         case Option::changePassword:
             changePassword = {readString("unlockedzip"), readString("password")};
             break;
+        case Option::changeKeys:
+            changeKeys = {readString("unlockedzip"), Keys{readKey("X"), readKey("Y"), readKey("Z")}};
+            break;
         case Option::recoverPassword:
             recoverPassword = {readSize("length"), readCharset()};
             break;
@@ -232,6 +240,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-k, --keys,             keys),
         PAIRS(-d, --decipher,         decipheredFile),
         PAIRS(-U, --change-password,  changePassword),
+        {"--change-keys", Option::changeKeys},
         PAIRS(-r, --recover-password, recoverPassword),
         PAIRS(-L, --list,             infoArchive),
         PAIRS(-h, --help,             help)

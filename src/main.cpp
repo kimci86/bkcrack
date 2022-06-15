@@ -39,13 +39,18 @@ Options to get the internal password representation:
 
 Options to use the internal password representation:
  -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
-                              integers in hexadecimal (requires -d, -U or -r)
+                              integers in hexadecimal (requires -d, -U,
+                              --change-keys or -r)
 
  -d, --decipher <file>       File to write the deciphered data (requires -c)
 
  -U, --change-password <archive> <password>
         Create a copy of the encrypted zip archive with the password set to the
         given new password (requires -C)
+
+     --change-keys <archive> <X> <Y> <Z>
+        Create a copy of the encrypted zip archive using the given new internal
+        password representation (requires -C)
 
  -r, --recover-password <length> <charset>
         Try to recover the password or an equivalent one up to the given length
@@ -141,15 +146,15 @@ try
 
     // From there, keysvec is not empty.
 
+    const Keys keys = keysvec.front();
+    if((args.decipheredFile || args.changePassword || args.changeKeys || args.recoverPassword) && keysvec.size() > 1)
+        std::cout << "Continuing with keys " << keys << "\n"
+                  << "Use the command line option -k to provide other keys." << std::endl;
+
     // decipher
     if(args.decipheredFile)
     {
         std::cout << "[" << put_time << "] Writing deciphered data " << *args.decipheredFile << " (maybe compressed)"<< std::endl;
-
-        Keys keys = keysvec.front();
-        if(keysvec.size() > 1)
-            std::cout << "Deciphering data using the keys " << keys << "\n"
-                      << "Use the command line option -k to provide other keys." << std::endl;
 
         {
             std::ifstream cipherstream = openInput(args.cipherArchive ? *args.cipherArchive : *args.cipherFile);
@@ -180,17 +185,29 @@ try
 
         std::cout << "[" << put_time << "] Writing unlocked archive " << unlockedArchive << " with password \"" << newPassword << "\"" << std::endl;
 
-        Keys keys = keysvec.front();
-        if(keysvec.size() > 1)
-            std::cout << "Unlocking archive using the keys " << keys << "\n"
-                      << "Use the command line option -k to provide other keys." << std::endl;
-
         {
             const auto archive = Zip{*args.cipherArchive};
             std::ofstream unlocked = openOutput(unlockedArchive);
 
             ConsoleProgress progress(std::cout);
             archive.changeKeys(unlocked, keys, Keys{newPassword}, progress);
+        }
+
+        std::cout << "Wrote unlocked archive." << std::endl;
+    }
+
+    if(args.changeKeys)
+    {
+        const auto& [unlockedArchive, newKeys] = *args.changeKeys;
+
+        std::cout << "[" << put_time << "] Writing unlocked archive " << unlockedArchive << " with keys " << newKeys << std::endl;
+
+        {
+            const auto archive = Zip{*args.cipherArchive};
+            std::ofstream unlocked = openOutput(unlockedArchive);
+
+            ConsoleProgress progress(std::cout);
+            archive.changeKeys(unlocked, keys, newKeys, progress);
         }
 
         std::cout << "Wrote unlocked archive." << std::endl;

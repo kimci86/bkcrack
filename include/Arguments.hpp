@@ -65,11 +65,23 @@ class Arguments
         /// Arguments needed to change an archive's password
         struct ChangePassword
         {
-            std::string unlockedArchive; ///< File to write the encryped archive with the new password
-            std::string newPassword;     ///< Password chosen to generate the unlocked archive
+            std::string unlockedArchive; ///< File to write the new encrypted archive
+            std::string newPassword;     ///< Password chosen to generate the new archive
         };
         /// \copydoc ChangePassword
         std::optional<ChangePassword> changePassword;
+
+        /// \brief Arguments needed to change an archive's internal password representation
+        ///
+        /// Changing the internal password representation is an alternative to changing the password
+        /// when the target password is not known, but its internal representation is known.
+        struct ChangeKeys
+        {
+            std::string unlockedArchive; ///< File to write the new encrypted archive
+            Keys newKeys;                ///< Internal password representation chosen to generate the new archive
+        };
+        /// \copydoc ChangeKeys
+        std::optional<ChangeKeys> changeKeys;
 
         /// Arguments needed to attempt a password recovery
         struct PasswordRecovery
@@ -110,6 +122,7 @@ class Arguments
             keys,
             decipheredFile,
             changePassword,
+            changeKeys,
             recoverPassword,
             infoArchive,
             help
