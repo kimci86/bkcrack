@@ -48,6 +48,8 @@ Options to use the internal password representation:
                               --change-keys or -r)
 
  -d, --decipher <file>       File to write the deciphered data (requires -c)
+     --keep-header           Write the encryption header at the beginning of
+                              deciphered data instead of discarding it
 
  -U, --change-password <archive> <password>
         Create a copy of the encrypted zip archive with the password set to the
@@ -164,7 +166,10 @@ try
     // decipher
     if(args.decipheredFile)
     {
-        std::cout << "[" << put_time << "] Writing deciphered data " << *args.decipheredFile << " (maybe compressed)"<< std::endl;
+        std::cout << "[" << put_time << "] Writing deciphered data " << *args.decipheredFile << " (maybe compressed)";
+        if(args.keepHeader)
+            std::cout << " with encryption header";
+        std::cout << std::endl;
 
         {
             std::ifstream cipherstream = openInput(args.cipherArchive ? *args.cipherArchive : *args.cipherFile);
@@ -182,7 +187,7 @@ try
 
             std::ofstream decipheredstream = openOutput(*args.decipheredFile);
 
-            decipher(cipherstream, ciphersize, Data::ENCRYPTION_HEADER_SIZE, decipheredstream, keys);
+            decipher(cipherstream, ciphersize, args.keepHeader ? 0 : static_cast<std::size_t>(Data::ENCRYPTION_HEADER_SIZE), decipheredstream, keys);
         }
 
         std::cout << "Wrote deciphered data." << std::endl;

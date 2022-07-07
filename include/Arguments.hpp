@@ -65,6 +65,9 @@ class Arguments
         /// File to write the deciphered text corresponding to \ref cipherFile
         std::optional<std::string> decipheredFile;
 
+        /// Tell whether to keep the encryption header or discard it when writing the deciphered text
+        bool keepHeader = false;
+
         /// Arguments needed to change an archive's password
         struct ChangePassword
         {
@@ -125,6 +128,7 @@ class Arguments
             password,
             keys,
             decipheredFile,
+            keepHeader,
             changePassword,
             changeKeys,
             recoverPassword,

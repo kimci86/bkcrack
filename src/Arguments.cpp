@@ -199,6 +199,9 @@ void Arguments::parseArgument()
         case Option::decipheredFile:
             decipheredFile = readString("decipheredfile");
             break;
+        case Option::keepHeader:
+            keepHeader = true;
+            break;
         case Option::changePassword:
             changePassword = {readString("unlockedzip"), readString("password")};
             break;
@@ -243,6 +246,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         {"--password", Option::password},
         PAIRS(-k, --keys,             keys),
         PAIRS(-d, --decipher,         decipheredFile),
+        {"--keep-header", Option::keepHeader},
         PAIRS(-U, --change-password,  changePassword),
         {"--change-keys", Option::changeKeys},
         PAIRS(-r, --recover-password, recoverPassword),
