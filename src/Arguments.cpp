@@ -230,29 +230,33 @@ std::string Arguments::readString(const std::string& description)
 
 Arguments::Option Arguments::readOption(const std::string& description)
 {
-    #define PAIRS(short, long, option) {#short, Option::option}, {#long, Option::option}
+    #define PAIR(string, option) {#string, Option::option}
+    #define PAIRS(short, long, option) PAIR(short, option), PAIR(long, option)
+
     static const std::map<std::string, Option> stringToOption = {
-        PAIRS(-c, --cipher-file,      cipherFile),
-        {"--cipher-index", Option::cipherIndex},
-        PAIRS(-C, --cipher-zip,       cipherArchive),
-        PAIRS(-p, --plain-file,       plainFile),
-        {"--plain-index", Option::plainIndex},
-        PAIRS(-P, --plain-zip,        plainArchive),
-        PAIRS(-t, --truncate,         plainFilePrefix),
-        PAIRS(-o, --offset,           offset),
-        PAIRS(-x, --extra,            extraPlaintext),
-        {"--ignore-check-byte", Option::ignoreCheckByte},
-        PAIRS(-e, --exhaustive,       exhaustive),
-        {"--password", Option::password},
-        PAIRS(-k, --keys,             keys),
-        PAIRS(-d, --decipher,         decipheredFile),
-        {"--keep-header", Option::keepHeader},
-        PAIRS(-U, --change-password,  changePassword),
-        {"--change-keys", Option::changeKeys},
-        PAIRS(-r, --recover-password, recoverPassword),
-        PAIRS(-L, --list,             infoArchive),
-        PAIRS(-h, --help,             help)
+        PAIRS(-c, --cipher-file,       cipherFile),
+        PAIR (    --cipher-index,      cipherIndex),
+        PAIRS(-C, --cipher-zip,        cipherArchive),
+        PAIRS(-p, --plain-file,        plainFile),
+        PAIR (    --plain-index,       plainIndex),
+        PAIRS(-P, --plain-zip,         plainArchive),
+        PAIRS(-t, --truncate,          plainFilePrefix),
+        PAIRS(-o, --offset,            offset),
+        PAIRS(-x, --extra,             extraPlaintext),
+        PAIR (    --ignore-check-byte, ignoreCheckByte),
+        PAIRS(-e, --exhaustive,        exhaustive),
+        PAIR (    --password,          password),
+        PAIRS(-k, --keys,              keys),
+        PAIRS(-d, --decipher,          decipheredFile),
+        PAIR (    --keep-header,       keepHeader),
+        PAIRS(-U, --change-password,   changePassword),
+        PAIR (    --change-keys,       changeKeys),
+        PAIRS(-r, --recover-password,  recoverPassword),
+        PAIRS(-L, --list,              infoArchive),
+        PAIRS(-h, --help,              help)
     };
+
+    #undef PAIR
     #undef PAIRS
 
     std::string str = readString(description);
