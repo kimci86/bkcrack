@@ -176,70 +176,75 @@ bool Recovery::recursion(int i)
     return false;
 }
 
-bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password, Progress& progress)
+bool recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, std::string& password, Progress& progress)
 {
     Recovery worker(keys, charset, progress);
 
-    // look for a password of length between 0 and 6
-    progress.log([](std::ostream& os) { os << "length 0-6..." << std::endl; });
-
-    if(worker.recoverShortPassword())
+    for(std::size_t length = minLength; length <= maxLength; length++)
     {
-        password = worker.getPassword();
-        progress.state = Progress::State::EarlyExit;
-        return true;
-    }
-
-    // look for a password of length between 7 and 9
-    for(std::size_t length = 7; length < 10 && length <= max_length; length++)
-    {
-        progress.log([length](std::ostream& os) { os << "length " << length << "..." << std::endl; });
-
-        if(worker.recoverLongPassword(Keys{}, length))
+        if(length <= 6)
         {
-            password = worker.getPassword();
-            progress.state = Progress::State::EarlyExit;
-            return true;
-        }
-    }
+            progress.log([](std::ostream& os) { os << "length 0-6..." << std::endl; });
 
-    // look for a password of length between 10 and max_length
-    // same as above, but in a parallel loop
-    for(std::size_t length = 10; length <= max_length; length++)
-    {
-        const int charsetSize = charset.size();
-
-        std::atomic<bool> found = false;
-        progress.done = 0;
-        progress.total = charsetSize * charsetSize;
-
-        progress.log([length](std::ostream& os) { os << "length " << length << "..." << std::endl; });
-
-        // bruteforce two characters to have many tasks for each CPU thread and share work evenly
-        #pragma omp parallel for firstprivate(worker) schedule(dynamic)
-        for(std::int32_t i = 0; i < charsetSize * charsetSize; i++)
-        {
-            if(progress.state != Progress::State::Normal)
-                continue; // cannot break out of an OpenMP for loop
-
-            Keys init;
-            init.update(charset[i / charsetSize]);
-            init.update(charset[i % charsetSize]);
-
-            if(worker.recoverLongPassword(init, length - 2))
+            if(worker.recoverShortPassword())
             {
                 password = worker.getPassword();
-                password.insert(password.begin(), charset[i % charsetSize]);
-                password.insert(password.begin(), charset[i / charsetSize]);
-                found = true;
                 progress.state = Progress::State::EarlyExit;
+                return true;
             }
 
-            progress.done++;
+            length = 6; // searching up to length 6 is done
         }
+        else
+        {
+            progress.log([length](std::ostream& os) { os << "length " << length << "..." << std::endl; });
 
-        if(found)
-            return true;
+            if(length < 10)
+            {
+                if(worker.recoverLongPassword(Keys{}, length))
+                {
+                    password = worker.getPassword();
+                    progress.state = Progress::State::EarlyExit;
+                    return true;
+                }
+            }
+            else
+            {
+                // same as above, but in a parallel loop
+
+                const int charsetSize = charset.size();
+
+                std::atomic<bool> found = false;
+                progress.done = 0;
+                progress.total = charsetSize * charsetSize;
+
+                // bruteforce two characters to have many tasks for each CPU thread and share work evenly
+                #pragma omp parallel for firstprivate(worker) schedule(dynamic)
+                for(std::int32_t i = 0; i < charsetSize * charsetSize; i++)
+                {
+                    if(progress.state != Progress::State::Normal)
+                        continue; // cannot break out of an OpenMP for loop
+
+                    Keys init;
+                    init.update(charset[i / charsetSize]);
+                    init.update(charset[i % charsetSize]);
+
+                    if(worker.recoverLongPassword(init, length - 2))
+                    {
+                        password = worker.getPassword();
+                        password.insert(password.begin(), charset[i % charsetSize]);
+                        password.insert(password.begin(), charset[i / charsetSize]);
+                        found = true;
+                        progress.state = Progress::State::EarlyExit;
+                    }
+
+                    progress.done++;
+                }
+
+                if(found)
+                    return true;
+            }
+        }
     }
 
     return false;
