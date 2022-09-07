@@ -116,11 +116,12 @@ The internal keys are enough.
 However, we might also be interested in finding the original password.
 To do this, we need to choose a maximum length and a set of characters among which we hope to find those that constitute the password.
 To save time, we have to choose those parameters wisely.
-For a given maximal length, a small charset will be explored much faster than a big one, but making a wrong assumption by choosing a charset that is too small will not allow to recover the password.
+For a given length, a small charset will be explored much faster than a big one, but making a wrong assumption by choosing a charset that is too small will not allow to recover the password.
 
-At first, we can try all candidates up to a given length without making any assumption about the character set. We use the charset `?b` which is the set containing all bytes (from 0 to 255), so we do not miss any candidate up to length 9.
+At first, we can try all candidates up to a given length without making any assumption about the character set.
+We use the charset `?b` which is the set containing all bytes (from 0 to 255), so we do not miss any candidate up to length 9.
 
-    $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 9 ?b
+    $ ../bkcrack -k c4490e28 b414a23d 91404b31 --bruteforce ?b --length 0..9
 
     [17:52:16] Recovering password
     length 0-6...
@@ -131,36 +132,23 @@ At first, we can try all candidates up to a given length without making any assu
 
 It failed so we know the password has 10 characters or more.
 
-Now, let us assume the password is made of 11 or less printable ASCII characters, using the charset `?p`.
+Now, let us assume the password is made of 10 or 11 printable ASCII characters, using the charset `?p`.
 
-    $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 11 ?p
+    $ ../bkcrack -k c4490e28 b414a23d 91404b31 --bruteforce ?p --length 10..11
 
     [17:52:34] Recovering password
-    length 0-6...
-    length 7...
-    length 8...
-    length 9...
     length 10...
-    100.0 % (9025 / 9025)
     length 11...
     100.0 % (9025 / 9025)
     [17:52:38] Could not recover password
 
 It failed again so we know the password has non-printable ASCII characters or has 12 or more characters.
 
-Now, let us assume the password is made of 12 or less alpha-numerical characters.
+Now, let us assume the password is made of 12 alpha-numerical characters.
 
-    $ ../bkcrack -k c4490e28 b414a23d 91404b31 -r 12 ?a
+    $ ../bkcrack -k c4490e28 b414a23d 91404b31 --bruteforce ?a --length 12
 
     [17:54:37] Recovering password
-    length 0-6...
-    length 7...
-    length 8...
-    length 9...
-    length 10...
-    100.0 % (3844 / 3844)
-    length 11...
-    100.0 % (3844 / 3844)
     length 12...
     51.8 % (1993 / 3844)
     [17:54:49] Password
