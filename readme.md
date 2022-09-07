@@ -136,9 +136,14 @@ It assumes that every entry was originally encrypted with the same password.
 
 ### Recover password
 
-Given the internal keys, bkcrack can try to find the original password up to a given length:
+Given the internal keys, bkcrack can try to find the original password.
+You can look for a password up to a given length using a given character set:
 
     bkcrack -k 1ded830c 24454157 7213b8c5 -r 10 ?p
+
+You can be more specific by specifying a minimal password length:
+
+    bkcrack -k 18f285c6 881f2169 b35d661d -r 11..13 ?p
 
 Learn
 -----
