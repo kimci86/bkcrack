@@ -3,6 +3,8 @@
 #include "Zip.hpp"
 #include <algorithm>
 #include <bitset>
+#include <type_traits>
+#include <variant>
 
 namespace
 {
@@ -36,6 +38,42 @@ auto translateIntParseError(F&& f, const std::string& value)
     }
 }
 
+int parseInt(const std::string& value)
+{
+    return translateIntParseError([](const std::string& value)
+        {
+            return std::stoi(value, nullptr, 0);
+        }, value);
+}
+
+std::size_t parseSize(const std::string& value)
+{
+    return translateIntParseError([](const std::string& value)
+        {
+            return std::stoull(value, nullptr, 0);
+        }, value);
+}
+
+std::variant<Arguments::LengthInterval, std::size_t> parseInterval(const std::string& value)
+{
+    const std::string separator = "..";
+
+    if(const auto minEnd = value.find(separator); minEnd != std::string::npos)
+    {
+        Arguments::LengthInterval interval;
+
+        if(0 < minEnd)
+            interval.minLength = parseSize(value.substr(0, minEnd));
+
+        if(const auto maxBegin = minEnd + separator.size(); maxBegin < value.size())
+            interval.maxLength = parseSize(value.substr(maxBegin));
+
+        return interval;
+    }
+    else
+        return parseSize(value);
+}
+
 } // namespace
 
 Arguments::Error::Error(const std::string& description)
@@ -58,8 +96,8 @@ Arguments::Arguments(int argc, const char* argv[])
     // check constraints on arguments
     if(keys)
     {
-        if(!decipheredFile && !changePassword && !changeKeys && !recoverPassword)
-            throw Error("-d, -U, --change-keys or -r parameter is missing (required by -k)");
+        if(!decipheredFile && !changePassword && !changeKeys && !bruteforce)
+            throw Error("-d, -U, --change-keys or --bruteforce parameter is missing (required by -k)");
     }
     else if(!password)
     {
@@ -100,6 +138,9 @@ Arguments::Arguments(int argc, const char* argv[])
         throw Error("-C parameter is missing (required by --change-keys)");
     if(changeKeys && changeKeys->unlockedArchive == cipherArchive)
         throw Error("-C and --change-keys parameters must point to different files");
+
+    if(length && !bruteforce)
+        throw Error("--bruteforce parameter is missing (required by --length)");
 }
 
 Data Arguments::loadData() const
@@ -142,6 +183,11 @@ Data Arguments::loadData() const
         ciphertext = loadFile(*cipherFile, needed);
 
     return Data(std::move(ciphertext), std::move(plaintext), offset, extraPlaintextWithCheckByte.value_or(extraPlaintext));
+}
+
+Arguments::LengthInterval Arguments::LengthInterval::operator&(const Arguments::LengthInterval& other) const
+{
+    return {std::max(minLength, other.minLength), std::min(maxLength, other.maxLength)};
 }
 
 bool Arguments::finished() const
@@ -208,8 +254,27 @@ void Arguments::parseArgument()
         case Option::changeKeys:
             changeKeys = {readString("unlockedzip"), Keys{readKey("X"), readKey("Y"), readKey("Z")}};
             break;
+        case Option::bruteforce:
+            bruteforce = readCharset();
+            break;
+        case Option::length:
+            length = length.value_or(LengthInterval{}) & std::visit([](auto arg)
+            {
+                if constexpr(std::is_same_v<decltype(arg), std::size_t>)
+                    return LengthInterval{arg, arg}; // a single value is interpreted as an exact length
+                else
+                    return arg;
+            }, parseInterval(readString("length")));
+            break;
         case Option::recoverPassword:
-            recoverPassword = {readSize("length"), readCharset()};
+            length = length.value_or(LengthInterval{}) & std::visit([](auto arg)
+            {
+                if constexpr(std::is_same_v<decltype(arg), std::size_t>)
+                    return LengthInterval{0, arg}; // a single value is interpreted as an interval 0..max
+                else
+                    return arg;
+            }, parseInterval(readString("length")));
+            bruteforce = readCharset();
             break;
         case Option::infoArchive:
             infoArchive = readString("zipfile");
@@ -251,6 +316,8 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIR (    --keep-header,       keepHeader),
         PAIRS(-U, --change-password,   changePassword),
         PAIR (    --change-keys,       changeKeys),
+        PAIRS(-b, --bruteforce,        bruteforce),
+        PAIRS(-l, --length,            length),
         PAIRS(-r, --recover-password,  recoverPassword),
         PAIRS(-L, --list,              infoArchive),
         PAIRS(-h, --help,              help)
@@ -268,18 +335,12 @@ Arguments::Option Arguments::readOption(const std::string& description)
 
 int Arguments::readInt(const std::string& description)
 {
-    return translateIntParseError([](const std::string& value)
-        {
-            return std::stoi(value, nullptr, 0);
-        }, readString(description));
+    return parseInt(readString(description));
 }
 
 std::size_t Arguments::readSize(const std::string& description)
 {
-    return translateIntParseError([](const std::string& value)
-        {
-            return std::stoull(value, nullptr, 0);
-        }, readString(description));
+    return parseSize(readString(description));
 }
 
 bytevec Arguments::readHex(const std::string& description)

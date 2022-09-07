@@ -43,6 +43,6 @@ class Recovery
 };
 
 /// Try to recover the password associated with the given keys
-bool recoverPassword(const Keys& keys, std::size_t max_length, const bytevec& charset, std::string& password, Progress& progress);
+bool recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, std::string& password, Progress& progress);
 
 #endif // BKCRACK_PASSWORD_HPP

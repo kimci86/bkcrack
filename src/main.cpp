@@ -45,7 +45,7 @@ Options to get the internal password representation:
 Options to use the internal password representation:
  -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
                               integers in hexadecimal (requires -d, -U,
-                              --change-keys or -r)
+                              --change-keys or --bruteforce)
 
  -d, --decipher <file>       File to write the deciphered data (requires -c)
      --keep-header           Write the encryption header at the beginning of
@@ -59,18 +59,26 @@ Options to use the internal password representation:
         Create a copy of the encrypted zip archive using the given new internal
         password representation (requires -C)
 
- -r, --recover-password <length> <charset>
-        Try to recover the password or an equivalent one up to the given length
-        using characters in the given charset. The charset is a sequence of
-        characters or shortcuts for predefined charsets listed below.
-        Example: ?l?d-.@
-          ?l lowercase letters
-          ?u uppercase letters
-          ?d decimal digits
-          ?s punctuation
-          ?a alpha-numerical characters (same as ?l?u?d)
-          ?p printable characters (same as ?a?s)
-          ?b all bytes (0x00 - 0xff)
+ -b, --bruteforce <charset>
+        Try to recover the password or an equivalent one by generating and
+        testing password candidates using characters in the given charset.
+        The charset is a sequence of characters or shortcuts for predefined
+        charsets listed below. Example: ?l?d-.@
+
+          ?l lowercase letters              abcdefghijklmnopqrstuvwxyz
+          ?u uppercase letters              ABCDEFGHIJKLMNOPQRSTUVWXYZ
+          ?d decimal digits                 0123456789
+          ?s special characters              !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
+          ?a alpha-numerical characters     (same as ?l?u?d)
+          ?p printable ASCII characters     (same as ?l?u?d?s)
+          ?b all bytes                      (0x00 - 0xff)
+
+ -l, --length [ <min>..<max> | <min>.. | ..<max> | <length> ]
+        Length interval or exact length of password candidates to generate and
+        test during password recovery (requires --bruteforce)
+
+ -r, --recover-password [ <min>..<max> | <min>.. | ..<max> | <max> ] <charset>
+        Shortcut for --length and --bruteforce options
 
 Other options:
  -L, --list <archive>        List entries in a zip archive and exit
@@ -159,7 +167,7 @@ try
     // From there, keysvec is not empty.
 
     const Keys keys = keysvec.front();
-    if((args.decipheredFile || args.changePassword || args.changeKeys || args.recoverPassword) && keysvec.size() > 1)
+    if((args.decipheredFile || args.changePassword || args.changeKeys || args.bruteforce) && keysvec.size() > 1)
         std::cout << "Continuing with keys " << keys << "\n"
                   << "Use the command line option -k to provide other keys." << std::endl;
 
@@ -229,9 +237,10 @@ try
     }
 
     // recover password
-    if(args.recoverPassword)
+    if(args.bruteforce)
     {
-        const auto& [maxLength, charset] = *args.recoverPassword;
+        const auto& charset = *args.bruteforce;
+        const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
 
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
         std::string password;
@@ -239,7 +248,7 @@ try
 
         {
             ConsoleProgress progress(std::cout);
-            success = recoverPassword(keysvec.front(), maxLength, charset, password, progress);
+            success = recoverPassword(keysvec.front(), charset, minLength, maxLength, password, progress);
         }
 
         if(success)

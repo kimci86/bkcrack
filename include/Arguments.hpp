@@ -1,6 +1,7 @@
 #ifndef BKCRACK_ARGUMENTS_HPP
 #define BKCRACK_ARGUMENTS_HPP
 
+#include <limits>
 #include <map>
 #include <optional>
 
@@ -89,14 +90,23 @@ class Arguments
         /// \copydoc ChangeKeys
         std::optional<ChangeKeys> changeKeys;
 
-        /// Arguments needed to attempt a password recovery
-        struct PasswordRecovery
+        /// Characters to generate password candidates
+        std::optional<bytevec> bruteforce;
+
+        /// Range of password lengths to try during password recovery
+        struct LengthInterval
         {
-            std::size_t maxLength; ///< Maximum password length to try during password recovery
-            bytevec charset;       ///< Characters to generate password candidates
+            /// Smallest password length to try (inclusive)
+            std::size_t minLength{0};
+
+            /// Greatest password length to try (inclusive)
+            std::size_t maxLength{std::numeric_limits<std::size_t>::max()};
+
+            /// Compute the intersection between this interval and the given \a other interval
+            LengthInterval operator&(const LengthInterval& other) const;
         };
-        /// \copydoc PasswordRecovery
-        std::optional<PasswordRecovery> recoverPassword;
+        /// \copydoc LengthInterval
+        std::optional<LengthInterval> length;
 
         /// Zip archive about which to display information
         std::optional<std::string> infoArchive;
@@ -131,6 +141,8 @@ class Arguments
             keepHeader,
             changePassword,
             changeKeys,
+            bruteforce,
+            length,
             recoverPassword,
             infoArchive,
             help
