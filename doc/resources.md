@@ -141,7 +141,7 @@ Resources {#resources}
 
   Deflate disassembler to convert a deflate, zlib, or gzip stream into a readable form.
 
-  Copyrighted (Mark Adler, all rights reserved)
+  License: zlib
 
 - [hannob/zipeinfo](https://github.com/hannob/zipeinfo)
 
