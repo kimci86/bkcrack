@@ -70,30 +70,40 @@ void Recovery::recoverLongPassword(const Keys& initial)
 
         prefix.push_back(charset[0]);
 
+        // precompute as much as we can about the next cipher state without knowing the password byte
+        const uint32 x0_partial = Crc32Tab::crc32(initial.getX(), 0);
+        const uint32 y0_partial = initial.getY() * MultTab::MULT + 1;
+        const uint32 z0_partial = Crc32Tab::crc32(initial.getZ(), 0);
+
         for(byte pi : charset)
         {
-            Keys init = initial;
-            init.update(pi);
+            // finish to update the cipher state
+            const uint32 x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
+            const uint32 y0 = y0_partial + MultTab::getMult(lsb(x0));
+            const uint32 z0 = z0_partial ^ Crc32Tab::crc32(0, msb(y0));
 
             // recoverShortPassword is inlined below for performance
 
             // check compatible Z0[16,32)
-            if(!z0_16_32[init.getZ() >> 16])
+            if(!z0_16_32[z0 >> 16])
                 continue;
 
             prefix.back() = pi;
 
             // initialize starting X, Y and Z values
-            x[0] = x0 = init.getX();
-            y[0] = init.getY();
-            z[0] = init.getZ();
+            x[0] = this->x0 = x0;
+            y[0] = y0;
+            z[0] = z0;
 
             // complete Z values and derive Y[24,32) values
-            for(int i = 1; i <= 4; i++)
-            {
-                y[i] = Crc32Tab::getYi_24_32(z[i], z[i-1]);
-                z[i] = Crc32Tab::crc32(z[i-1], msb(y[i]));
-            }
+            y[1] = Crc32Tab::getYi_24_32(z[1], z[1-1]);
+            z[1] = Crc32Tab::crc32(z[1-1], msb(y[1]));
+            y[2] = Crc32Tab::getYi_24_32(z[2], z[2-1]);
+            z[2] = Crc32Tab::crc32(z[2-1], msb(y[2]));
+            y[3] = Crc32Tab::getYi_24_32(z[3], z[3-1]);
+            z[3] = Crc32Tab::crc32(z[3-1], msb(y[3]));
+            y[4] = Crc32Tab::getYi_24_32(z[4], z[4-1]);
+            //z[4] = Crc32Tab::crc32(z[4-1], msb(y[4])); // this one is already known
 
             // recursively complete Y values and derive password
             recursion(5);
