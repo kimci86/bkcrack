@@ -54,9 +54,6 @@ class Arguments
         /// Tell not to use the check byte derived from ciphertext entry metadata as known plaintext
         bool ignoreCheckByte = false;
 
-        /// Tell whether to try all candidate keys exhaustively or stop after the first success
-        bool exhaustive = false;
-
         /// Password from which to derive the internal password representation
         std::optional<std::string> password;
 
@@ -108,6 +105,9 @@ class Arguments
         /// \copydoc LengthInterval
         std::optional<LengthInterval> length;
 
+        /// Tell whether to try all candidates (keys or passwords) exhaustively or stop after the first success
+        bool exhaustive = false;
+
         /// Zip archive about which to display information
         std::optional<std::string> infoArchive;
 
@@ -134,7 +134,6 @@ class Arguments
             offset,
             extraPlaintext,
             ignoreCheckByte,
-            exhaustive,
             password,
             keys,
             decipheredFile,
@@ -144,6 +143,7 @@ class Arguments
             bruteforce,
             length,
             recoverPassword,
+            exhaustive,
             infoArchive,
             help
         };
