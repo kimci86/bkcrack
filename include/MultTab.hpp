@@ -7,6 +7,12 @@
 class MultTab
 {
     public:
+        /// \return MULT * x using a lookup table
+        static inline uint32 getMult(byte x)
+        {
+            return instance.multtab[x];
+        }
+
         /// \return MULT^-1 * x using a lookup table
         static inline uint32 getMultinv(byte x)
         {
@@ -38,6 +44,7 @@ class MultTab
         MultTab();
 
         // lookup tables
+        u32arr<256> multtab;
         u32arr<256> multinvtab;
         std::array<bytevec, 256> msbprodfiber2;
         std::array<bytevec, 256> msbprodfiber3;
