@@ -15,24 +15,40 @@ class Recovery
         /// Constructor
         Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions, bool exhaustive, Progress& progress);
 
-        /// Look for a password of length 6 or less
-        void recoverShortPassword();
+        /// \brief Look for a password of length 6 or less
+        ///
+        /// Try to derive 6 characters such that updating the given cipher state
+        /// with them gives the target cipher state (the password representation).
+        /// On success, the current prefix followed by those 6 characters is added
+        /// to the shared output vector.
+        ///
+        /// If the target length is less than 6, the first characters are ignored so that
+        /// the saved solution has the target length. This is useful to recover passwords
+        /// shorter than 6 characters.
+        ///
+        /// \pre prefix.size() + 6 == length && initial == Keys{prefix} || length < 6
+        void recoverShortPassword(const Keys& initial);
 
-        /// Look for a password of given length (at least 7) starting with the given prefix
-        void recoverLongPassword(const bytevec& prefix, std::size_t length);
+        /// \brief Look for password of length 7 or more
+        ///
+        /// Recursively iterate on possible prefixes of length-6 characters.
+        /// For each prefix, try to recover the last 6 characters like recoverShortPassword.
+        ///
+        /// \pre prefix.size() + 6 < length && initial == Keys{prefix}
+        void recoverLongPassword(const Keys& initial);
+
+        /// Length of the password to recover
+        std::size_t length;
+
+        /// The first characters of the password candidate, up to length-6 characters long
+        std::string prefix;
+
+        /// Set of characters to generate password candidates
+        const bytevec& charset;
 
     private:
-        // try to recover a password of length 7 or more
-        void recoverLong(const Keys& initial, std::size_t length);
-
-        // try to recover a password of length 6
-        void recover(const Keys& initial);
-
         // iterate recursively on possible Y values
         void recursion(int i);
-
-        // set of characters to generate password candidates
-        const bytevec& charset;
 
         // set of possible Z0[16,31) values considering given character set
         std::bitset<1<<16> z0_16_32;
@@ -45,12 +61,7 @@ class Recovery
         u32arr<7> x, y, z;
         uint32 x0; // backup of candidate X value for convenience
 
-        bytearr<6> p;     // password last 6 bytes
-        bytevec m_prefix; // password first l-6 bytes
-
-        // Number of password bytes to ignore at the beginning of p array.
-        // Useful when looking for a password shorter than 6 bytes.
-        std::size_t m_erase = 0;
+        bytearr<6> p; // password last 6 bytes
 
         std::vector<std::string>& solutions; // shared output vector of valid passwords
         const bool exhaustive;

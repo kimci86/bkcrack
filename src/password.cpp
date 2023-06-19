@@ -38,75 +38,7 @@ Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::st
     }
 }
 
-void Recovery::recoverShortPassword()
-{
-    m_prefix.clear();
-
-    Keys initial;
-
-    for(int length = 6; length >= 0; length--)
-    {
-        if(progress.state != Progress::State::Normal)
-            return;
-
-        m_erase = 6 - length;
-        recover(initial);
-        m_erase = 0;
-
-        initial.updateBackwardPlaintext(charset.front());
-    }
-}
-
-void Recovery::recoverLongPassword(const bytevec& prefix, std::size_t length)
-{
-    const std::size_t guessed = std::min(prefix.size(), length - 6);
-
-    m_prefix = prefix;
-    m_prefix.resize(length - 6);
-    m_erase = 0;
-
-    Keys init;
-    for(auto it = m_prefix.begin(); it != m_prefix.begin() + guessed; ++it)
-        init.update(*it);
-
-    recoverLong(init, length - guessed);
-}
-
-void Recovery::recoverLong(const Keys& initial, std::size_t length)
-{
-    if(length == 7)
-    {
-        if(!zm1_24_32[initial.getZ() >> 24])
-            return;
-
-        for(byte pi : charset)
-        {
-            m_prefix[m_prefix.size() + 6 - length] = pi;
-
-            Keys init = initial;
-            init.update(pi);
-
-            recover(init);
-        }
-    }
-    else
-    {
-        if(progress.state != Progress::State::Normal)
-            return;
-
-        for(byte pi : charset)
-        {
-            m_prefix[m_prefix.size() + 6 - length] = pi;
-
-            Keys init = initial;
-            init.update(pi);
-
-            recoverLong(init, length-1);
-        }
-    }
-}
-
-void Recovery::recover(const Keys& initial)
+void Recovery::recoverShortPassword(const Keys& initial)
 {
     // check compatible Z0[16,32)
     if(!z0_16_32[initial.getZ() >> 16])
@@ -126,6 +58,65 @@ void Recovery::recover(const Keys& initial)
 
     // recursively complete Y values and derive password
     recursion(5);
+}
+
+void Recovery::recoverLongPassword(const Keys& initial)
+{
+    if(prefix.size() + 7 == length) // there is only one more character to bruteforce
+    {
+        // check compatible Z{-1}[24, 32)
+        if(!zm1_24_32[initial.getZ() >> 24])
+            return;
+
+        prefix.push_back(charset[0]);
+
+        for(byte pi : charset)
+        {
+            Keys init = initial;
+            init.update(pi);
+
+            // recoverShortPassword is inlined below for performance
+
+            // check compatible Z0[16,32)
+            if(!z0_16_32[init.getZ() >> 16])
+                continue;
+
+            prefix.back() = pi;
+
+            // initialize starting X, Y and Z values
+            x[0] = x0 = init.getX();
+            y[0] = init.getY();
+            z[0] = init.getZ();
+
+            // complete Z values and derive Y[24,32) values
+            for(int i = 1; i <= 4; i++)
+            {
+                y[i] = Crc32Tab::getYi_24_32(z[i], z[i-1]);
+                z[i] = Crc32Tab::crc32(z[i-1], msb(y[i]));
+            }
+
+            // recursively complete Y values and derive password
+            recursion(5);
+        }
+
+        prefix.pop_back();
+    }
+    else // bruteforce the next character and continue recursively
+    {
+        prefix.push_back(charset[0]);
+
+        for(byte pi : charset)
+        {
+            Keys init = initial;
+            init.update(pi);
+
+            prefix.back() = pi;
+
+            recoverLongPassword(init);
+        }
+
+        prefix.pop_back();
+    }
 }
 
 void Recovery::recursion(int i)
@@ -172,8 +163,9 @@ void Recovery::recursion(int i)
 
         if(x[0] == x0) // the password is successfully recovered
         {
-            std::string password = std::string(m_prefix.begin(), m_prefix.end());
-            password.append(p.begin() + m_erase, p.end());
+            std::string password = std::string(prefix.begin(), prefix.end());
+            password.append(p.begin(), p.end());
+            password.erase(password.begin(), password.end() - length);
 
             #pragma omp critical
             solutions.push_back(password);
@@ -189,6 +181,102 @@ void Recovery::recursion(int i)
     }
 }
 
+namespace
+{
+
+void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& progress)
+{
+    if(worker.prefix.size() + 1 + 9 == worker.length) // bruteforce one character in parallel
+    {
+        const int charsetSize = worker.charset.size();
+
+        worker.prefix.push_back(worker.charset[0]);
+
+        #pragma omp parallel for firstprivate(worker) schedule(dynamic)
+        for(int i = 0; i < charsetSize; i++)
+        {
+            if(progress.state != Progress::State::Normal)
+                continue; // cannot break out of an OpenMP for loop
+
+            byte pm4 = worker.charset[i];
+
+            Keys init = initial;
+            init.update(pm4);
+
+            worker.prefix.back() = pm4;
+
+            worker.recoverLongPassword(init);
+
+            progress.done += charsetSize;
+        }
+
+        worker.prefix.pop_back();
+    }
+    else if(worker.prefix.size() + 2 + 9 == worker.length) // bruteforce two characters in parallel
+    {
+        const int charsetSize = worker.charset.size();
+
+        worker.prefix.push_back(worker.charset[0]);
+        worker.prefix.push_back(worker.charset[0]);
+
+        const bool reportProgress = worker.prefix.size() == 2;
+        const bool reportProgressCoarse = worker.prefix.size() == 3;
+
+        #pragma omp parallel for firstprivate(worker) schedule(dynamic)
+        for(int i = 0; i < charsetSize * charsetSize; i++)
+        {
+            if(progress.state != Progress::State::Normal)
+                continue; // cannot break out of an OpenMP for loop
+
+            byte pm4 = worker.charset[i / charsetSize];
+            byte pm3 = worker.charset[i % charsetSize];
+
+            Keys init = initial;
+            init.update(pm4);
+            init.update(pm3);
+
+            worker.prefix[worker.prefix.size() - 2] = pm4;
+            worker.prefix[worker.prefix.size() - 1] = pm3;
+
+            worker.recoverLongPassword(init);
+
+            if(reportProgress || (reportProgressCoarse && i % charsetSize == 0))
+                progress.done++;
+        }
+
+        worker.prefix.pop_back();
+        worker.prefix.pop_back();
+    }
+    else // try password prefixes recursively
+    {
+        worker.prefix.push_back(worker.charset[0]);
+
+        const bool reportProgress = worker.prefix.size() == 2;
+
+        for(byte pi : worker.charset)
+        {
+            Keys init = initial;
+            init.update(pi);
+
+            worker.prefix.back() = pi;
+
+            recoverPasswordRecursive(worker, init, progress);
+
+            // Because the recursive call may explore only a fraction of its
+            // search space, check that it was run in full before counting progress.
+            if(progress.state != Progress::State::Normal)
+                break;
+
+            if(reportProgress)
+                progress.done++;
+        }
+
+        worker.prefix.pop_back();
+    }
+}
+
+} // namespace
+
 std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, bool exhaustive, Progress& progress)
 {
     std::vector<std::string> solutions;
@@ -203,7 +291,16 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
         {
             progress.log([](std::ostream& os) { os << "length 0-6..." << std::endl; });
 
-            worker.recoverShortPassword();
+            Keys initial;
+
+            // look for a password of length between 0 and 6
+            for(int l = 6; l >= 0; l--)
+            {
+                worker.length = l;
+                worker.recoverShortPassword(initial);
+
+                initial.updateBackwardPlaintext(charset.front());
+            }
 
             length = 6; // searching up to length 6 is done
         }
@@ -211,28 +308,17 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
         {
             progress.log([length](std::ostream& os) { os << "length " << length << "..." << std::endl; });
 
+            worker.length = length;
             if(length < 10)
-                worker.recoverLongPassword({}, length);
+            {
+                worker.recoverLongPassword(Keys{});
+            }
             else
             {
-                // same as above, but in a parallel loop
-
-                const int charsetSize = charset.size();
-
                 progress.done = 0;
-                progress.total = charsetSize * charsetSize;
+                progress.total = charset.size() * charset.size();
 
-                // bruteforce two characters to have many tasks for each CPU thread and share work evenly
-                #pragma omp parallel for firstprivate(worker) schedule(dynamic)
-                for(std::int32_t i = 0; i < charsetSize * charsetSize; i++)
-                {
-                    if(progress.state != Progress::State::Normal)
-                        continue; // cannot break out of an OpenMP for loop
-
-                    worker.recoverLongPassword({charset[i / charsetSize], charset[i % charsetSize]}, length);
-
-                    progress.done++;
-                }
+                recoverPasswordRecursive(worker, Keys{}, progress);
             }
         }
     }
