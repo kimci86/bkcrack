@@ -21,7 +21,8 @@ jobs:
 
     - name: Install dependencies
       if: runner.os == 'macOS'
-      run: brew install libomp
+      # OpenMP is already installed but for some reason it is not found by CMake unless we explicitly create symlinks.
+      run: brew link --force libomp
 
     - name: Configure CMake
       run: cmake -S . -B build ${{matrix.platform.cmake-config}}
