@@ -202,20 +202,21 @@ void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& p
 
         worker.prefix.push_back(worker.charset[0]);
 
-        #pragma omp parallel for firstprivate(worker) schedule(dynamic)
+        Recovery threadWorker = worker;
+        #pragma omp parallel for firstprivate(threadWorker) schedule(dynamic)
         for(int i = 0; i < charsetSize; i++)
         {
             if(progress.state != Progress::State::Normal)
                 continue; // cannot break out of an OpenMP for loop
 
-            byte pm4 = worker.charset[i];
+            byte pm4 = threadWorker.charset[i];
 
             Keys init = initial;
             init.update(pm4);
 
-            worker.prefix.back() = pm4;
+            threadWorker.prefix.back() = pm4;
 
-            worker.recoverLongPassword(init);
+            threadWorker.recoverLongPassword(init);
 
             progress.done += charsetSize;
         }
@@ -232,23 +233,24 @@ void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& p
         const bool reportProgress = worker.prefix.size() == 2;
         const bool reportProgressCoarse = worker.prefix.size() == 3;
 
-        #pragma omp parallel for firstprivate(worker) schedule(dynamic)
+        Recovery threadWorker = worker;
+        #pragma omp parallel for firstprivate(threadWorker) schedule(dynamic)
         for(int i = 0; i < charsetSize * charsetSize; i++)
         {
             if(progress.state != Progress::State::Normal)
                 continue; // cannot break out of an OpenMP for loop
 
-            byte pm4 = worker.charset[i / charsetSize];
-            byte pm3 = worker.charset[i % charsetSize];
+            byte pm4 = threadWorker.charset[i / charsetSize];
+            byte pm3 = threadWorker.charset[i % charsetSize];
 
             Keys init = initial;
             init.update(pm4);
             init.update(pm3);
 
-            worker.prefix[worker.prefix.size() - 2] = pm4;
-            worker.prefix[worker.prefix.size() - 1] = pm3;
+            threadWorker.prefix[threadWorker.prefix.size() - 2] = pm4;
+            threadWorker.prefix[threadWorker.prefix.size() - 1] = pm3;
 
-            worker.recoverLongPassword(init);
+            threadWorker.recoverLongPassword(init);
 
             if(reportProgress || (reportProgressCoarse && i % charsetSize == 0))
                 progress.done++;
