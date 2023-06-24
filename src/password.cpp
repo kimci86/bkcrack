@@ -1,6 +1,8 @@
 #include "password.hpp"
 #include "Crc32Tab.hpp"
 #include "MultTab.hpp"
+#include <algorithm>
+#include <iomanip>
 
 Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions, bool exhaustive, Progress& progress)
 : charset(charset), solutions(solutions), exhaustive(exhaustive), progress(progress)
@@ -176,6 +178,31 @@ void Recovery::recursion(int i)
             std::string password = std::string(prefix.begin(), prefix.end());
             password.append(p.begin(), p.end());
             password.erase(password.begin(), password.end() - length);
+
+            const bool isInCharset = std::all_of(password.begin(), password.end(), [this](char c) {
+                return std::binary_search(charset.begin(), charset.end(), c);
+            });
+
+            if(!isInCharset)
+            {
+                progress.log([&password](std::ostream& os)
+                {
+                    const auto flagsBefore = os.setf(std::ios::hex, std::ios::basefield);
+                    const auto fillBefore = os.fill('0');
+
+                    os << "Password: " << password << " (as bytes:";
+                    for(byte c : password)
+                        os << ' ' << std::setw(2) << static_cast<int>(c);
+                    os << ')' << std::endl;
+
+                    os.fill(fillBefore);
+                    os.flags(flagsBefore);
+
+                    os << "Some characters are not in the expected charset. Continuing." << std::endl;
+                });
+
+                return;
+            }
 
             #pragma omp critical
             solutions.push_back(password);
