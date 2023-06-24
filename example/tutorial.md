@@ -150,6 +150,7 @@ Now, let us assume the password is made of 12 alpha-numerical characters.
 
     [17:54:37] Recovering password
     length 12...
+    Password: W4sF0rgotten
     51.8 % (1993 / 3844)
     [17:54:49] Password
     as bytes: 57 34 73 46 30 72 67 6f 74 74 65 6e

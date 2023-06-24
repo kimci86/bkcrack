@@ -233,9 +233,6 @@ void Arguments::parseArgument()
         case Option::ignoreCheckByte:
             ignoreCheckByte = true;
             break;
-        case Option::exhaustive:
-            exhaustive = true;
-            break;
         case Option::password:
             password = readString("password");
             break;
@@ -276,6 +273,9 @@ void Arguments::parseArgument()
             }, parseInterval(readString("length")));
             bruteforce = readCharset();
             break;
+        case Option::exhaustive:
+            exhaustive = true;
+            break;
         case Option::infoArchive:
             infoArchive = readString("zipfile");
             break;
@@ -309,7 +309,6 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-o, --offset,            offset),
         PAIRS(-x, --extra,             extraPlaintext),
         PAIR (    --ignore-check-byte, ignoreCheckByte),
-        PAIRS(-e, --exhaustive,        exhaustive),
         PAIR (    --password,          password),
         PAIRS(-k, --keys,              keys),
         PAIRS(-d, --decipher,          decipheredFile),
@@ -319,6 +318,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-b, --bruteforce,        bruteforce),
         PAIRS(-l, --length,            length),
         PAIRS(-r, --recover-password,  recoverPassword),
+        PAIRS(-e, --exhaustive,        exhaustive),
         PAIRS(-L, --list,              infoArchive),
         PAIRS(-h, --help,              help)
     };

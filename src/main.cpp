@@ -35,8 +35,6 @@ Options to get the internal password representation:
      --ignore-check-byte     Do not automatically use ciphertext's check byte
                               as known plaintext
 
- -e, --exhaustive            Try all the keys remaining after Z reduction
-
      --password <password>   Password from which to derive the internal password
                               representation. Useful for testing purposes and
                               advanced scenarios such as reverting the effect of
@@ -81,6 +79,9 @@ Options to use the internal password representation:
         Shortcut for --length and --bruteforce options
 
 Other options:
+ -e, --exhaustive            Exhaustively look for all solutions (keys or
+                              passwords) instead of stopping after the first
+                              solution is found
  -L, --list <archive>        List entries in a zip archive and exit
  -h, --help                  Show this help and exit
 
@@ -243,35 +244,38 @@ try
         const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
 
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
-        std::string password;
-        bool success;
+
+        std::vector<std::string> passwords;
 
         {
             ConsoleProgress progress(std::cout);
-            success = recoverPassword(keysvec.front(), charset, minLength, maxLength, password, progress);
+            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, args.exhaustive, progress);
         }
 
-        if(success)
+        std::cout << "[" << put_time << "] ";
+        if(passwords.empty())
         {
-            std::cout << "[" << put_time << "] Password" << std::endl;
-            std::cout << "as bytes: ";
-            {
-                const auto flagsBefore = std::cout.setf(std::ios::hex, std::ios::basefield);
-                const auto fillBefore = std::cout.fill('0');
-
-                for(byte c : password)
-                    std::cout << std::setw(2) << static_cast<int>(c) << ' ';
-                std::cout << std::endl;
-
-                std::cout.fill(fillBefore);
-                std::cout.flags(flagsBefore);
-            }
-            std::cout << "as text: " << password << std::endl;
+            std::cout << "Could not recover password" << std::endl;
+            return 1;
         }
         else
         {
-            std::cout << "[" << put_time << "] Could not recover password" << std::endl;
-            return 1;
+            std::cout << "Password" << std::endl;
+
+            const auto flagsBefore = std::cout.setf(std::ios::hex, std::ios::basefield);
+            const auto fillBefore = std::cout.fill('0');
+
+            for(const auto& password : passwords)
+            {
+                std::cout << "as bytes: ";
+                for(byte c : password)
+                    std::cout << std::setw(2) << static_cast<int>(c) << ' ';
+                std::cout << std::endl;
+                std::cout << "as text: " << password << std::endl;
+            }
+
+            std::cout.fill(fillBefore);
+            std::cout.flags(flagsBefore);
         }
     }
 
