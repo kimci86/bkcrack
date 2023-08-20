@@ -104,10 +104,6 @@ To do so, use the `-x` flag followed by an offset and bytes in hexadecimal.
 
     bkcrack -c cipherfile -p plainfile -x 25 4b4f -x 30 21
 
-#### Number of threads
-
-If bkcrack was built with parallel mode enabled, the number of threads used can be set through the environment variable `OMP_NUM_THREADS`.
-
 ### Decipher
 
 If the attack is successful, the deciphered data associated to the ciphertext used for the attack can be saved:

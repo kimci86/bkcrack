@@ -18,11 +18,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 # enable C++17
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-# enable OpenMP if wanted
-if(BKCRACK_PARALLEL_MODE)
-    find_package(OpenMP 2.0 REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
-endif()
+# let CMake work out the system-specific details to use threads
+find_package(Threads REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
 
 # install rules
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
