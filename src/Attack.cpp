@@ -3,9 +3,12 @@
 #include "Crc32Tab.hpp"
 #include "KeystreamTab.hpp"
 #include "MultTab.hpp"
+#include <algorithm>
+#include <atomic>
+#include <thread>
 
-Attack::Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, bool exhaustive, Progress& progress)
- : data(data), index(index + 1 - Attack::CONTIGUOUS_SIZE), solutions(solutions), exhaustive(exhaustive), progress(progress)
+Attack::Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, std::mutex& solutionsMutex, bool exhaustive, Progress& progress)
+ : data(data), index(index + 1 - Attack::CONTIGUOUS_SIZE), solutions(solutions), solutionsMutex(solutionsMutex), exhaustive(exhaustive), progress(progress)
 {}
 
 void Attack::carryout(uint32 z7_2_32)
@@ -160,8 +163,10 @@ void Attack::testXlist()
     // get the keys associated with the initial state
     keysBackward.updateBackward(data.ciphertext, indexBackward, 0);
 
-    #pragma omp critical
-    solutions.push_back(keysBackward);
+    {
+        const auto lock = std::scoped_lock{solutionsMutex};
+        solutions.push_back(keysBackward);
+    }
 
     progress.log([&keysBackward](std::ostream& os)
     {
@@ -172,27 +177,32 @@ void Attack::testXlist()
         progress.state = Progress::State::EarlyExit;
 }
 
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, const bool exhaustive, Progress& progress)
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, int jobs, const bool exhaustive, Progress& progress)
 {
     const uint32* candidates = zi_2_32_vector.data();
-    const std::int32_t size = zi_2_32_vector.size();
+    const auto size = static_cast<int>(zi_2_32_vector.size());
 
     std::vector<Keys> solutions;
-    Attack worker(data, index, solutions, exhaustive, progress);
+    std::mutex solutionsMutex;
+    Attack worker(data, index, solutions, solutionsMutex, exhaustive, progress);
 
     progress.done = 0;
     progress.total = size;
 
-    #pragma omp parallel for firstprivate(worker) schedule(dynamic)
-    for(std::int32_t i = 0; i < size; ++i) // OpenMP 2.0 requires signed index variable
-    {
-        if(progress.state != Progress::State::Normal)
-            continue; // cannot break out of an OpenMP for loop
-
-        worker.carryout(candidates[i]);
-
-        progress.done++;
-    }
+    const auto threadCount = std::clamp(jobs, 1, size);
+    auto threads = std::vector<std::thread>{};
+    auto nextCandidateIndex = std::atomic<int>{0};
+    for(auto i = 0; i < threadCount; ++i)
+        threads.emplace_back(
+            [&nextCandidateIndex, size, &progress, candidates, worker]() mutable {
+                for(auto i = nextCandidateIndex++; i < size && progress.state == Progress::State::Normal; i = nextCandidateIndex++)
+                {
+                    worker.carryout(candidates[i]);
+                    progress.done++;
+                }
+            });
+    for(auto& thread : threads)
+        thread.join();
 
     return solutions;
 }

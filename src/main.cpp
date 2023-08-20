@@ -145,7 +145,7 @@ try
 
         {
             ConsoleProgress progress(std::cout);
-            keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.exhaustive, progress);
+            keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.jobs, args.exhaustive, progress);
         }
 
         // print the keys
