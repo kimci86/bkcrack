@@ -247,7 +247,7 @@ try
 
         {
             ConsoleProgress progress(std::cout);
-            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, args.exhaustive, progress);
+            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, args.jobs, args.exhaustive, progress);
         }
 
         std::cout << "[" << put_time << "] ";
