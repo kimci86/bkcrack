@@ -79,14 +79,12 @@ Options to use the internal password representation:
         Shortcut for --length and --bruteforce options
 
 Other options:
+ -j, --jobs <count>          Number of threads to use for parallelized operations
  -e, --exhaustive            Exhaustively look for all solutions (keys or
                               passwords) instead of stopping after the first
                               solution is found
  -L, --list <archive>        List entries in a zip archive and exit
- -h, --help                  Show this help and exit
-
-Environment variables:
- OMP_NUM_THREADS             Number of threads to use for parallel computations)_";
+ -h, --help                  Show this help and exit)_";
 
 void listEntries(const std::string& archiveFilename);
 void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys);

@@ -3,6 +3,7 @@
 #include "Zip.hpp"
 #include <algorithm>
 #include <bitset>
+#include <thread>
 #include <type_traits>
 #include <variant>
 
@@ -81,7 +82,11 @@ Arguments::Error::Error(const std::string& description)
 {}
 
 Arguments::Arguments(int argc, const char* argv[])
-: m_current{argv + 1}, m_end{argv + argc}
+: jobs{[]() -> int {
+    const auto concurrency = std::thread::hardware_concurrency();
+    return concurrency ? concurrency : 2;
+  }()}
+, m_current{argv + 1}, m_end{argv + argc}
 {
     // parse arguments
     while(!finished())
@@ -273,6 +278,9 @@ void Arguments::parseArgument()
             }, parseInterval(readString("length")));
             bruteforce = readCharset();
             break;
+        case Option::jobs:
+            jobs = readInt("count");
+            break;
         case Option::exhaustive:
             exhaustive = true;
             break;
@@ -318,6 +326,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-b, --bruteforce,        bruteforce),
         PAIRS(-l, --length,            length),
         PAIRS(-r, --recover-password,  recoverPassword),
+        PAIRS(-j, --jobs,              jobs),
         PAIRS(-e, --exhaustive,        exhaustive),
         PAIRS(-L, --list,              infoArchive),
         PAIRS(-h, --help,              help)

@@ -105,6 +105,9 @@ class Arguments
         /// \copydoc LengthInterval
         std::optional<LengthInterval> length;
 
+        /// Number of threads to use for parallelized operations
+        int jobs;
+
         /// Tell whether to try all candidates (keys or passwords) exhaustively or stop after the first success
         bool exhaustive = false;
 
@@ -143,6 +146,7 @@ class Arguments
             bruteforce,
             length,
             recoverPassword,
+            jobs,
             exhaustive,
             infoArchive,
             help
