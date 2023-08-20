@@ -19,11 +19,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install dependencies
-      if: runner.os == 'macOS'
-      # OpenMP is already installed but for some reason it is not found by CMake unless we explicitly create symlinks.
-      run: brew link --force libomp
-
     - name: Configure CMake
       run: cmake -S . -B build ${{matrix.platform.cmake-config}}
 

@@ -2,10 +2,12 @@
 #include "Crc32Tab.hpp"
 #include "MultTab.hpp"
 #include <algorithm>
+#include <atomic>
 #include <iomanip>
+#include <thread>
 
-Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions, bool exhaustive, Progress& progress)
-: charset(charset), solutions(solutions), exhaustive(exhaustive), progress(progress)
+Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions, std::mutex& solutionsMutex, bool exhaustive, Progress& progress)
+: charset(charset), solutions(solutions), solutionsMutex(solutionsMutex), exhaustive(exhaustive), progress(progress)
 {
     // initialize target X, Y and Z values
     x[6] = keys.getX();
@@ -204,8 +206,10 @@ void Recovery::recursion(int i)
                 return;
             }
 
-            #pragma omp critical
-            solutions.push_back(password);
+            {
+                const auto lock = std::scoped_lock{solutionsMutex};
+                solutions.push_back(password);
+            }
 
             progress.log([&password](std::ostream& os)
             {
@@ -221,7 +225,7 @@ void Recovery::recursion(int i)
 namespace
 {
 
-void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& progress)
+void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, Progress& progress)
 {
     if(worker.prefix.size() + 1 + 9 == worker.length) // bruteforce one character in parallel
     {
@@ -229,24 +233,28 @@ void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& p
 
         worker.prefix.push_back(worker.charset[0]);
 
-        Recovery threadWorker = worker;
-        #pragma omp parallel for firstprivate(threadWorker) schedule(dynamic)
-        for(int i = 0; i < charsetSize; i++)
-        {
-            if(progress.state != Progress::State::Normal)
-                continue; // cannot break out of an OpenMP for loop
+        const auto threadCount = std::clamp(jobs, 1, charsetSize);
+        auto threads = std::vector<std::thread>{};
+        auto nextCandidateIndex = std::atomic<int>{0};
+        for(auto i = 0; i < threadCount; ++i)
+            threads.emplace_back(
+                [&nextCandidateIndex, charsetSize, &progress, worker, initial]() mutable {
+                    for(auto i = nextCandidateIndex++; i < charsetSize && progress.state == Progress::State::Normal; i = nextCandidateIndex++)
+                    {
+                        byte pm4 = worker.charset[i];
 
-            byte pm4 = threadWorker.charset[i];
+                        Keys init = initial;
+                        init.update(pm4);
 
-            Keys init = initial;
-            init.update(pm4);
+                        worker.prefix.back() = pm4;
 
-            threadWorker.prefix.back() = pm4;
+                        worker.recoverLongPassword(init);
 
-            threadWorker.recoverLongPassword(init);
-
-            progress.done += charsetSize;
-        }
+                        progress.done += charsetSize;
+                    }
+                });
+        for(auto& thread : threads)
+            thread.join();
 
         worker.prefix.pop_back();
     }
@@ -260,28 +268,32 @@ void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& p
         const bool reportProgress = worker.prefix.size() == 2;
         const bool reportProgressCoarse = worker.prefix.size() == 3;
 
-        Recovery threadWorker = worker;
-        #pragma omp parallel for firstprivate(threadWorker) schedule(dynamic)
-        for(int i = 0; i < charsetSize * charsetSize; i++)
-        {
-            if(progress.state != Progress::State::Normal)
-                continue; // cannot break out of an OpenMP for loop
+        const auto threadCount = std::clamp(jobs, 1, charsetSize);
+        auto threads = std::vector<std::thread>{};
+        auto nextCandidateIndex = std::atomic<int>{0};
+        for(auto i = 0; i < threadCount; ++i)
+            threads.emplace_back(
+                [&nextCandidateIndex, charsetSize, &progress, worker, initial, reportProgress, reportProgressCoarse]() mutable {
+                    for(auto i = nextCandidateIndex++; i < charsetSize * charsetSize && progress.state == Progress::State::Normal; i = nextCandidateIndex++)
+                    {
+                        byte pm4 = worker.charset[i / charsetSize];
+                        byte pm3 = worker.charset[i % charsetSize];
 
-            byte pm4 = threadWorker.charset[i / charsetSize];
-            byte pm3 = threadWorker.charset[i % charsetSize];
+                        Keys init = initial;
+                        init.update(pm4);
+                        init.update(pm3);
 
-            Keys init = initial;
-            init.update(pm4);
-            init.update(pm3);
+                        worker.prefix[worker.prefix.size() - 2] = pm4;
+                        worker.prefix[worker.prefix.size() - 1] = pm3;
 
-            threadWorker.prefix[threadWorker.prefix.size() - 2] = pm4;
-            threadWorker.prefix[threadWorker.prefix.size() - 1] = pm3;
+                        worker.recoverLongPassword(init);
 
-            threadWorker.recoverLongPassword(init);
-
-            if(reportProgress || (reportProgressCoarse && i % charsetSize == 0))
-                progress.done++;
-        }
+                        if(reportProgress || (reportProgressCoarse && i % charsetSize == 0))
+                            progress.done++;
+                    }
+                });
+        for(auto& thread : threads)
+            thread.join();
 
         worker.prefix.pop_back();
         worker.prefix.pop_back();
@@ -299,7 +311,7 @@ void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& p
 
             worker.prefix.back() = pi;
 
-            recoverPasswordRecursive(worker, init, progress);
+            recoverPasswordRecursive(worker, jobs, init, progress);
 
             // Because the recursive call may explore only a fraction of its
             // search space, check that it was run in full before counting progress.
@@ -316,10 +328,11 @@ void recoverPasswordRecursive(Recovery& worker, const Keys& initial, Progress& p
 
 } // namespace
 
-std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, bool exhaustive, Progress& progress)
+std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, int jobs, bool exhaustive, Progress& progress)
 {
     std::vector<std::string> solutions;
-    Recovery worker(keys, charset, solutions, exhaustive, progress);
+    std::mutex solutionsMutex;
+    Recovery worker(keys, charset, solutions, solutionsMutex, exhaustive, progress);
 
     for(std::size_t length = minLength; length <= maxLength; length++)
     {
@@ -357,7 +370,7 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
                 progress.done = 0;
                 progress.total = charset.size() * charset.size();
 
-                recoverPasswordRecursive(worker, Keys{}, progress);
+                recoverPasswordRecursive(worker, jobs, Keys{}, progress);
             }
         }
     }

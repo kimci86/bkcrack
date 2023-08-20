@@ -1,6 +1,8 @@
 #ifndef BKCRACK_ATTACK_HPP
 #define BKCRACK_ATTACK_HPP
 
+#include <mutex>
+
 #include "types.hpp"
 #include "Data.hpp"
 #include "Keys.hpp"
@@ -16,10 +18,11 @@ class Attack
         /// \param data Data used to carry out the attack
         /// \param index Index of Z[2,32) values passed to carry out the attack
         /// \param solutions Shared output vector for valid keys
+        /// \param solutionsMutex Mutex to protect \a solutions from concurrent access
         /// \param exhaustive True to try and find all valid keys,
         ///                   false to stop searching after the first one is found
         /// \param progress Object to report progress
-        Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, bool exhaustive, Progress& progress);
+        Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, std::mutex& solutionsMutex, bool exhaustive, Progress& progress);
 
         /// Carry out the attack for the given Z[2,32) value
         void carryout(uint32 z7_2_32);
@@ -48,6 +51,7 @@ class Attack
         const std::size_t index; // starting index of the used plaintext and keystream
 
         std::vector<Keys>& solutions; // shared output vector of valid keys
+        std::mutex& solutionsMutex;
         const bool exhaustive;
         Progress& progress;
 
@@ -60,9 +64,10 @@ class Attack
 /// \param data Data used to carry out the attack
 /// \param zi_2_32_vector Zi[2,32) candidates
 /// \param index Index of the Zi[2,32) values relative to keystream
+/// \param jobs Number of threads to use
 /// \param exhaustive True to try and find all valid keys,
 ///                   false to stop searching after the first one is found
 /// \param progress Object to report progress
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, bool exhaustive, Progress& progress);
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, int jobs, bool exhaustive, Progress& progress);
 
 #endif // BKCRACK_ATTACK_HPP

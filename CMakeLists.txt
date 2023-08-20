@@ -15,9 +15,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-# option to select parallel or serial attack
-option(BKCRACK_PARALLEL_MODE "Enable multithreaded attack with OpenMP." ON)
-
 # option for building the documentation
 option(BKCRACK_BUILD_DOC "Enable documentation generation with doxygen." OFF)
 

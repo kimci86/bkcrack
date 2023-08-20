@@ -2,6 +2,7 @@
 #define BKCRACK_PASSWORD_HPP
 
 #include <bitset>
+#include <mutex>
 
 #include "Keys.hpp"
 #include "Progress.hpp"
@@ -13,7 +14,7 @@ class Recovery
 {
     public:
         /// Constructor
-        Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions, bool exhaustive, Progress& progress);
+        Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions, std::mutex& solutionsMutex, bool exhaustive, Progress& progress);
 
         /// \brief Look for a password of length 6 or less
         ///
@@ -64,6 +65,7 @@ class Recovery
         bytearr<6> p; // password last 6 bytes
 
         std::vector<std::string>& solutions; // shared output vector of valid passwords
+        std::mutex& solutionsMutex;
         const bool exhaustive;
         Progress& progress;
 };
@@ -73,12 +75,13 @@ class Recovery
 /// \param charset The set of characters with which to constitute password candidates
 /// \param minLength The smallest password length to try
 /// \param maxLength The greatest password length to try
+/// \param jobs Number of threads to use
 /// \param exhaustive True to try and find all valid passwords,
 ///                   false to stop searching after the first one is found
 /// \param progress Object to report progress
 /// \return A vector of passwords associated with the given keys.
 ///         A vector is needed instead of a single string because there can be
 ///         collisions (i.e. several passwords for the same keys).
-std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, bool exhaustive, Progress& progress);
+std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, int jobs, bool exhaustive, Progress& progress);
 
 #endif // BKCRACK_PASSWORD_HPP
