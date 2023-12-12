@@ -55,12 +55,10 @@ cmake --build build --config Release --target install
 
 ### Thrid-party packages
 
-<a href="https://repology.org/project/bkcrack/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/bkcrack.svg" alt="Packaging status" align="right">
-</a>
-
-bkcrack is available in the package repositories listed on the right.
+bkcrack is available in the package repositories listed below.
 Those packages are provided by external maintainers.
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/bkcrack.svg)](https://repology.org/project/bkcrack/versions)
 
 Usage
 -----
