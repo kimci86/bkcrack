@@ -1,6 +1,7 @@
 #include "VirtualTerminalSupport.hpp"
 #include "log.hpp"
 #include "ConsoleProgress.hpp"
+#include "SigintHandler.hpp"
 #include "file.hpp"
 #include "Zip.hpp"
 #include "Arguments.hpp"
@@ -143,10 +144,18 @@ try
         std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
 
+        const auto state = [&]() -> Progress::State
         {
             ConsoleProgress progress(std::cout);
+            SigintHandler sigintHandler{progress.state};
             keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.jobs, args.exhaustive, progress);
-        }
+            return progress.state;
+        }();
+
+        if(state == Progress::State::Canceled)
+            std::cout << "Operation interrupted by user." << std::endl;
+        else if(state == Progress::State::EarlyExit)
+            std::cout << "Found a solution. Stopping." << std::endl;
 
         // print the keys
         std::cout << "[" << put_time << "] ";
@@ -238,17 +247,25 @@ try
     // recover password
     if(args.bruteforce)
     {
-        const auto& charset = *args.bruteforce;
-        const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
-
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
 
         std::vector<std::string> passwords;
 
+        const auto state = [&]() -> Progress::State
         {
+            const auto& charset = *args.bruteforce;
+            const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
+
             ConsoleProgress progress(std::cout);
+            SigintHandler sigintHandler(progress.state);
             passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, args.jobs, args.exhaustive, progress);
-        }
+            return progress.state;
+        }();
+
+        if(state == Progress::State::Canceled)
+            std::cout << "Operation interrupted by user." << std::endl;
+        else if(state == Progress::State::EarlyExit)
+            std::cout << "Found a solution. Stopping." << std::endl;
 
         std::cout << "[" << put_time << "] ";
         if(passwords.empty())
