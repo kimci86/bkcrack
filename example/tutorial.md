@@ -74,7 +74,9 @@ After a little while, the keys will appear!
     100.0 % (13 / 13)
     [17:42:44] Attack on 542303 Z values at index 6
     Keys: c4490e28 b414a23d 91404b31
-    33.9 % (183761 / 542303)
+    33.9 % (183750 / 542303)
+    Found a solution. Stopping.
+    You may resume the attack with the option: --continue-attack 183750
     [17:48:03] Keys
     c4490e28 b414a23d 91404b31
 
@@ -151,7 +153,9 @@ Now, let us assume the password is made of 12 alpha-numerical characters.
     [17:54:37] Recovering password
     length 12...
     Password: W4sF0rgotten
-    51.8 % (1993 / 3844)
+    51.7 % (1989 / 3844)
+    Found a solution. Stopping.
+    You may resume the password recovery with the option: --continue-recovery 573478303030
     [17:54:49] Password
     as bytes: 57 34 73 46 30 72 67 6f 74 74 65 6e
     as text: W4sF0rgotten
