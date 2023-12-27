@@ -108,6 +108,9 @@ class Arguments
         /// \copydoc LengthInterval
         std::optional<LengthInterval> length;
 
+        /// Starting point for password recovery
+        std::string recoveryStart;
+
         /// Number of threads to use for parallelized operations
         int jobs;
 
@@ -150,6 +153,7 @@ class Arguments
             bruteforce,
             length,
             recoverPassword,
+            recoveryStart,
             jobs,
             exhaustive,
             infoArchive,

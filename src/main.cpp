@@ -83,6 +83,10 @@ Options to use the internal password representation:
  -r, --recover-password [ <min>..<max> | <min>.. | ..<max> | <max> ] <charset>
         Shortcut for --length and --bruteforce options
 
+     --continue-recovery <checkpoint>
+        Starting point of the password recovery. Useful to continue a previous
+        non-exhaustive or interrupted password recovery.
+
 Other options:
  -j, --jobs <count>          Number of threads to use for parallelized operations
  -e, --exhaustive            Exhaustively look for all solutions (keys or
@@ -261,21 +265,36 @@ try
 
         std::vector<std::string> passwords;
 
-        const auto state = [&]() -> Progress::State
+        const auto [state, restart] = [&]() -> std::pair<Progress::State, std::string>
         {
             const auto& charset = *args.bruteforce;
             const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
+            std::string start = args.recoveryStart;
 
             ConsoleProgress progress(std::cout);
             SigintHandler sigintHandler(progress.state);
-            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, args.jobs, args.exhaustive, progress);
-            return progress.state;
+            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs, args.exhaustive, progress);
+            return {progress.state, start};
         }();
 
-        if(state == Progress::State::Canceled)
-            std::cout << "Operation interrupted by user." << std::endl;
-        else if(state == Progress::State::EarlyExit)
-            std::cout << "Found a solution. Stopping." << std::endl;
+        if(state != Progress::State::Normal)
+        {
+            if(state == Progress::State::Canceled)
+                std::cout << "Operation interrupted by user." << std::endl;
+            else if(state == Progress::State::EarlyExit)
+                std::cout << "Found a solution. Stopping." << std::endl;
+
+            const auto flagsBefore = std::cout.setf(std::ios::hex, std::ios::basefield);
+            const auto fillBefore = std::cout.fill('0');
+
+            std::cout << "You may resume the password recovery with the option: --continue-recovery ";
+            for(byte c : restart)
+                std::cout << std::setw(2) << static_cast<int>(c);
+            std::cout << std::endl;
+
+            std::cout.fill(fillBefore);
+            std::cout.flags(flagsBefore);
+        }
 
         std::cout << "[" << put_time << "] ";
         if(passwords.empty())

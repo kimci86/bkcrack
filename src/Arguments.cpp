@@ -281,6 +281,12 @@ void Arguments::parseArgument()
             }, parseInterval(readString("length")));
             bruteforce = readCharset();
             break;
+        case Option::recoveryStart:
+        {
+            const bytevec checkpoint = readHex("checkpoint");
+            recoveryStart.assign(checkpoint.begin(), checkpoint.end());
+            break;
+        }
         case Option::jobs:
             jobs = readInt("count");
             break;
@@ -330,6 +336,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-b, --bruteforce,        bruteforce),
         PAIRS(-l, --length,            length),
         PAIRS(-r, --recover-password,  recoverPassword),
+        PAIR (    --continue-recovery, recoveryStart),
         PAIRS(-j, --jobs,              jobs),
         PAIRS(-e, --exhaustive,        exhaustive),
         PAIRS(-L, --list,              infoArchive),
