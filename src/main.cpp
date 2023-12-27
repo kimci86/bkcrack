@@ -36,10 +36,14 @@ Options to get the internal password representation:
      --ignore-check-byte     Do not automatically use ciphertext's check byte
                               as known plaintext
 
-     --password <password>   Password from which to derive the internal password
-                              representation. Useful for testing purposes and
-                              advanced scenarios such as reverting the effect of
-                              the --change-password command.
+     --continue-attack <checkpoint>
+        Starting point of the attack. Useful to continue a previous
+        non-exhaustive or interrupted attack.
+
+     --password <password>
+        Password from which to derive the internal password representation.
+        Useful for testing purposes and advanced scenarios such as reverting
+        the effect of the --change-password command.
 
 Options to use the internal password representation:
  -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
@@ -144,18 +148,24 @@ try
         std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
 
-        const auto state = [&]() -> Progress::State
+        const auto [state, restart] = [&]() -> std::pair<Progress::State, int>
         {
+            int start = args.attackStart;
             ConsoleProgress progress(std::cout);
             SigintHandler sigintHandler{progress.state};
-            keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.jobs, args.exhaustive, progress);
-            return progress.state;
+            keysvec = attack(data, zr.getCandidates(), start, zr.getIndex(), args.jobs, args.exhaustive, progress);
+            return {progress.state, start};
         }();
 
-        if(state == Progress::State::Canceled)
-            std::cout << "Operation interrupted by user." << std::endl;
-        else if(state == Progress::State::EarlyExit)
-            std::cout << "Found a solution. Stopping." << std::endl;
+        if(state != Progress::State::Normal)
+        {
+            if(state == Progress::State::Canceled)
+                std::cout << "Operation interrupted by user." << std::endl;
+            else if(state == Progress::State::EarlyExit)
+                std::cout << "Found a solution. Stopping." << std::endl;
+
+            std::cout << "You may resume the attack with the option: --continue-attack " << restart << std::endl;
+        }
 
         // print the keys
         std::cout << "[" << put_time << "] ";

@@ -177,7 +177,7 @@ void Attack::testXlist()
         progress.state = Progress::State::EarlyExit;
 }
 
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, int jobs, const bool exhaustive, Progress& progress)
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, int& start, std::size_t index, int jobs, const bool exhaustive, Progress& progress)
 {
     const uint32* candidates = zi_2_32_vector.data();
     const auto size = static_cast<int>(zi_2_32_vector.size());
@@ -186,23 +186,28 @@ std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::si
     std::mutex solutionsMutex;
     Attack worker(data, index, solutions, solutionsMutex, exhaustive, progress);
 
-    progress.done = 0;
+    progress.done = start;
     progress.total = size;
 
     const auto threadCount = std::clamp(jobs, 1, size);
     auto threads = std::vector<std::thread>{};
-    auto nextCandidateIndex = std::atomic<int>{0};
+    auto nextCandidateIndex = std::atomic<int>{start};
     for(auto i = 0; i < threadCount; ++i)
         threads.emplace_back(
             [&nextCandidateIndex, size, &progress, candidates, worker]() mutable {
-                for(auto i = nextCandidateIndex++; i < size && progress.state == Progress::State::Normal; i = nextCandidateIndex++)
+                for(auto i = nextCandidateIndex++; i < size; i = nextCandidateIndex++)
                 {
                     worker.carryout(candidates[i]);
                     progress.done++;
+
+                    if(progress.state != Progress::State::Normal)
+                        break;
                 }
             });
     for(auto& thread : threads)
         thread.join();
+
+    start = nextCandidateIndex;
 
     return solutions;
 }

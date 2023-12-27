@@ -63,11 +63,13 @@ class Attack
 /// \brief Iterate on Zi[2,32) candidates to try and find complete internal keys
 /// \param data Data used to carry out the attack
 /// \param zi_2_32_vector Zi[2,32) candidates
+/// \param start Starting index of Zi[2,32) candidates in zi_2_32_vector to try.
+///              Also used as an output parameter to tell where to restart.
 /// \param index Index of the Zi[2,32) values relative to keystream
 /// \param jobs Number of threads to use
 /// \param exhaustive True to try and find all valid keys,
 ///                   false to stop searching after the first one is found
 /// \param progress Object to report progress
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, std::size_t index, int jobs, bool exhaustive, Progress& progress);
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, int& start, std::size_t index, int jobs, bool exhaustive, Progress& progress);
 
 #endif // BKCRACK_ATTACK_HPP

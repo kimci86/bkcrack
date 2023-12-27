@@ -238,6 +238,9 @@ void Arguments::parseArgument()
         case Option::ignoreCheckByte:
             ignoreCheckByte = true;
             break;
+        case Option::attackStart:
+            attackStart = readInt("checkpoint");
+            break;
         case Option::password:
             password = readString("password");
             break;
@@ -317,6 +320,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-o, --offset,            offset),
         PAIRS(-x, --extra,             extraPlaintext),
         PAIR (    --ignore-check-byte, ignoreCheckByte),
+        PAIR (    --continue-attack,   attackStart),
         PAIR (    --password,          password),
         PAIRS(-k, --keys,              keys),
         PAIRS(-d, --decipher,          decipheredFile),
