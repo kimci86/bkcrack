@@ -1,6 +1,7 @@
 #include "VirtualTerminalSupport.hpp"
 #include "log.hpp"
 #include "ConsoleProgress.hpp"
+#include "SigintHandler.hpp"
 #include "file.hpp"
 #include "Zip.hpp"
 #include "Arguments.hpp"
@@ -35,10 +36,14 @@ Options to get the internal password representation:
      --ignore-check-byte     Do not automatically use ciphertext's check byte
                               as known plaintext
 
-     --password <password>   Password from which to derive the internal password
-                              representation. Useful for testing purposes and
-                              advanced scenarios such as reverting the effect of
-                              the --change-password command.
+     --continue-attack <checkpoint>
+        Starting point of the attack. Useful to continue a previous
+        non-exhaustive or interrupted attack.
+
+     --password <password>
+        Password from which to derive the internal password representation.
+        Useful for testing purposes and advanced scenarios such as reverting
+        the effect of the --change-password command.
 
 Options to use the internal password representation:
  -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
@@ -77,6 +82,10 @@ Options to use the internal password representation:
 
  -r, --recover-password [ <min>..<max> | <min>.. | ..<max> | <max> ] <charset>
         Shortcut for --length and --bruteforce options
+
+     --continue-recovery <checkpoint>
+        Starting point of the password recovery. Useful to continue a previous
+        non-exhaustive or interrupted password recovery.
 
 Other options:
  -j, --jobs <count>          Number of threads to use for parallelized operations
@@ -143,9 +152,23 @@ try
         std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
                   << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE)) << std::endl;
 
+        const auto [state, restart] = [&]() -> std::pair<Progress::State, int>
         {
+            int start = args.attackStart;
             ConsoleProgress progress(std::cout);
-            keysvec = attack(data, zr.getCandidates(), zr.getIndex(), args.jobs, args.exhaustive, progress);
+            SigintHandler sigintHandler{progress.state};
+            keysvec = attack(data, zr.getCandidates(), start, zr.getIndex(), args.jobs, args.exhaustive, progress);
+            return {progress.state, start};
+        }();
+
+        if(state != Progress::State::Normal)
+        {
+            if(state == Progress::State::Canceled)
+                std::cout << "Operation interrupted by user." << std::endl;
+            else if(state == Progress::State::EarlyExit)
+                std::cout << "Found a solution. Stopping." << std::endl;
+
+            std::cout << "You may resume the attack with the option: --continue-attack " << restart << std::endl;
         }
 
         // print the keys
@@ -238,16 +261,39 @@ try
     // recover password
     if(args.bruteforce)
     {
-        const auto& charset = *args.bruteforce;
-        const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
-
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
 
         std::vector<std::string> passwords;
 
+        const auto [state, restart] = [&]() -> std::pair<Progress::State, std::string>
         {
+            const auto& charset = *args.bruteforce;
+            const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
+            std::string start = args.recoveryStart;
+
             ConsoleProgress progress(std::cout);
-            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, args.jobs, args.exhaustive, progress);
+            SigintHandler sigintHandler(progress.state);
+            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs, args.exhaustive, progress);
+            return {progress.state, start};
+        }();
+
+        if(state != Progress::State::Normal)
+        {
+            if(state == Progress::State::Canceled)
+                std::cout << "Operation interrupted by user." << std::endl;
+            else if(state == Progress::State::EarlyExit)
+                std::cout << "Found a solution. Stopping." << std::endl;
+
+            const auto flagsBefore = std::cout.setf(std::ios::hex, std::ios::basefield);
+            const auto fillBefore = std::cout.fill('0');
+
+            std::cout << "You may resume the password recovery with the option: --continue-recovery ";
+            for(byte c : restart)
+                std::cout << std::setw(2) << static_cast<int>(c);
+            std::cout << std::endl;
+
+            std::cout.fill(fillBefore);
+            std::cout.flags(flagsBefore);
         }
 
         std::cout << "[" << put_time << "] ";

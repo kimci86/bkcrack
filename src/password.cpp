@@ -225,21 +225,28 @@ void Recovery::recursion(int i)
 namespace
 {
 
-void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, Progress& progress)
+void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, const std::string& start, std::string& restart, Progress& progress)
 {
+    const int charsetSize = worker.charset.size();
+
+    int index_start = 0;
+    if(worker.prefix.size() < start.size())
+        while(index_start < charsetSize && worker.charset[index_start] < static_cast<unsigned char>(start[worker.prefix.size()]))
+            ++index_start;
+
     if(worker.prefix.size() + 1 + 9 == worker.length) // bruteforce one character in parallel
     {
-        const int charsetSize = worker.charset.size();
-
         worker.prefix.push_back(worker.charset[0]);
+
+        progress.done += index_start * charsetSize;
 
         const auto threadCount = std::clamp(jobs, 1, charsetSize);
         auto threads = std::vector<std::thread>{};
-        auto nextCandidateIndex = std::atomic<int>{0};
+        auto nextCandidateIndex = std::atomic<int>{index_start};
         for(auto i = 0; i < threadCount; ++i)
             threads.emplace_back(
                 [&nextCandidateIndex, charsetSize, &progress, worker, initial]() mutable {
-                    for(auto i = nextCandidateIndex++; i < charsetSize && progress.state == Progress::State::Normal; i = nextCandidateIndex++)
+                    for(auto i = nextCandidateIndex++; i < charsetSize; i = nextCandidateIndex++)
                     {
                         byte pm4 = worker.charset[i];
 
@@ -251,16 +258,32 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, P
                         worker.recoverLongPassword(init);
 
                         progress.done += charsetSize;
+
+                        if(progress.state != Progress::State::Normal)
+                            break;
                     }
                 });
         for(auto& thread : threads)
             thread.join();
 
         worker.prefix.pop_back();
+
+        if(nextCandidateIndex < charsetSize)
+        {
+            restart = worker.prefix;
+            restart.push_back(worker.charset[nextCandidateIndex]);
+            restart.append(worker.length - 6 - restart.size(), worker.charset[0]);
+        }
     }
     else if(worker.prefix.size() + 2 + 9 == worker.length) // bruteforce two characters in parallel
     {
-        const int charsetSize = worker.charset.size();
+        index_start *= charsetSize;
+        if(worker.prefix.size() + 1 < start.size())
+        {
+            const auto maxIndex = std::min(charsetSize * charsetSize, index_start + charsetSize);
+            while(index_start < maxIndex && worker.charset[index_start % charsetSize] < static_cast<unsigned char>(start[worker.prefix.size() + 1]))
+                ++index_start;
+        }
 
         worker.prefix.push_back(worker.charset[0]);
         worker.prefix.push_back(worker.charset[0]);
@@ -268,13 +291,18 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, P
         const bool reportProgress = worker.prefix.size() == 2;
         const bool reportProgressCoarse = worker.prefix.size() == 3;
 
+        if(reportProgress)
+            progress.done += index_start;
+        else if(reportProgressCoarse)
+            progress.done += index_start / charsetSize;
+
         const auto threadCount = std::clamp(jobs, 1, charsetSize);
         auto threads = std::vector<std::thread>{};
-        auto nextCandidateIndex = std::atomic<int>{0};
+        auto nextCandidateIndex = std::atomic<int>{index_start};
         for(auto i = 0; i < threadCount; ++i)
             threads.emplace_back(
                 [&nextCandidateIndex, charsetSize, &progress, worker, initial, reportProgress, reportProgressCoarse]() mutable {
-                    for(auto i = nextCandidateIndex++; i < charsetSize * charsetSize && progress.state == Progress::State::Normal; i = nextCandidateIndex++)
+                    for(auto i = nextCandidateIndex++; i < charsetSize * charsetSize; i = nextCandidateIndex++)
                     {
                         byte pm4 = worker.charset[i / charsetSize];
                         byte pm3 = worker.charset[i % charsetSize];
@@ -290,6 +318,9 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, P
 
                         if(reportProgress || (reportProgressCoarse && i % charsetSize == 0))
                             progress.done++;
+
+                        if(progress.state != Progress::State::Normal)
+                            break;
                     }
                 });
         for(auto& thread : threads)
@@ -297,6 +328,14 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, P
 
         worker.prefix.pop_back();
         worker.prefix.pop_back();
+
+        if(nextCandidateIndex < charsetSize * charsetSize)
+        {
+            restart = worker.prefix;
+            restart.push_back(worker.charset[nextCandidateIndex / charsetSize]);
+            restart.push_back(worker.charset[nextCandidateIndex % charsetSize]);
+            restart.append(worker.length - 6 - restart.size(), worker.charset[0]);
+        }
     }
     else // try password prefixes recursively
     {
@@ -304,18 +343,26 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, P
 
         const bool reportProgress = worker.prefix.size() == 2;
 
-        for(byte pi : worker.charset)
+        if(worker.prefix.size() == 1)
+            progress.done += index_start * charsetSize;
+        else if(reportProgress)
+            progress.done += index_start;
+
+        for(int i = index_start; i < charsetSize; i++)
         {
+            byte pi = worker.charset[i];
+
             Keys init = initial;
             init.update(pi);
 
             worker.prefix.back() = pi;
 
-            recoverPasswordRecursive(worker, jobs, init, progress);
+            recoverPasswordRecursive(worker, jobs, init, i == index_start ? start : "", restart, progress);
 
             // Because the recursive call may explore only a fraction of its
             // search space, check that it was run in full before counting progress.
-            if(progress.state != Progress::State::Normal)
+
+            if(!restart.empty())
                 break;
 
             if(reportProgress)
@@ -328,13 +375,15 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, P
 
 } // namespace
 
-std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, int jobs, bool exhaustive, Progress& progress)
+std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength, std::size_t maxLength, std::string& start, int jobs, bool exhaustive, Progress& progress)
 {
     std::vector<std::string> solutions;
     std::mutex solutionsMutex;
     Recovery worker(keys, charset, solutions, solutionsMutex, exhaustive, progress);
 
-    for(std::size_t length = minLength; length <= maxLength; length++)
+    std::string restart;
+    const std::size_t startLength = std::max(minLength, start.empty() ? 0 : start.size() + 6);
+    for(std::size_t length = startLength; length <= maxLength; length++)
     {
         if(progress.state != Progress::State::Normal)
             break;
@@ -370,10 +419,12 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
                 progress.done = 0;
                 progress.total = charset.size() * charset.size();
 
-                recoverPasswordRecursive(worker, jobs, Keys{}, progress);
+                recoverPasswordRecursive(worker, jobs, Keys{}, length == startLength ? start : "", restart, progress);
             }
         }
     }
+
+    start = restart;
 
     return solutions;
 }

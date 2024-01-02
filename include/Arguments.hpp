@@ -54,6 +54,9 @@ class Arguments
         /// Tell not to use the check byte derived from ciphertext entry metadata as known plaintext
         bool ignoreCheckByte = false;
 
+        /// Staring point of the attack on Z values remaining after reduction
+        int attackStart = 0;
+
         /// Password from which to derive the internal password representation
         std::optional<std::string> password;
 
@@ -105,6 +108,9 @@ class Arguments
         /// \copydoc LengthInterval
         std::optional<LengthInterval> length;
 
+        /// Starting point for password recovery
+        std::string recoveryStart;
+
         /// Number of threads to use for parallelized operations
         int jobs;
 
@@ -137,6 +143,7 @@ class Arguments
             offset,
             extraPlaintext,
             ignoreCheckByte,
+            attackStart,
             password,
             keys,
             decipheredFile,
@@ -146,6 +153,7 @@ class Arguments
             bruteforce,
             length,
             recoverPassword,
+            recoveryStart,
             jobs,
             exhaustive,
             infoArchive,
