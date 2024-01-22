@@ -284,16 +284,19 @@ try
             else if(state == Progress::State::EarlyExit)
                 std::cout << "Found a solution. Stopping." << std::endl;
 
-            const auto flagsBefore = std::cout.setf(std::ios::hex, std::ios::basefield);
-            const auto fillBefore = std::cout.fill('0');
+            if(!restart.empty())
+            {
+                const auto flagsBefore = std::cout.setf(std::ios::hex, std::ios::basefield);
+                const auto fillBefore = std::cout.fill('0');
 
-            std::cout << "You may resume the password recovery with the option: --continue-recovery ";
-            for(byte c : restart)
-                std::cout << std::setw(2) << static_cast<int>(c);
-            std::cout << std::endl;
+                std::cout << "You may resume the password recovery with the option: --continue-recovery ";
+                for(byte c : restart)
+                    std::cout << std::setw(2) << static_cast<int>(c);
+                std::cout << std::endl;
 
-            std::cout.fill(fillBefore);
-            std::cout.flags(flagsBefore);
+                std::cout.fill(fillBefore);
+                std::cout.flags(flagsBefore);
+            }
         }
 
         std::cout << "[" << put_time << "] ";
