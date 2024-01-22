@@ -1,6 +1,5 @@
 # configure version header
-string(TIMESTAMP TODAY "%Y-%m-%d")
-set(VERSION_HEADER_CONFIGURED "${PROJECT_BINARY_DIR}/include/version.hpp" )
+set(VERSION_HEADER_CONFIGURED "${PROJECT_BINARY_DIR}/include/version.hpp")
 configure_file("${PROJECT_SOURCE_DIR}/include/version.hpp.in" "${VERSION_HEADER_CONFIGURED}")
 
 # list files

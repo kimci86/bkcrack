@@ -107,7 +107,7 @@ try
     VirtualTerminalSupport vtSupport;
 
     // version information
-    std::cout << "bkcrack " BKCRACK_VERSION " - " BKCRACK_COMPILATION_DATE << std::endl;
+    std::cout << "bkcrack " BKCRACK_VERSION " - " BKCRACK_VERSION_DATE << std::endl;
 
     const Arguments args(argc, argv);
     if(args.help)

@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.16)
 
 # project definition
 project(bkcrack
-    VERSION 1.6.0
+    VERSION 1.6.0 # remember to update bkcrack_VERSION_DATE below when releasing a new version
     DESCRIPTION "Crack legacy zip encryption with Biham and Kocher's known plaintext attack."
     HOMEPAGE_URL "https://github.com/kimci86/bkcrack"
     LANGUAGES CXX)
+set(bkcrack_VERSION_DATE "2024-01-02")
 
 # default build type
 set(default_build_type "Release")
