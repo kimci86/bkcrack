@@ -15,13 +15,20 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-# option for building the documentation
-option(BKCRACK_BUILD_DOC "Enable documentation generation with doxygen." OFF)
-
-# add the subdirectories
+# main program
 add_subdirectory(src)
+
+# documentation generation
+option(BKCRACK_BUILD_DOC "Enable documentation generation with doxygen." OFF)
 if(BKCRACK_BUILD_DOC)
     add_subdirectory(doc)
+endif()
+
+# automated tests
+option(BKCRACK_BUILD_TESTING "Enable automated testing with ctest." OFF)
+if(BKCRACK_BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 # install rules
