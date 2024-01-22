@@ -181,7 +181,7 @@ void Recovery::recursion(int i)
             password.append(p.begin(), p.end());
             password.erase(password.begin(), password.end() - length);
 
-            const bool isInCharset = std::all_of(password.begin(), password.end(), [this](char c) {
+            const bool isInCharset = std::all_of(password.begin(), password.end(), [this](unsigned char c) {
                 return std::binary_search(charset.begin(), charset.end(), c);
             });
 
