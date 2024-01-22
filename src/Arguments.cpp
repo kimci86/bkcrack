@@ -92,11 +92,8 @@ Arguments::Arguments(int argc, const char* argv[])
     while(!finished())
         parseArgument();
 
-    if(help)
-        return;
-
-    if(infoArchive)
-        return;
+    if(help || version || infoArchive)
+        return; // no further checks are needed for those options
 
     // check constraints on arguments
     if(keys)
@@ -296,6 +293,9 @@ void Arguments::parseArgument()
         case Option::infoArchive:
             infoArchive = readString("zipfile");
             break;
+        case Option::version:
+            version = true;
+            break;
         case Option::help:
             help = true;
             break;
@@ -340,6 +340,7 @@ Arguments::Option Arguments::readOption(const std::string& description)
         PAIRS(-j, --jobs,              jobs),
         PAIRS(-e, --exhaustive,        exhaustive),
         PAIRS(-L, --list,              infoArchive),
+        PAIR (    --version,           version),
         PAIRS(-h, --help,              help)
     };
 

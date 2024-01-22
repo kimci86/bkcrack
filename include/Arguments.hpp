@@ -120,6 +120,9 @@ class Arguments
         /// Zip archive about which to display information
         std::optional<std::string> infoArchive;
 
+        /// Tell whether version information is needed or not
+        bool version = false;
+
         /// Tell whether help message is needed or not
         bool help = false;
 
@@ -157,6 +160,7 @@ class Arguments
             jobs,
             exhaustive,
             infoArchive,
+            version,
             help
         };
 

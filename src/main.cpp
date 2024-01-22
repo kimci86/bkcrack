@@ -93,6 +93,7 @@ Other options:
                               passwords) instead of stopping after the first
                               solution is found
  -L, --list <archive>        List entries in a zip archive and exit
+     --version               Show version information and exit
  -h, --help                  Show this help and exit)_";
 
 void listEntries(const std::string& archiveFilename);
@@ -113,6 +114,12 @@ try
     if(args.help)
     {
         std::cout << usage << std::endl;
+        return 0;
+    }
+
+    if(args.version)
+    {
+        // version information was already printed, nothing else to do
         return 0;
     }
 

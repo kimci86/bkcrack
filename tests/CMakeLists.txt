@@ -15,5 +15,8 @@ set_tests_properties(cli.bruteforce.long   PROPERTIES PASS_REGULAR_EXPRESSION "P
 add_test(NAME cli.list COMMAND bkcrack -L secrets.zip WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/example)
 set_tests_properties(cli.list PROPERTIES PASS_REGULAR_EXPRESSION "advice\.jpg.*spiral\.svg")
 
+add_test(NAME cli.version COMMAND bkcrack --version)
+set_tests_properties(cli.version PROPERTIES PASS_REGULAR_EXPRESSION "^bkcrack ${bkcrack_VERSION} - ${bkcrack_VERSION_DATE}\n\$")
+
 add_test(NAME cli.help COMMAND bkcrack -h)
 set_tests_properties(cli.help PROPERTIES PASS_REGULAR_EXPRESSION "usage:")
