@@ -19,11 +19,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Configure CMake
-      run: cmake -S . -B build ${{matrix.platform.cmake-config}}
+    - name: Configure project
+      run: cmake -S . -B build -DBKCRACK_BUILD_TESTING=ON ${{matrix.platform.cmake-config}}
 
     - name: Build project
       run: cmake --build build --config Release
+
+    - name: Run tests
+      run: ctest --test-dir build -C Release --output-on-failure
 
     - name: Create package
       run: cmake --build build --config Release --target package
