@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Configure project
       run: cmake -S . -B build -DBKCRACK_BUILD_TESTING=ON ${{matrix.platform.cmake-config}}
@@ -32,9 +32,9 @@ jobs:
       run: cmake --build build --config Release --target package
 
     - name: Upload package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: packages
+        name: ${{ matrix.platform.name }} package
         path: |
           build/*.zip
           build/*.tar.gz
@@ -47,10 +47,11 @@ jobs:
 
     steps:
     - name: Download packages
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
-        name: packages
+        pattern: "* package"
         path: packages
+        merge-multiple: true
 
     - name: Create release
       uses: softprops/action-gh-release@v1
