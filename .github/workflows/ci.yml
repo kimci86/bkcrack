@@ -52,14 +52,10 @@ jobs:
         name: packages
         path: packages
 
-    - name: Get tag name
-      id: get_tag_name
-      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-
     - name: Create release
       uses: softprops/action-gh-release@v1
       with:
-        name: Release ${{ steps.get_tag_name.outputs.tag }}
+        name: Release ${{ github.ref_name }}
         files: packages/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
