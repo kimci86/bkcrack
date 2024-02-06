@@ -1,63 +1,64 @@
 #ifndef BKCRACK_ATTACK_HPP
 #define BKCRACK_ATTACK_HPP
 
-#include <mutex>
-
-#include "types.hpp"
 #include "Data.hpp"
 #include "Keys.hpp"
 #include "Progress.hpp"
+#include "types.hpp"
+
+#include <mutex>
 
 /// \file Attack.hpp
 
 /// Class to carry out the attack for a given Z[2,32) value
 class Attack
 {
-    public:
-        /// \brief Constructor
-        /// \param data Data used to carry out the attack
-        /// \param index Index of Z[2,32) values passed to carry out the attack
-        /// \param solutions Shared output vector for valid keys
-        /// \param solutionsMutex Mutex to protect \a solutions from concurrent access
-        /// \param exhaustive True to try and find all valid keys,
-        ///                   false to stop searching after the first one is found
-        /// \param progress Object to report progress
-        Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, std::mutex& solutionsMutex, bool exhaustive, Progress& progress);
+public:
+    /// \brief Constructor
+    /// \param data Data used to carry out the attack
+    /// \param index Index of Z[2,32) values passed to carry out the attack
+    /// \param solutions Shared output vector for valid keys
+    /// \param solutionsMutex Mutex to protect \a solutions from concurrent access
+    /// \param exhaustive True to try and find all valid keys,
+    ///                   false to stop searching after the first one is found
+    /// \param progress Object to report progress
+    Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, std::mutex& solutionsMutex,
+           bool exhaustive, Progress& progress);
 
-        /// Carry out the attack for the given Z[2,32) value
-        void carryout(uint32 z7_2_32);
+    /// Carry out the attack for the given Z[2,32) value
+    void carryout(uint32 z7_2_32);
 
-        enum : std::size_t
-        {
-            /// Number of contiguous known plaintext bytes required by the attack
-            CONTIGUOUS_SIZE = 8,
+    enum : std::size_t
+    {
+        /// Number of contiguous known plaintext bytes required by the attack
+        CONTIGUOUS_SIZE = 8,
 
-            /// Total number of known plaintext bytes required by the attack
-            ATTACK_SIZE = 12
-        };
+        /// Total number of known plaintext bytes required by the attack
+        ATTACK_SIZE = 12
+    };
 
-    private:
-        // iterate recursively over Z-lists
-        void exploreZlists(int i);
+private:
+    // iterate recursively over Z-lists
+    void exploreZlists(int i);
 
-        // iterate recursively over Y-lists
-        void exploreYlists(int i);
+    // iterate recursively over Y-lists
+    void exploreYlists(int i);
 
-        // check whether the X-list is valid or not
-        void testXlist();
+    // check whether the X-list is valid or not
+    void testXlist();
 
-        const Data& data;
+    const Data& data;
 
-        const std::size_t index; // starting index of the used plaintext and keystream
+    const std::size_t index; // starting index of the used plaintext and keystream
 
-        std::vector<Keys>& solutions; // shared output vector of valid keys
-        std::mutex& solutionsMutex;
-        const bool exhaustive;
-        Progress& progress;
+    std::vector<Keys>& solutions; // shared output vector of valid keys
+    std::mutex&        solutionsMutex;
+    const bool         exhaustive;
+    Progress&          progress;
 
-        u32arr<CONTIGUOUS_SIZE> zlist;
-        u32arr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
-        u32arr<CONTIGUOUS_SIZE> xlist; // the first four elements are not used
+    u32arr<CONTIGUOUS_SIZE> zlist;
+    u32arr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
+    u32arr<CONTIGUOUS_SIZE> xlist; // the first four elements are not used
 };
 
 /// \brief Iterate on Zi[2,32) candidates to try and find complete internal keys
@@ -70,6 +71,7 @@ class Attack
 /// \param exhaustive True to try and find all valid keys,
 ///                   false to stop searching after the first one is found
 /// \param progress Object to report progress
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, int& start, std::size_t index, int jobs, bool exhaustive, Progress& progress);
+std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, int& start, std::size_t index, int jobs,
+                         bool exhaustive, Progress& progress);
 
 #endif // BKCRACK_ATTACK_HPP

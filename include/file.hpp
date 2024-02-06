@@ -22,16 +22,16 @@
 /// }
 /// \enddot
 
-#include <fstream>
-
 #include "types.hpp"
+
+#include <fstream>
 
 /// Exception thrown if a file cannot be opened
 class FileError : public BaseError
 {
-    public:
-        /// Constructor
-        FileError(const std::string& description);
+public:
+    /// Constructor
+    FileError(const std::string& description);
 };
 
 /// \brief Open an input file stream
