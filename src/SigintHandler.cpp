@@ -1,4 +1,5 @@
 #include "SigintHandler.hpp"
+
 #include <csignal>
 
 namespace

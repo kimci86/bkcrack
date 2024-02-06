@@ -32,6 +32,16 @@ if(BKCRACK_BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
+# code formatting
+find_program(BKCRACK_CLANG_FORMAT_EXECUTABLE clang-format DOC "Path to clang-format program used to format C++ code.")
+if(BKCRACK_CLANG_FORMAT_EXECUTABLE)
+    get_target_property(files_to_format bkcrack SOURCES)
+    add_custom_target(format
+        COMMAND ${BKCRACK_CLANG_FORMAT_EXECUTABLE} -i ${files_to_format}
+        COMMENT "Formatting C++ code with ${BKCRACK_CLANG_FORMAT_EXECUTABLE}"
+        VERBATIM)
+endif()
+
 # install rules
 install(DIRECTORY example DESTINATION .)
 install(DIRECTORY tools DESTINATION .)
