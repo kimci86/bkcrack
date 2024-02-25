@@ -20,7 +20,7 @@ Attack::Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions
 {
 }
 
-void Attack::carryout(uint32 z7_2_32)
+void Attack::carryout(std::uint32_t z7_2_32)
 {
     zlist[7] = z7_2_32;
     exploreZlists(7);
@@ -31,10 +31,10 @@ void Attack::exploreZlists(int i)
     if (i != 0) // the Z-list is not complete so generate Z{i-1}[2,32) values
     {
         // get Z{i-1}[10,32) from CRC32^-1
-        uint32 zim1_10_32 = Crc32Tab::getZim1_10_32(zlist[i]);
+        std::uint32_t zim1_10_32 = Crc32Tab::getZim1_10_32(zlist[i]);
 
         // get Z{i-1}[2,16) values from keystream byte k{i-1} and Z{i-1}[10,16)
-        for (uint32 zim1_2_16 : KeystreamTab::getZi_2_16_vector(data.keystream[index + i - 1], zim1_10_32))
+        for (std::uint32_t zim1_2_16 : KeystreamTab::getZi_2_16_vector(data.keystream[index + i - 1], zim1_10_32))
         {
             // add Z{i-1}[2,32) to the Z-list
             zlist[i - 1] = zim1_10_32 | zim1_2_16;
@@ -53,10 +53,10 @@ void Attack::exploreZlists(int i)
     else // the Z-list is complete so iterate over possible Y values
     {
         // guess Y7[8,24) and keep prod == (Y7[8,32) - 1) * mult^-1
-        for (uint32 y7_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[7])) << 24) - MultTab::MULTINV;
+        for (std::uint32_t y7_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[7])) << 24) - MultTab::MULTINV;
              y7_8_24 < 1 << 24; y7_8_24 += 1 << 8, prod += MultTab::MULTINV << 8)
             // get possible Y7[0,8) values
-            for (byte y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
+            for (std::uint8_t y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
                 // filter Y7[0,8) using Y6[24,32)
                 if (prod + MultTab::getMultinv(y7_0_8) - (ylist[6] & MASK_24_32) <= MAXDIFF_0_24)
                 {
@@ -70,14 +70,14 @@ void Attack::exploreYlists(int i)
 {
     if (i != 3) // the Y-list is not complete so generate Y{i-1} values
     {
-        uint32 fy  = (ylist[i] - 1) * MultTab::MULTINV;
-        uint32 ffy = (fy - 1) * MultTab::MULTINV;
+        std::uint32_t fy  = (ylist[i] - 1) * MultTab::MULTINV;
+        std::uint32_t ffy = (fy - 1) * MultTab::MULTINV;
 
         // get possible LSB(Xi)
-        for (byte xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i - 2] & MASK_24_32))))
+        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i - 2] & MASK_24_32))))
         {
             // compute corresponding Y{i-1}
-            uint32 yim1 = fy - xi_0_8;
+            std::uint32_t yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
             if (ffy - MultTab::getMultinv(xi_0_8) - (ylist[i - 2] & MASK_24_32) <= MAXDIFF_0_24 &&
@@ -105,20 +105,19 @@ void Attack::testXlist()
                    | lsb(xlist[i]);                                                           // set the LSB
 
     // compute X3
-    uint32 x = xlist[7];
+    std::uint32_t x = xlist[7];
     for (int i = 6; i >= 3; i--)
         x = Crc32Tab::crc32inv(x, data.plaintext[index + i]);
 
     // check that X3 fits with Y1[26,32)
-    uint32 y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & MASK_26_32;
+    std::uint32_t y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & MASK_26_32;
     if (((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
         return;
 
     // decipher and filter by comparing with remaining contiguous plaintext forward
     Keys keysForward(xlist[7], ylist[7], zlist[7]);
     keysForward.update(data.plaintext[index + 7]);
-    for (bytevec::const_iterator p = data.plaintext.begin() + index + 8,
-                                 c = data.ciphertext.begin() + data.offset + index + 8;
+    for (auto p = data.plaintext.begin() + index + 8, c = data.ciphertext.begin() + data.offset + index + 8;
          p != data.plaintext.end(); ++p, ++c)
     {
         if ((*c ^ keysForward.getK()) != *p)
@@ -130,8 +129,8 @@ void Attack::testXlist()
 
     // and also backward
     Keys keysBackward(x, ylist[3], zlist[3]);
-    using rit = std::reverse_iterator<bytevec::const_iterator>;
-    for (rit p = rit(data.plaintext.begin() + index + 3), c = rit(data.ciphertext.begin() + data.offset + index + 3);
+    for (auto p = std::reverse_iterator{data.plaintext.begin() + index + 3},
+              c = std::reverse_iterator{data.ciphertext.begin() + data.offset + index + 3};
          p != data.plaintext.rend(); ++p, ++c)
     {
         keysBackward.updateBackward(*c);
@@ -142,23 +141,23 @@ void Attack::testXlist()
     std::size_t indexBackward = data.offset;
 
     // continue filtering with extra known plaintext
-    for (const std::pair<std::size_t, byte>& extra : data.extraPlaintext)
+    for (const auto& [extraIndex, extraByte] : data.extraPlaintext)
     {
-        byte p;
-        if (extra.first < indexBackward)
+        std::uint8_t p;
+        if (extraIndex < indexBackward)
         {
-            keysBackward.updateBackward(data.ciphertext, indexBackward, extra.first);
-            indexBackward = extra.first;
+            keysBackward.updateBackward(data.ciphertext, indexBackward, extraIndex);
+            indexBackward = extraIndex;
             p             = data.ciphertext[indexBackward] ^ keysBackward.getK();
         }
         else
         {
-            keysForward.update(data.ciphertext, indexForward, extra.first);
-            indexForward = extra.first;
+            keysForward.update(data.ciphertext, indexForward, extraIndex);
+            indexForward = extraIndex;
             p            = data.ciphertext[indexForward] ^ keysForward.getK();
         }
 
-        if (p != extra.second)
+        if (p != extraByte)
             return;
     }
 
@@ -178,11 +177,11 @@ void Attack::testXlist()
         progress.state = Progress::State::EarlyExit;
 }
 
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, int& start, std::size_t index, int jobs,
-                         const bool exhaustive, Progress& progress)
+std::vector<Keys> attack(const Data& data, const std::vector<std::uint32_t>& zi_2_32_vector, int& start,
+                         std::size_t index, int jobs, const bool exhaustive, Progress& progress)
 {
-    const uint32* candidates = zi_2_32_vector.data();
-    const auto    size       = static_cast<int>(zi_2_32_vector.size());
+    const std::uint32_t* candidates = zi_2_32_vector.data();
+    const auto           size       = static_cast<int>(zi_2_32_vector.size());
 
     std::vector<Keys> solutions;
     std::mutex        solutionsMutex;

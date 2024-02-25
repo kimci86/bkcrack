@@ -306,7 +306,7 @@ try
                 const auto fillBefore  = std::cout.fill('0');
 
                 std::cout << "You may resume the password recovery with the option: --continue-recovery ";
-                for (byte c : restart)
+                for (std::uint8_t c : restart)
                     std::cout << std::setw(2) << static_cast<int>(c);
                 std::cout << std::endl;
 
@@ -331,7 +331,7 @@ try
             for (const auto& password : passwords)
             {
                 std::cout << "as bytes: ";
-                for (byte c : password)
+                for (std::uint8_t c : password)
                     std::cout << std::setw(2) << static_cast<int>(c) << ' ';
                 std::cout << std::endl;
                 std::cout << "as text: " << password << std::endl;
@@ -449,7 +449,7 @@ void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostr
     for (std::ostreambuf_iterator<char> plain(os); i < size && cipher != std::istreambuf_iterator<char>();
          i++, ++cipher, ++plain)
     {
-        byte p = *cipher ^ keys.getK();
+        std::uint8_t p = *cipher ^ keys.getK();
         keys.update(p);
         *plain = p;
     }

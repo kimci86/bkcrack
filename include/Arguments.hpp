@@ -50,7 +50,7 @@ public:
 
     /// Additional bytes of plaintext with their offset relative to ciphertext without encryption header (may be
     /// negative)
-    std::map<int, byte> extraPlaintext;
+    std::map<int, std::uint8_t> extraPlaintext;
 
     /// Tell not to use the check byte derived from ciphertext entry metadata as known plaintext
     bool ignoreCheckByte = false;
@@ -92,7 +92,7 @@ public:
     std::optional<ChangeKeys> changeKeys;
 
     /// Characters to generate password candidates
-    std::optional<bytevec> bruteforce;
+    std::optional<std::vector<std::uint8_t>> bruteforce;
 
     /// Range of password lengths to try during password recovery
     struct LengthInterval
@@ -165,13 +165,13 @@ private:
         help
     };
 
-    std::string readString(const std::string& description);
-    Option      readOption(const std::string& description);
-    int         readInt(const std::string& description);
-    std::size_t readSize(const std::string& description);
-    bytevec     readHex(const std::string& description);
-    uint32      readKey(const std::string& description);
-    bytevec     readCharset();
+    std::string               readString(const std::string& description);
+    Option                    readOption(const std::string& description);
+    int                       readInt(const std::string& description);
+    std::size_t               readSize(const std::string& description);
+    std::vector<std::uint8_t> readHex(const std::string& description);
+    std::uint32_t             readKey(const std::string& description);
+    std::vector<std::uint8_t> readCharset();
 };
 
 #endif // BKCRACK_ARGUMENTS_HPP

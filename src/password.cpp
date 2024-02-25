@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <thread>
 
-Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions,
+Recovery::Recovery(const Keys& keys, const std::vector<std::uint8_t>& charset, std::vector<std::string>& solutions,
                    std::mutex& solutionsMutex, bool exhaustive, Progress& progress)
 : charset(charset)
 , solutions(solutions)
@@ -29,13 +29,13 @@ Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::st
         z[i - 1] = Crc32Tab::crc32inv(z[i], msb(y[i]));
 
     // precompute possible Z0[16,32) and Z{-1}[24,32)
-    for (byte p5 : charset)
+    for (std::uint8_t p5 : charset)
     {
         x[5] = Crc32Tab::crc32inv(x[6], p5);
         y[4] = (y[5] - 1) * MultTab::MULTINV - lsb(x[5]);
         z[3] = Crc32Tab::crc32inv(z[4], msb(y[4]));
 
-        for (byte p4 : charset)
+        for (std::uint8_t p4 : charset)
         {
             x[4] = Crc32Tab::crc32inv(x[5], p4);
             y[3] = (y[4] - 1) * MultTab::MULTINV - lsb(x[4]);
@@ -82,16 +82,16 @@ void Recovery::recoverLongPassword(const Keys& initial)
         prefix.push_back(charset[0]);
 
         // precompute as much as we can about the next cipher state without knowing the password byte
-        const uint32 x0_partial = Crc32Tab::crc32(initial.getX(), 0);
-        const uint32 y0_partial = initial.getY() * MultTab::MULT + 1;
-        const uint32 z0_partial = Crc32Tab::crc32(initial.getZ(), 0);
+        const std::uint32_t x0_partial = Crc32Tab::crc32(initial.getX(), 0);
+        const std::uint32_t y0_partial = initial.getY() * MultTab::MULT + 1;
+        const std::uint32_t z0_partial = Crc32Tab::crc32(initial.getZ(), 0);
 
-        for (byte pi : charset)
+        for (std::uint8_t pi : charset)
         {
             // finish to update the cipher state
-            const uint32 x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
-            const uint32 y0 = y0_partial + MultTab::getMult(lsb(x0));
-            const uint32 z0 = z0_partial ^ Crc32Tab::crc32(0, msb(y0));
+            const std::uint32_t x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
+            const std::uint32_t y0 = y0_partial + MultTab::getMult(lsb(x0));
+            const std::uint32_t z0 = z0_partial ^ Crc32Tab::crc32(0, msb(y0));
 
             // recoverShortPassword is inlined below for performance
 
@@ -126,7 +126,7 @@ void Recovery::recoverLongPassword(const Keys& initial)
     {
         prefix.push_back(charset[0]);
 
-        for (byte pi : charset)
+        for (std::uint8_t pi : charset)
         {
             Keys init = initial;
             init.update(pi);
@@ -144,14 +144,14 @@ void Recovery::recursion(int i)
 {
     if (i != 1) // the Y-list is not complete so generate Y{i-1} values
     {
-        uint32 fy  = (y[i] - 1) * MultTab::MULTINV;
-        uint32 ffy = (fy - 1) * MultTab::MULTINV;
+        const std::uint32_t fy  = (y[i] - 1) * MultTab::MULTINV;
+        const std::uint32_t ffy = (fy - 1) * MultTab::MULTINV;
 
         // get possible LSB(Xi)
-        for (byte xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & MASK_24_32))))
+        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & MASK_24_32))))
         {
             // compute corresponding Y{i-1}
-            uint32 yim1 = fy - xi_0_8;
+            const std::uint32_t yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
             if (ffy - MultTab::getMultinv(xi_0_8) - (y[i - 2] & MASK_24_32) <= MAXDIFF_0_24 &&
@@ -177,9 +177,9 @@ void Recovery::recursion(int i)
         // complete X values and derive password
         for (int i = 5; 0 <= i; i--)
         {
-            uint32 xi_xor_pi = Crc32Tab::crc32inv(x[i + 1], 0);
-            p[i]             = lsb(xi_xor_pi ^ x[i]);
-            x[i]             = xi_xor_pi ^ p[i];
+            const std::uint32_t xi_xor_pi = Crc32Tab::crc32inv(x[i + 1], 0);
+            p[i]                          = lsb(xi_xor_pi ^ x[i]);
+            x[i]                          = xi_xor_pi ^ p[i];
         }
 
         if (x[0] == x0) // the password is successfully recovered
@@ -201,7 +201,7 @@ void Recovery::recursion(int i)
                         const auto fillBefore  = os.fill('0');
 
                         os << "Password: " << password << " (as bytes:";
-                        for (byte c : password)
+                        for (std::uint8_t c : password)
                             os << ' ' << std::setw(2) << static_cast<int>(c);
                         os << ')' << std::endl;
 
@@ -256,7 +256,7 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
                 {
                     for (auto i = nextCandidateIndex++; i < charsetSize; i = nextCandidateIndex++)
                     {
-                        byte pm4 = worker.charset[i];
+                        std::uint8_t pm4 = worker.charset[i];
 
                         Keys init = initial;
                         init.update(pm4);
@@ -315,8 +315,8 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
                 {
                     for (auto i = nextCandidateIndex++; i < charsetSize * charsetSize; i = nextCandidateIndex++)
                     {
-                        byte pm4 = worker.charset[i / charsetSize];
-                        byte pm3 = worker.charset[i % charsetSize];
+                        std::uint8_t pm4 = worker.charset[i / charsetSize];
+                        std::uint8_t pm3 = worker.charset[i % charsetSize];
 
                         Keys init = initial;
                         init.update(pm4);
@@ -361,7 +361,7 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
 
         for (int i = index_start; i < charsetSize; i++)
         {
-            byte pi = worker.charset[i];
+            std::uint8_t pi = worker.charset[i];
 
             Keys init = initial;
             init.update(pi);
@@ -386,9 +386,9 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
 
 } // namespace
 
-std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength,
-                                         std::size_t maxLength, std::string& start, int jobs, bool exhaustive,
-                                         Progress& progress)
+std::vector<std::string> recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset,
+                                         std::size_t minLength, std::size_t maxLength, std::string& start, int jobs,
+                                         bool exhaustive, Progress& progress)
 {
     std::vector<std::string> solutions;
     std::mutex               solutionsMutex;

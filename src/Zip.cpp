@@ -40,7 +40,7 @@ std::ostream& write(std::ostream& os, const T& x)
     return os;
 }
 
-enum class Signature : uint32
+enum class Signature : std::uint32_t
 {
     LOCAL_FILE_HEADER        = 0x04034b50,
     CENTRAL_DIRECTORY_HEADER = 0x02014b50,
@@ -51,35 +51,35 @@ enum class Signature : uint32
 
 bool checkSignature(std::istream& is, const Signature& signature)
 {
-    uint32 sig;
-    return read(is, sig) && sig == static_cast<uint32>(signature);
+    std::uint32_t sig;
+    return read(is, sig) && sig == static_cast<std::uint32_t>(signature);
 }
 
-uint64 findCentralDirectoryOffset(std::istream& is)
+std::uint64_t findCentralDirectoryOffset(std::istream& is)
 {
-    uint64 centralDirectoryOffset;
+    std::uint64_t centralDirectoryOffset;
 
     // find end of central directory signature
     {
-        uint32 signature;
-        uint16 commentLength = 0;
+        std::uint32_t signature;
+        std::uint16_t commentLength = 0;
         do
         {
             is.seekg(-22 - commentLength, std::ios::end);
-        } while (read(is, signature) && signature != static_cast<uint32>(Signature::EOCD) &&
+        } while (read(is, signature) && signature != static_cast<std::uint32_t>(Signature::EOCD) &&
                  commentLength++ < MASK_0_16);
 
-        if (!is || signature != static_cast<uint32>(Signature::EOCD))
+        if (!is || signature != static_cast<std::uint32_t>(Signature::EOCD))
             throw Zip::Error("could not find end of central directory signature");
     }
 
     // read end of central directory record
     {
-        uint16 disk;
+        std::uint16_t disk;
 
         read(is, disk);
         is.seekg(10, std::ios::cur);
-        read<uint64, 4>(is, centralDirectoryOffset);
+        read<std::uint64_t, 4>(is, centralDirectoryOffset);
 
         if (!is)
             throw Zip::Error("could not read end of central directory record");
@@ -91,7 +91,7 @@ uint64 findCentralDirectoryOffset(std::istream& is)
     is.seekg(-40, std::ios::cur);
     if (checkSignature(is, Signature::ZIP64_EOCD_LOCATOR))
     {
-        uint64 zip64EndOfCentralDirectoryOffset;
+        std::uint64_t zip64EndOfCentralDirectoryOffset;
 
         is.seekg(4, std::ios::cur);
         read(is, zip64EndOfCentralDirectoryOffset);
@@ -103,7 +103,7 @@ uint64 findCentralDirectoryOffset(std::istream& is)
         is.seekg(zip64EndOfCentralDirectoryOffset, std::ios::beg);
         if (checkSignature(is, Signature::ZIP64_EOCD))
         {
-            uint16 versionNeededToExtract;
+            std::uint16_t versionNeededToExtract;
 
             is.seekg(10, std::ios::cur);
             read(is, versionNeededToExtract);
@@ -141,14 +141,14 @@ Zip::Iterator& Zip::Iterator::operator++()
     if (!checkSignature(*m_is, Signature::CENTRAL_DIRECTORY_HEADER))
         return *this = Iterator{};
 
-    uint16 flags;
-    uint16 method;
-    uint16 lastModTime;
-    uint16 lastModDate;
+    std::uint16_t flags;
+    std::uint16_t method;
+    std::uint16_t lastModTime;
+    std::uint16_t lastModDate;
 
-    uint16 filenameLength;
-    uint16 extraFieldLength;
-    uint16 fileCommentLength;
+    std::uint16_t filenameLength;
+    std::uint16_t extraFieldLength;
+    std::uint16_t fileCommentLength;
 
     m_is->seekg(4, std::ios::cur);
     read(*m_is, flags);
@@ -156,13 +156,13 @@ Zip::Iterator& Zip::Iterator::operator++()
     read(*m_is, lastModTime);
     read(*m_is, lastModDate);
     read(*m_is, m_entry->crc32);
-    read<uint64, 4>(*m_is, m_entry->packedSize);
-    read<uint64, 4>(*m_is, m_entry->uncompressedSize);
+    read<std::uint64_t, 4>(*m_is, m_entry->packedSize);
+    read<std::uint64_t, 4>(*m_is, m_entry->uncompressedSize);
     read(*m_is, filenameLength);
     read(*m_is, extraFieldLength);
     read(*m_is, fileCommentLength);
     m_is->seekg(8, std::ios::cur);
-    read<uint64, 4>(*m_is, m_entry->offset);
+    read<std::uint64_t, 4>(*m_is, m_entry->offset);
     read(*m_is, m_entry->name, filenameLength);
 
     m_entry->encryption = flags & 1
@@ -171,13 +171,13 @@ Zip::Iterator& Zip::Iterator::operator++()
 
     m_entry->compression = static_cast<Compression>(method);
 
-    m_entry->checkByte = (flags >> 3) & 1 ? static_cast<byte>(lastModTime >> 8) : msb(m_entry->crc32);
+    m_entry->checkByte = (flags >> 3) & 1 ? static_cast<std::uint8_t>(lastModTime >> 8) : msb(m_entry->crc32);
 
     for (int remaining = extraFieldLength; remaining > 0;)
     {
         // read extra field header
-        uint16 id;
-        uint16 size;
+        std::uint16_t id;
+        std::uint16_t size;
         read(*m_is, id);
         read(*m_is, size);
         remaining -= 4 + size;
@@ -205,12 +205,12 @@ Zip::Iterator& Zip::Iterator::operator++()
         case 0x7075: // Info-ZIP Unicode Path
             if (5 <= size)
             {
-                uint32 nameCrc32 = MASK_0_32;
-                for (byte b : m_entry->name)
+                std::uint32_t nameCrc32 = MASK_0_32;
+                for (std::uint8_t b : m_entry->name)
                     nameCrc32 = Crc32Tab::crc32(nameCrc32, b);
                 nameCrc32 ^= MASK_0_32;
 
-                uint32 expectedNameCrc32;
+                std::uint32_t expectedNameCrc32;
                 m_is->seekg(1, std::ios::cur);
                 read(*m_is, expectedNameCrc32);
                 size -= 5;
@@ -226,7 +226,7 @@ Zip::Iterator& Zip::Iterator::operator++()
         case 0x9901: // AE-x encryption structure
             if (7 <= size)
             {
-                uint16 method;
+                std::uint16_t method;
                 m_is->seekg(5, std::ios::cur);
                 read(*m_is, method);
                 size -= 7;
@@ -314,7 +314,7 @@ std::istream& Zip::seek(const Entry& entry) const
         throw Error("could not find local file header");
 
     // skip local file header
-    uint16 nameSize, extraSize;
+    std::uint16_t nameSize, extraSize;
     m_is.seekg(22, std::ios::cur);
     read(m_is, nameSize);
     read(m_is, extraSize);
@@ -323,23 +323,23 @@ std::istream& Zip::seek(const Entry& entry) const
     return m_is;
 }
 
-bytevec Zip::load(const Entry& entry, std::size_t count) const
+std::vector<std::uint8_t> Zip::load(const Entry& entry, std::size_t count) const
 {
-    return loadStream(seek(entry), std::min(entry.packedSize, static_cast<uint64>(count)));
+    return loadStream(seek(entry), std::min(entry.packedSize, static_cast<std::uint64_t>(count)));
 }
 
 void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys, Progress& progress) const
 {
     // Store encrypted entries local file header offset and packed size.
     // Use std::map to sort them by local file header offset.
-    std::map<uint64, uint64> packedSizeByLocalOffset;
+    std::map<std::uint64_t, std::uint64_t> packedSizeByLocalOffset;
     for (const auto& entry : *this)
         if (entry.encryption == Encryption::Traditional)
             packedSizeByLocalOffset.insert({entry.offset, entry.packedSize});
 
     // Rewind input stream and iterate on encrypted entries to change the keys, copy the rest.
     m_is.seekg(0, std::ios::beg);
-    uint64 currentOffset = 0;
+    std::uint64_t currentOffset = 0;
 
     progress.done  = 0;
     progress.total = packedSizeByLocalOffset.size();
@@ -356,12 +356,12 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
         if (!checkSignature(m_is, Signature::LOCAL_FILE_HEADER))
             throw Error("could not find local file header");
 
-        write(os, static_cast<uint32>(Signature::LOCAL_FILE_HEADER));
+        write(os, static_cast<std::uint32_t>(Signature::LOCAL_FILE_HEADER));
 
         std::copy_n(std::istreambuf_iterator<char>(m_is), 22, std::ostreambuf_iterator<char>(os));
         m_is.get();
 
-        uint16 filenameLength, extraSize;
+        std::uint16_t filenameLength, extraSize;
         read(m_is, filenameLength);
         read(m_is, extraSize);
         write(os, filenameLength);
@@ -380,8 +380,8 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
         std::generate_n(std::ostreambuf_iterator<char>(os), packedSize,
                         [&in, &decrypt, &encrypt]() -> char
                         {
-                            byte p = *in++ ^ decrypt.getK();
-                            byte c = p ^ encrypt.getK();
+                            std::uint8_t p = *in++ ^ decrypt.getK();
+                            std::uint8_t c = p ^ encrypt.getK();
                             decrypt.update(p);
                             encrypt.update(p);
                             return c;

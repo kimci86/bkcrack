@@ -7,13 +7,13 @@
 #include <algorithm>
 #include <bitset>
 
-Zreduction::Zreduction(const bytevec& keystream)
+Zreduction::Zreduction(const std::vector<std::uint8_t>& keystream)
 : keystream(keystream)
 {
     index = keystream.size() - 1;
     zi_vector.reserve(1 << 22);
 
-    for (uint32 zi_10_32_shifted = 0; zi_10_32_shifted < 1 << 22; zi_10_32_shifted++)
+    for (std::uint32_t zi_10_32_shifted = 0; zi_10_32_shifted < 1 << 22; zi_10_32_shifted++)
         if (KeystreamTab::hasZi_2_16(keystream[index], zi_10_32_shifted << 10))
             zi_vector.push_back(zi_10_32_shifted << 10);
 }
@@ -21,15 +21,15 @@ Zreduction::Zreduction(const bytevec& keystream)
 void Zreduction::reduce(Progress& progress)
 {
     // variables to keep track of the smallest Zi[2,32) vector
-    bool        tracking = false;
-    u32vec      bestCopy;
-    std::size_t bestIndex = index, bestSize = TRACK_SIZE;
+    bool                       tracking = false;
+    std::vector<std::uint32_t> bestCopy;
+    std::size_t                bestIndex = index, bestSize = TRACK_SIZE;
 
     // variables to wait for a limited number of steps when a small enough vector is found
     bool        waiting = false;
     std::size_t wait    = 0;
 
-    u32vec zim1_10_32_vector;
+    std::vector<std::uint32_t> zim1_10_32_vector;
     zim1_10_32_vector.reserve(1 << 22);
     std::bitset<1 << 22> zim1_10_32_set;
 
@@ -43,11 +43,11 @@ void Zreduction::reduce(Progress& progress)
         std::size_t number_of_zim1_2_32 = 0;
 
         // generate the Z{i-1}[10,32) values
-        for (uint32 zi_10_32 : zi_vector)
-            for (uint32 zi_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i], zi_10_32))
+        for (std::uint32_t zi_10_32 : zi_vector)
+            for (std::uint32_t zi_2_16 : KeystreamTab::getZi_2_16_vector(keystream[i], zi_10_32))
             {
                 // get Z{i-1}[10,32) from CRC32^-1
-                uint32 zim1_10_32 = Crc32Tab::getZim1_10_32(zi_10_32 | zi_2_16);
+                std::uint32_t zim1_10_32 = Crc32Tab::getZim1_10_32(zi_10_32 | zi_2_16);
                 // collect without duplicates only those that are compatible with keystream{i-1}
                 if (!zim1_10_32_set[zim1_10_32 >> 10] && KeystreamTab::hasZi_2_16(keystream[i - 1], zim1_10_32))
                 {
@@ -106,14 +106,15 @@ void Zreduction::generate()
     std::size_t number_of_zi_10_32 = zi_vector.size();
     for (std::size_t i = 0; i < number_of_zi_10_32; i++)
     {
-        const u32vec& zi_2_16_vector = KeystreamTab::getZi_2_16_vector(keystream[index], zi_vector[i]);
+        const std::vector<std::uint32_t>& zi_2_16_vector =
+            KeystreamTab::getZi_2_16_vector(keystream[index], zi_vector[i]);
         for (std::size_t j = 1; j < zi_2_16_vector.size(); j++)
             zi_vector.push_back(zi_vector[i] | zi_2_16_vector[j]);
         zi_vector[i] |= zi_2_16_vector[0];
     }
 }
 
-const u32vec& Zreduction::getCandidates() const
+const std::vector<std::uint32_t>& Zreduction::getCandidates() const
 {
     return zi_vector;
 }

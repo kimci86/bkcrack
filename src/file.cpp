@@ -13,9 +13,9 @@ std::ifstream openInput(const std::string& filename)
         throw FileError("could not open input file " + filename);
 }
 
-bytevec loadStream(std::istream& is, std::size_t size)
+std::vector<std::uint8_t> loadStream(std::istream& is, std::size_t size)
 {
-    bytevec                        content;
+    std::vector<std::uint8_t>      content;
     std::istreambuf_iterator<char> it(is);
     for (std::size_t i = 0; i < size && it != std::istreambuf_iterator<char>(); i++, ++it)
         content.push_back(*it);
@@ -23,7 +23,7 @@ bytevec loadStream(std::istream& is, std::size_t size)
     return content;
 }
 
-bytevec loadFile(const std::string& filename, std::size_t size)
+std::vector<std::uint8_t> loadFile(const std::string& filename, std::size_t size)
 {
     std::ifstream is = openInput(filename);
     return loadStream(is, size);

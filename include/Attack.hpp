@@ -26,7 +26,7 @@ public:
            bool exhaustive, Progress& progress);
 
     /// Carry out the attack for the given Z[2,32) value
-    void carryout(uint32 z7_2_32);
+    void carryout(std::uint32_t z7_2_32);
 
     enum : std::size_t
     {
@@ -56,9 +56,9 @@ private:
     const bool         exhaustive;
     Progress&          progress;
 
-    u32arr<CONTIGUOUS_SIZE> zlist;
-    u32arr<CONTIGUOUS_SIZE> ylist; // the first two elements are not used
-    u32arr<CONTIGUOUS_SIZE> xlist; // the first four elements are not used
+    std::array<std::uint32_t, CONTIGUOUS_SIZE> zlist;
+    std::array<std::uint32_t, CONTIGUOUS_SIZE> ylist; // the first two elements are not used
+    std::array<std::uint32_t, CONTIGUOUS_SIZE> xlist; // the first four elements are not used
 };
 
 /// \brief Iterate on Zi[2,32) candidates to try and find complete internal keys
@@ -71,7 +71,7 @@ private:
 /// \param exhaustive True to try and find all valid keys,
 ///                   false to stop searching after the first one is found
 /// \param progress Object to report progress
-std::vector<Keys> attack(const Data& data, const u32vec& zi_2_32_vector, int& start, std::size_t index, int jobs,
-                         bool exhaustive, Progress& progress);
+std::vector<Keys> attack(const Data& data, const std::vector<std::uint32_t>& zi_2_32_vector, int& start,
+                         std::size_t index, int jobs, bool exhaustive, Progress& progress);
 
 #endif // BKCRACK_ATTACK_HPP

@@ -12,11 +12,11 @@
 ///
 ///     input [ label="filename" ];
 ///     output [ label="filename" ];
-///     bytevec [ URL="\ref bytevec" ];
+///     buffer [ label="std::vector<std::uint8_t>" ];
 ///
 ///     input -> "std::ifstream" [ label="openInput", URL="\ref openInput"];
-///     "std::ifstream" -> bytevec [ label="loadStream", URL="\ref loadStream"];
-///     input -> bytevec [ label="loadFile", URL="\ref loadFile"];
+///     "std::ifstream" -> buffer [ label="loadStream", URL="\ref loadStream"];
+///     input -> buffer [ label="loadFile", URL="\ref loadFile"];
 ///
 ///     output -> "std::ofstream" [ label="openOutput", URL="\ref openOutput"];
 /// }
@@ -39,11 +39,11 @@ public:
 std::ifstream openInput(const std::string& filename);
 
 /// Load at most \a size bytes from an input stream
-bytevec loadStream(std::istream& is, std::size_t size);
+std::vector<std::uint8_t> loadStream(std::istream& is, std::size_t size);
 
 /// \brief Load at most \a size bytes from a file
 /// \exception FileError if the file cannot be opened
-bytevec loadFile(const std::string& filename, std::size_t size);
+std::vector<std::uint8_t> loadFile(const std::string& filename, std::size_t size);
 
 /// \brief Open an output file stream
 /// \exception FileError if the file cannot be opened

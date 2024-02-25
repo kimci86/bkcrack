@@ -148,7 +148,7 @@ Arguments::Arguments(int argc, const char* argv[])
 Data Arguments::loadData() const
 {
     // load known plaintext
-    bytevec plaintext;
+    std::vector<std::uint8_t> plaintext;
     if (plainArchive)
     {
         const auto archive = Zip{*plainArchive};
@@ -166,8 +166,8 @@ Data Arguments::loadData() const
     if (!extraPlaintext.empty())
         needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + extraPlaintext.rbegin()->first + 1);
 
-    bytevec                            ciphertext;
-    std::optional<std::map<int, byte>> extraPlaintextWithCheckByte;
+    std::vector<std::uint8_t>                  ciphertext;
+    std::optional<std::map<int, std::uint8_t>> extraPlaintextWithCheckByte;
     if (cipherArchive)
     {
         const auto archive = Zip{*cipherArchive};
@@ -229,7 +229,7 @@ void Arguments::parseArgument()
     case Option::extraPlaintext:
     {
         int i = readInt("offset");
-        for (byte b : readHex("data"))
+        for (std::uint8_t b : readHex("data"))
             extraPlaintext[i++] = b;
         break;
     }
@@ -287,7 +287,7 @@ void Arguments::parseArgument()
         break;
     case Option::recoveryStart:
     {
-        const bytevec checkpoint = readHex("checkpoint");
+        const auto checkpoint = readHex("checkpoint");
         recoveryStart.assign(checkpoint.begin(), checkpoint.end());
         break;
     }
@@ -373,7 +373,7 @@ std::size_t Arguments::readSize(const std::string& description)
     return parseSize(readString(description));
 }
 
-bytevec Arguments::readHex(const std::string& description)
+std::vector<std::uint8_t> Arguments::readHex(const std::string& description)
 {
     std::string str = readString(description);
 
@@ -382,14 +382,14 @@ bytevec Arguments::readHex(const std::string& description)
     if (!std::all_of(str.begin(), str.end(), [](unsigned char c) { return std::isxdigit(c); }))
         throw Error("expected " + description + " in hexadecimal, got " + str);
 
-    bytevec data;
+    std::vector<std::uint8_t> data;
     for (std::size_t i = 0; i < str.length(); i += 2)
-        data.push_back(static_cast<byte>(std::stoul(str.substr(i, 2), nullptr, 16)));
+        data.push_back(static_cast<std::uint8_t>(std::stoul(str.substr(i, 2), nullptr, 16)));
 
     return data;
 }
 
-uint32 Arguments::readKey(const std::string& description)
+std::uint32_t Arguments::readKey(const std::string& description)
 {
     std::string str = readString(description);
 
@@ -398,10 +398,10 @@ uint32 Arguments::readKey(const std::string& description)
     if (!std::all_of(str.begin(), str.end(), [](unsigned char c) { return std::isxdigit(c); }))
         throw Error("expected " + description + " in hexadecimal, got " + str);
 
-    return static_cast<uint32>(std::stoul(str, nullptr, 16));
+    return static_cast<std::uint32_t>(std::stoul(str, nullptr, 16));
 }
 
-bytevec Arguments::readCharset()
+std::vector<std::uint8_t> Arguments::readCharset()
 {
     const std::bitset<256> lowercase   = charRange('a', 'z');
     const std::bitset<256> uppercase   = charRange('A', 'Z');
@@ -446,7 +446,7 @@ bytevec Arguments::readCharset()
             charset.set(*it);
     }
 
-    bytevec result;
+    std::vector<std::uint8_t> result;
     for (int c = 0; c < 256; c++)
         if (charset[c])
             result.push_back(c);

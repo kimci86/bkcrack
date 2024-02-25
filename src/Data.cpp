@@ -21,7 +21,7 @@ struct Range
         return size() < other.size();
     }
 
-    std::vector<std::pair<std::size_t, byte>>::iterator begin, end;
+    std::vector<std::pair<std::size_t, std::uint8_t>>::iterator begin, end;
 };
 
 } // namespace
@@ -31,7 +31,8 @@ Data::Error::Error(const std::string& description)
 {
 }
 
-Data::Data(bytevec ciphertextArg, bytevec plaintextArg, int offsetArg, const std::map<int, byte>& extraPlaintextArg)
+Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> plaintextArg, int offsetArg,
+           const std::map<int, std::uint8_t>& extraPlaintextArg)
 : ciphertext(std::move(ciphertextArg))
 , plaintext(std::move(plaintextArg))
 {
@@ -60,8 +61,9 @@ Data::Data(bytevec ciphertextArg, bytevec plaintextArg, int offsetArg, const std
     offset = ENCRYPTION_HEADER_SIZE + offsetArg;
 
     std::transform(extraPlaintextArg.begin(), extraPlaintextArg.end(), std::back_inserter(extraPlaintext),
-                   [](const std::pair<int, byte>& extra)
-                   { return std::make_pair(ENCRYPTION_HEADER_SIZE + extra.first, extra.second); });
+                   [](const std::pair<int, std::uint8_t>& extra) {
+                       return std::pair{ENCRYPTION_HEADER_SIZE + extra.first, extra.second};
+                   });
 
     // merge contiguous plaintext with adjacent extra plaintext
     {
@@ -70,12 +72,14 @@ Data::Data(bytevec ciphertextArg, bytevec plaintextArg, int offsetArg, const std
         // - [before, after)                  overlapping contiguous plaintext
         // - [after, extraPlaintext.end())    after contiguous plaintext
 
-        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
-        auto after  = std::lower_bound(before, extraPlaintext.end(), std::make_pair(offset + plaintext.size(), byte()));
+        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::pair{offset, std::uint8_t{}});
+        auto after =
+            std::lower_bound(before, extraPlaintext.end(), std::pair{offset + plaintext.size(), std::uint8_t{}});
 
         // overwrite overlapping plaintext
         std::for_each(before, after,
-                      [this](const std::pair<std::size_t, byte>& e) { plaintext[e.first - offset] = e.second; });
+                      [this](const std::pair<std::size_t, std::uint8_t>& e)
+                      { plaintext[e.first - offset] = e.second; });
 
         // merge contiguous plaintext with extra plaintext immediately before
         while (before != extraPlaintext.begin() && (before - 1)->first == offset - 1)
@@ -122,7 +126,7 @@ Data::Data(bytevec ciphertextArg, bytevec plaintextArg, int offsetArg, const std
             // rotate extra plaintext so that it will be sorted at the end of this scope
             {
                 auto before =
-                    std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
+                    std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::pair{offset, std::uint8_t{}});
                 if (offset < rangeOffset)
                     range = {before, std::rotate(before, range.begin, range.end)};
                 else
@@ -150,16 +154,17 @@ Data::Data(bytevec ciphertextArg, bytevec plaintextArg, int offsetArg, const std
 
     // reorder remaining extra plaintext for filtering
     {
-        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::make_pair(offset, byte()));
+        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::pair{offset, std::uint8_t{}});
         std::reverse(extraPlaintext.begin(), before);
-        std::inplace_merge(extraPlaintext.begin(), before, extraPlaintext.end(),
-                           [this](const std::pair<std::size_t, byte>& a, const std::pair<std::size_t, byte>& b) {
-                               return absdiff(a.first, offset + Attack::CONTIGUOUS_SIZE) <
-                                      absdiff(b.first, offset + Attack::CONTIGUOUS_SIZE);
-                           });
+        std::inplace_merge(
+            extraPlaintext.begin(), before, extraPlaintext.end(),
+            [this](const std::pair<std::size_t, std::uint8_t>& a, const std::pair<std::size_t, std::uint8_t>& b) {
+                return absdiff(a.first, offset + Attack::CONTIGUOUS_SIZE) <
+                       absdiff(b.first, offset + Attack::CONTIGUOUS_SIZE);
+            });
     }
 
     // compute keystream
     std::transform(plaintext.begin(), plaintext.end(), ciphertext.begin() + offset, std::back_inserter(keystream),
-                   std::bit_xor<byte>());
+                   std::bit_xor<std::uint8_t>());
 }

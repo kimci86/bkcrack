@@ -14,8 +14,8 @@ class Recovery
 {
 public:
     /// Constructor
-    Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions, std::mutex& solutionsMutex,
-             bool exhaustive, Progress& progress);
+    Recovery(const Keys& keys, const std::vector<std::uint8_t>& charset, std::vector<std::string>& solutions,
+             std::mutex& solutionsMutex, bool exhaustive, Progress& progress);
 
     /// \brief Look for a password of length 6 or less
     ///
@@ -46,7 +46,7 @@ public:
     std::string prefix;
 
     /// Set of characters to generate password candidates
-    const bytevec& charset;
+    const std::vector<std::uint8_t>& charset;
 
 private:
     // iterate recursively on possible Y values
@@ -60,10 +60,10 @@ private:
 
     // cipher state (X,Y,Z)_i for index i in [0, 6] where the last state (X,Y,Z)_6 is
     // the representation of the password to recover
-    u32arr<7> x, y, z;
-    uint32    x0; // backup of candidate X value for convenience
+    std::array<std::uint32_t, 7> x, y, z;
+    std::uint32_t                x0; // backup of candidate X value for convenience
 
-    bytearr<6> p; // password last 6 bytes
+    std::array<std::uint8_t, 6> p; // password last 6 bytes
 
     std::vector<std::string>& solutions; // shared output vector of valid passwords
     std::mutex&               solutionsMutex;
@@ -85,8 +85,8 @@ private:
 /// \return A vector of passwords associated with the given keys.
 ///         A vector is needed instead of a single string because there can be
 ///         collisions (i.e. several passwords for the same keys).
-std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength,
-                                         std::size_t maxLength, std::string& start, int jobs, bool exhaustive,
-                                         Progress& progress);
+std::vector<std::string> recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset,
+                                         std::size_t minLength, std::size_t maxLength, std::string& start, int jobs,
+                                         bool exhaustive, Progress& progress);
 
 #endif // BKCRACK_PASSWORD_HPP

@@ -6,7 +6,7 @@ Crc32Tab::Crc32Tab()
 {
     for (int b = 0; b < 256; b++)
     {
-        uint32 crc = b;
+        std::uint32_t crc = b;
         // compute CRC32 from the original definition
         for (int i = 0; i < 8; i++)
             if (crc & 1)
