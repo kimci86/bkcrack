@@ -10,7 +10,7 @@ class SigintHandler
 {
 public:
     /// Enable the signal handler
-    SigintHandler(std::atomic<Progress::State>& destination);
+    explicit SigintHandler(std::atomic<Progress::State>& destination);
 
     /// Disable the signal handler
     ~SigintHandler();

@@ -18,7 +18,7 @@ public:
     };
 
     /// Constructor
-    Progress(std::ostream& os);
+    explicit Progress(std::ostream& os);
 
     /// Get exclusive access to the shared output stream and output progress
     /// information with the given function

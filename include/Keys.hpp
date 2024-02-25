@@ -9,11 +9,14 @@
 class Keys
 {
 public:
-    /// Constructor
-    Keys(std::uint32_t x = 0x12345678, std::uint32_t y = 0x23456789, std::uint32_t z = 0x34567890);
+    /// Construct default state
+    Keys() = default;
+
+    /// Construct keys from given components
+    Keys(std::uint32_t x, std::uint32_t y, std::uint32_t z);
 
     /// Construct keys associated to the given password
-    Keys(const std::string& password);
+    explicit Keys(const std::string& password);
 
     /// Update the state with a plaintext byte
     inline void update(std::uint8_t p)
@@ -70,7 +73,7 @@ public:
     }
 
 private:
-    std::uint32_t x, y, z;
+    std::uint32_t x = 0x12345678, y = 0x23456789, z = 0x34567890;
 };
 
 #endif // BKCRACK_KEYS_HPP

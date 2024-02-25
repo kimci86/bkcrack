@@ -18,7 +18,7 @@ public:
     {
     public:
         /// Constructor
-        Error(const std::string& description);
+        explicit Error(const std::string& description);
     };
 
     /// \brief Constructor parsing command line arguments

@@ -15,7 +15,7 @@ class BaseError : public std::runtime_error
 {
 public:
     /// Constructor
-    BaseError(const std::string& type, const std::string& description);
+    explicit BaseError(const std::string& type, const std::string& description);
 };
 
 // utility functions

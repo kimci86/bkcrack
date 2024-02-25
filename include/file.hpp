@@ -31,7 +31,7 @@ class FileError : public BaseError
 {
 public:
     /// Constructor
-    FileError(const std::string& description);
+    explicit FileError(const std::string& description);
 };
 
 /// \brief Open an input file stream

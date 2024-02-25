@@ -9,7 +9,7 @@ class Zreduction
 {
 public:
     /// Constructor generating Zi[10,32) values from the last keystream byte
-    Zreduction(const std::vector<std::uint8_t>& keystream);
+    explicit Zreduction(const std::vector<std::uint8_t>& keystream);
 
     /// Reduce Zi[10,32) number using extra contiguous keystream
     void reduce(Progress& progress);

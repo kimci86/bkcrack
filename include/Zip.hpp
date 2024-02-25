@@ -25,7 +25,7 @@ public:
     {
     public:
         /// Constructor
-        Error(const std::string& description);
+        explicit Error(const std::string& description);
     };
 
     /// Encryption algorithm

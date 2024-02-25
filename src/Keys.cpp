@@ -8,7 +8,6 @@ Keys::Keys(std::uint32_t x, std::uint32_t y, std::uint32_t z)
 }
 
 Keys::Keys(const std::string& password)
-: Keys()
 {
     for (char p : password)
         update(p);

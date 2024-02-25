@@ -16,7 +16,7 @@ struct Data
     {
     public:
         /// Constructor
-        Error(const std::string& description);
+        explicit Error(const std::string& description);
     };
 
     /// \brief Construct data and check it can be used to carry out an attack
