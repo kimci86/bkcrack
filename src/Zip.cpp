@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <numeric>
 
 namespace
 {
@@ -205,10 +206,9 @@ Zip::Iterator& Zip::Iterator::operator++()
         case 0x7075: // Info-ZIP Unicode Path
             if (5 <= size)
             {
-                std::uint32_t nameCrc32 = mask<0, 32>;
-                for (std::uint8_t b : m_entry->name)
-                    nameCrc32 = Crc32Tab::crc32(nameCrc32, b);
-                nameCrc32 ^= mask<0, 32>;
+                const auto nameCrc32 =
+                    std::accumulate(m_entry->name.begin(), m_entry->name.end(), mask<0, 32>, Crc32Tab::crc32) ^
+                    mask<0, 32>;
 
                 std::uint32_t expectedNameCrc32;
                 m_is->seekg(1, std::ios::cur);
