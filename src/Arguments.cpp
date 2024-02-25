@@ -120,7 +120,7 @@ Arguments::Arguments(int argc, const char* argv[])
         if (plainIndex && !plainArchive)
             throw Error("-P parameter is missing (required by --plain-index)");
 
-        constexpr int minimumOffset = -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE);
+        constexpr int minimumOffset = -static_cast<int>(Data::encryptionHeaderSize);
         if (offset < minimumOffset)
             throw Error("plaintext offset " + std::to_string(offset) + " is too small (minimum is " +
                         std::to_string(minimumOffset) + ")");
@@ -160,11 +160,11 @@ Data Arguments::loadData() const
         plaintext = loadFile(*plainFile, plainFilePrefix);
 
     // load ciphertext needed by the attack
-    std::size_t needed = Data::ENCRYPTION_HEADER_SIZE;
+    std::size_t needed = Data::encryptionHeaderSize;
     if (!plaintext.empty())
-        needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + offset + plaintext.size());
+        needed = std::max(needed, Data::encryptionHeaderSize + offset + plaintext.size());
     if (!extraPlaintext.empty())
-        needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + extraPlaintext.rbegin()->first + 1);
+        needed = std::max(needed, Data::encryptionHeaderSize + extraPlaintext.rbegin()->first + 1);
 
     std::vector<std::uint8_t>                  ciphertext;
     std::optional<std::map<int, std::uint8_t>> extraPlaintextWithCheckByte;

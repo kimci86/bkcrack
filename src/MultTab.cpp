@@ -4,9 +4,9 @@ const MultTab MultTab::instance;
 
 MultTab::MultTab()
 {
-    std::uint32_t prod    = 0; // x * MULT
-    std::uint32_t prodinv = 0; // x * MULT^-1
-    for (int x = 0; x < 256; x++, prod += MULT, prodinv += MULTINV)
+    std::uint32_t prod    = 0; // x * mult
+    std::uint32_t prodinv = 0; // x * mult^-1
+    for (int x = 0; x < 256; x++, prod += mult, prodinv += multInv)
     {
         multtab[x]    = prod;
         multinvtab[x] = prodinv;

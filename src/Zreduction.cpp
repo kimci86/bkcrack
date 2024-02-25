@@ -21,24 +21,24 @@ Zreduction::Zreduction(const std::vector<std::uint8_t>& keystream)
 void Zreduction::reduce(Progress& progress)
 {
     // variables to keep track of the smallest Zi[2,32) vector
-    constexpr std::size_t      TRACK_SIZE = 1 << 16;
-    bool                       tracking   = false;
+    constexpr std::size_t      trackSizeThreshold = 1 << 16;
+    bool                       tracking           = false;
     std::vector<std::uint32_t> bestCopy;
-    std::size_t                bestIndex = index, bestSize = TRACK_SIZE;
+    std::size_t                bestIndex = index, bestSize = trackSizeThreshold;
 
     // variables to wait for a limited number of steps when a small enough vector is found
-    constexpr std::size_t WAIT_SIZE = 1 << 8;
-    bool                  waiting   = false;
-    std::size_t           wait      = 0;
+    constexpr std::size_t waitSizeThreshold = 1 << 8;
+    bool                  waiting           = false;
+    std::size_t           wait              = 0;
 
     std::vector<std::uint32_t> zim1_10_32_vector;
     zim1_10_32_vector.reserve(1 << 22);
     std::bitset<1 << 22> zim1_10_32_set;
 
     progress.done  = 0;
-    progress.total = keystream.size() - Attack::CONTIGUOUS_SIZE;
+    progress.total = keystream.size() - Attack::contiguousSize;
 
-    for (std::size_t i = index; i >= Attack::CONTIGUOUS_SIZE; i--)
+    for (std::size_t i = index; i >= Attack::contiguousSize; i--)
     {
         zim1_10_32_vector.clear();
         zim1_10_32_set.reset();
@@ -74,7 +74,7 @@ void Zreduction::reduce(Progress& progress)
                 // keep a copy of the vector because size is about to grow
                 std::swap(bestCopy, zi_vector);
 
-                if (bestSize <= WAIT_SIZE)
+                if (bestSize <= waitSizeThreshold)
                 {
                     // enable waiting
                     waiting = true;
@@ -95,12 +95,12 @@ void Zreduction::reduce(Progress& progress)
     if (tracking)
     {
         // put bestCopy in zi_vector only if bestIndex is not the index of zi_vector
-        if (bestIndex != Attack::CONTIGUOUS_SIZE - 1)
+        if (bestIndex != Attack::contiguousSize - 1)
             std::swap(zi_vector, bestCopy);
         index = bestIndex;
     }
     else
-        index = Attack::CONTIGUOUS_SIZE - 1;
+        index = Attack::contiguousSize - 1;
 }
 
 void Zreduction::generate()

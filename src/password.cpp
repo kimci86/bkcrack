@@ -22,7 +22,7 @@ Recovery::Recovery(const Keys& keys, const std::vector<std::uint8_t>& charset, s
     z[6] = keys.getZ();
 
     // derive Y5
-    y[5] = (y[6] - 1) * MultTab::MULTINV - lsb(x[6]);
+    y[5] = (y[6] - 1) * MultTab::multInv - lsb(x[6]);
 
     // derive more Z bytes
     for (int i = 6; 1 < i; i--)
@@ -32,13 +32,13 @@ Recovery::Recovery(const Keys& keys, const std::vector<std::uint8_t>& charset, s
     for (std::uint8_t p5 : charset)
     {
         x[5] = Crc32Tab::crc32inv(x[6], p5);
-        y[4] = (y[5] - 1) * MultTab::MULTINV - lsb(x[5]);
+        y[4] = (y[5] - 1) * MultTab::multInv - lsb(x[5]);
         z[3] = Crc32Tab::crc32inv(z[4], msb(y[4]));
 
         for (std::uint8_t p4 : charset)
         {
             x[4] = Crc32Tab::crc32inv(x[5], p4);
-            y[3] = (y[4] - 1) * MultTab::MULTINV - lsb(x[4]);
+            y[3] = (y[4] - 1) * MultTab::multInv - lsb(x[4]);
             z[2] = Crc32Tab::crc32inv(z[3], msb(y[3]));
             z[1] = Crc32Tab::crc32inv(z[2], 0);
             z[0] = Crc32Tab::crc32inv(z[1], 0);
@@ -83,7 +83,7 @@ void Recovery::recoverLongPassword(const Keys& initial)
 
         // precompute as much as we can about the next cipher state without knowing the password byte
         const std::uint32_t x0_partial = Crc32Tab::crc32(initial.getX(), 0);
-        const std::uint32_t y0_partial = initial.getY() * MultTab::MULT + 1;
+        const std::uint32_t y0_partial = initial.getY() * MultTab::mult + 1;
         const std::uint32_t z0_partial = Crc32Tab::crc32(initial.getZ(), 0);
 
         for (std::uint8_t pi : charset)
@@ -144,8 +144,8 @@ void Recovery::recursion(int i)
 {
     if (i != 1) // the Y-list is not complete so generate Y{i-1} values
     {
-        const std::uint32_t fy  = (y[i] - 1) * MultTab::MULTINV;
-        const std::uint32_t ffy = (fy - 1) * MultTab::MULTINV;
+        const std::uint32_t fy  = (y[i] - 1) * MultTab::multInv;
+        const std::uint32_t ffy = (fy - 1) * MultTab::multInv;
 
         // get possible LSB(Xi)
         for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & mask<24, 32>))))
@@ -170,7 +170,7 @@ void Recovery::recursion(int i)
     else // the Y-list is complete
     {
         // only the X1 LSB was not set yet, so do it here
-        x[1] = (y[1] - 1) * MultTab::MULTINV - y[0];
+        x[1] = (y[1] - 1) * MultTab::multInv - y[0];
         if (x[1] > 0xff)
             return;
 

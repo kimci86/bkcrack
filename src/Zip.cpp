@@ -42,11 +42,11 @@ std::ostream& write(std::ostream& os, const T& x)
 
 enum class Signature : std::uint32_t
 {
-    LOCAL_FILE_HEADER        = 0x04034b50,
-    CENTRAL_DIRECTORY_HEADER = 0x02014b50,
-    ZIP64_EOCD               = 0x06064b50,
-    ZIP64_EOCD_LOCATOR       = 0x07064b50,
-    EOCD                     = 0x06054b50
+    LocalFileHeader        = 0x04034b50,
+    CentralDirectoryHeader = 0x02014b50,
+    Zip64Eocd              = 0x06064b50,
+    Zip64EocdLocator       = 0x07064b50,
+    Eocd                   = 0x06054b50
 };
 
 bool checkSignature(std::istream& is, const Signature& signature)
@@ -66,10 +66,10 @@ std::uint64_t findCentralDirectoryOffset(std::istream& is)
         do
         {
             is.seekg(-22 - commentLength, std::ios::end);
-        } while (read(is, signature) && signature != static_cast<std::uint32_t>(Signature::EOCD) &&
+        } while (read(is, signature) && signature != static_cast<std::uint32_t>(Signature::Eocd) &&
                  commentLength++ < mask<0, 16>);
 
-        if (!is || signature != static_cast<std::uint32_t>(Signature::EOCD))
+        if (!is || signature != static_cast<std::uint32_t>(Signature::Eocd))
             throw Zip::Error("could not find end of central directory signature");
     }
 
@@ -89,7 +89,7 @@ std::uint64_t findCentralDirectoryOffset(std::istream& is)
 
     // look for Zip64 end of central directory locator
     is.seekg(-40, std::ios::cur);
-    if (checkSignature(is, Signature::ZIP64_EOCD_LOCATOR))
+    if (checkSignature(is, Signature::Zip64EocdLocator))
     {
         std::uint64_t zip64EndOfCentralDirectoryOffset;
 
@@ -101,7 +101,7 @@ std::uint64_t findCentralDirectoryOffset(std::istream& is)
 
         // read Zip64 end of central directory record
         is.seekg(zip64EndOfCentralDirectoryOffset, std::ios::beg);
-        if (checkSignature(is, Signature::ZIP64_EOCD))
+        if (checkSignature(is, Signature::Zip64Eocd))
         {
             std::uint16_t versionNeededToExtract;
 
@@ -138,7 +138,7 @@ Zip::Iterator::Iterator(const Zip& archive)
 
 Zip::Iterator& Zip::Iterator::operator++()
 {
-    if (!checkSignature(*m_is, Signature::CENTRAL_DIRECTORY_HEADER))
+    if (!checkSignature(*m_is, Signature::CentralDirectoryHeader))
         return *this = Iterator{};
 
     std::uint16_t flags;
@@ -310,7 +310,7 @@ void Zip::checkEncryption(const Entry& entry, Encryption expected)
 std::istream& Zip::seek(const Entry& entry) const
 {
     m_is.seekg(entry.offset, std::ios::beg);
-    if (!checkSignature(m_is, Signature::LOCAL_FILE_HEADER))
+    if (!checkSignature(m_is, Signature::LocalFileHeader))
         throw Error("could not find local file header");
 
     // skip local file header
@@ -353,10 +353,10 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
             m_is.get();
         }
 
-        if (!checkSignature(m_is, Signature::LOCAL_FILE_HEADER))
+        if (!checkSignature(m_is, Signature::LocalFileHeader))
             throw Error("could not find local file header");
 
-        write(os, static_cast<std::uint32_t>(Signature::LOCAL_FILE_HEADER));
+        write(os, static_cast<std::uint32_t>(Signature::LocalFileHeader));
 
         std::copy_n(std::istreambuf_iterator<char>(m_is), 22, std::ostreambuf_iterator<char>(os));
         m_is.get();

@@ -12,7 +12,7 @@
 Attack::Attack(const Data& data, std::size_t index, std::vector<Keys>& solutions, std::mutex& solutionsMutex,
                bool exhaustive, Progress& progress)
 : data(data)
-, index(index + 1 - Attack::CONTIGUOUS_SIZE)
+, index(index + 1 - Attack::contiguousSize)
 , solutions(solutions)
 , solutionsMutex(solutionsMutex)
 , exhaustive(exhaustive)
@@ -53,8 +53,8 @@ void Attack::exploreZlists(int i)
     else // the Z-list is complete so iterate over possible Y values
     {
         // guess Y7[8,24) and keep prod == (Y7[8,32) - 1) * mult^-1
-        for (std::uint32_t y7_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[7])) << 24) - MultTab::MULTINV;
-             y7_8_24 < 1 << 24; y7_8_24 += 1 << 8, prod += MultTab::MULTINV << 8)
+        for (std::uint32_t y7_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[7])) << 24) - MultTab::multInv;
+             y7_8_24 < 1 << 24; y7_8_24 += 1 << 8, prod += MultTab::multInv << 8)
             // get possible Y7[0,8) values
             for (std::uint8_t y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
                 // filter Y7[0,8) using Y6[24,32)
@@ -70,8 +70,8 @@ void Attack::exploreYlists(int i)
 {
     if (i != 3) // the Y-list is not complete so generate Y{i-1} values
     {
-        std::uint32_t fy  = (ylist[i] - 1) * MultTab::MULTINV;
-        std::uint32_t ffy = (fy - 1) * MultTab::MULTINV;
+        std::uint32_t fy  = (ylist[i] - 1) * MultTab::multInv;
+        std::uint32_t ffy = (fy - 1) * MultTab::multInv;
 
         // get possible LSB(Xi)
         for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i - 2] & mask<24, 32>))))
@@ -111,7 +111,7 @@ void Attack::testXlist()
 
     // check that X3 fits with Y1[26,32)
     std::uint32_t y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & mask<26, 32>;
-    if (((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > maxdiff<26>)
+    if (((ylist[3] - 1) * MultTab::multInv - lsb(x) - 1) * MultTab::multInv - y1_26_32 > maxdiff<26>)
         return;
 
     // decipher and filter by comparing with remaining contiguous plaintext forward

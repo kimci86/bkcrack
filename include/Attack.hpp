@@ -29,10 +29,10 @@ public:
     void carryout(std::uint32_t z7_2_32);
 
     /// Number of contiguous known plaintext bytes required by the attack
-    static constexpr std::size_t CONTIGUOUS_SIZE = 8;
+    static constexpr std::size_t contiguousSize = 8;
 
     /// Total number of known plaintext bytes required by the attack
-    static constexpr std::size_t ATTACK_SIZE = 12;
+    static constexpr std::size_t attackSize = 12;
 
 private:
     // iterate recursively over Z-lists
@@ -53,9 +53,9 @@ private:
     const bool         exhaustive;
     Progress&          progress;
 
-    std::array<std::uint32_t, CONTIGUOUS_SIZE> zlist;
-    std::array<std::uint32_t, CONTIGUOUS_SIZE> ylist; // the first two elements are not used
-    std::array<std::uint32_t, CONTIGUOUS_SIZE> xlist; // the first four elements are not used
+    std::array<std::uint32_t, contiguousSize> zlist;
+    std::array<std::uint32_t, contiguousSize> ylist; // the first two elements are not used
+    std::array<std::uint32_t, contiguousSize> xlist; // the first four elements are not used
 };
 
 /// \brief Iterate on Zi[2,32) candidates to try and find complete internal keys

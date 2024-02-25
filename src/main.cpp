@@ -109,7 +109,7 @@ try
     VirtualTerminalSupport vtSupport;
 
     // version information
-    std::cout << "bkcrack " << BKCRACK_VERSION << " - " << BKCRACK_VERSION_DATE << std::endl;
+    std::cout << "bkcrack " << bkcrackVersion << " - " << bkcrackVersionDate << std::endl;
 
     const Arguments args(argc, argv);
     if (args.help)
@@ -146,9 +146,9 @@ try
 
         // generate and reduce Zi[10,32) values
         Zreduction zr(data.keystream);
-        if (data.keystream.size() > Attack::CONTIGUOUS_SIZE)
+        if (data.keystream.size() > Attack::contiguousSize)
         {
-            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::CONTIGUOUS_SIZE)
+            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::contiguousSize)
                       << " bytes of known plaintext" << std::endl;
 
             ConsoleProgress progress(std::cout);
@@ -160,7 +160,7 @@ try
 
         // carry out the attack on the remaining Zi[2,32) values
         std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
-                  << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE))
+                  << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::encryptionHeaderSize))
                   << std::endl;
 
         const auto [state, restart] = [&]() -> std::pair<Progress::State, int>
@@ -229,7 +229,7 @@ try
             std::ofstream decipheredstream = openOutput(*args.decipheredFile);
 
             decipher(cipherstream, ciphersize,
-                     args.keepHeader ? 0 : static_cast<std::size_t>(Data::ENCRYPTION_HEADER_SIZE), decipheredstream,
+                     args.keepHeader ? 0 : static_cast<std::size_t>(Data::encryptionHeaderSize), decipheredstream,
                      keys);
         }
 

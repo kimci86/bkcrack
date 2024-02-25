@@ -19,7 +19,7 @@ public:
     inline void update(std::uint8_t p)
     {
         x = Crc32Tab::crc32(x, p);
-        y = (y + lsb(x)) * MultTab::MULT + 1;
+        y = (y + lsb(x)) * MultTab::mult + 1;
         z = Crc32Tab::crc32(z, msb(y));
     }
 
@@ -30,7 +30,7 @@ public:
     inline void updateBackward(std::uint8_t c)
     {
         z = Crc32Tab::crc32inv(z, msb(y));
-        y = (y - 1) * MultTab::MULTINV - lsb(x);
+        y = (y - 1) * MultTab::multInv - lsb(x);
         x = Crc32Tab::crc32inv(x, c ^ getK());
     }
 
@@ -38,7 +38,7 @@ public:
     inline void updateBackwardPlaintext(std::uint8_t p)
     {
         z = Crc32Tab::crc32inv(z, msb(y));
-        y = (y - 1) * MultTab::MULTINV - lsb(x);
+        y = (y - 1) * MultTab::multInv - lsb(x);
         x = Crc32Tab::crc32inv(x, p);
     }
 

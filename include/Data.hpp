@@ -9,7 +9,7 @@
 struct Data
 {
     /// Size of the traditional PKWARE encryption header
-    static constexpr std::size_t ENCRYPTION_HEADER_SIZE = 12;
+    static constexpr std::size_t encryptionHeaderSize = 12;
 
     /// Exception thrown if data cannot be used to carry out an attack
     class Error : public BaseError

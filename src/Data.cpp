@@ -37,32 +37,32 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 , plaintext(std::move(plaintextArg))
 {
     // validate lengths
-    if (ciphertext.size() < Attack::ATTACK_SIZE)
-        throw Error("ciphertext is too small for an attack (minimum length is " + std::to_string(Attack::ATTACK_SIZE) +
+    if (ciphertext.size() < Attack::attackSize)
+        throw Error("ciphertext is too small for an attack (minimum length is " + std::to_string(Attack::attackSize) +
                     ")");
     if (ciphertext.size() < plaintext.size())
         throw Error("ciphertext is smaller than plaintext");
 
     // validate offsets
-    constexpr int minimumOffset = -static_cast<int>(ENCRYPTION_HEADER_SIZE);
+    constexpr int minimumOffset = -static_cast<int>(encryptionHeaderSize);
     if (offsetArg < minimumOffset)
         throw Error("plaintext offset " + std::to_string(offsetArg) + " is too small (minimum is " +
                     std::to_string(minimumOffset) + ")");
-    if (ciphertext.size() < ENCRYPTION_HEADER_SIZE + offsetArg + plaintext.size())
+    if (ciphertext.size() < encryptionHeaderSize + offsetArg + plaintext.size())
         throw Error("plaintext offset " + std::to_string(offsetArg) + " is too large");
 
     if (!extraPlaintextArg.empty() && extraPlaintextArg.begin()->first < minimumOffset)
         throw Error("extra plaintext offset " + std::to_string(extraPlaintextArg.begin()->first) +
                     " is too small (minimum is " + std::to_string(minimumOffset) + ")");
-    if (!extraPlaintextArg.empty() && ciphertext.size() <= ENCRYPTION_HEADER_SIZE + extraPlaintextArg.rbegin()->first)
+    if (!extraPlaintextArg.empty() && ciphertext.size() <= encryptionHeaderSize + extraPlaintextArg.rbegin()->first)
         throw Error("extra plaintext offset " + std::to_string(extraPlaintextArg.rbegin()->first) + " is too large");
 
     // shift offsets to absolute values
-    offset = ENCRYPTION_HEADER_SIZE + offsetArg;
+    offset = encryptionHeaderSize + offsetArg;
 
     std::transform(extraPlaintextArg.begin(), extraPlaintextArg.end(), std::back_inserter(extraPlaintext),
                    [](const std::pair<int, std::uint8_t>& extra) {
-                       return std::pair{ENCRYPTION_HEADER_SIZE + extra.first, extra.second};
+                       return std::pair{encryptionHeaderSize + extra.first, extra.second};
                    });
 
     // merge contiguous plaintext with adjacent extra plaintext
@@ -145,12 +145,12 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
     }
 
     // check that there is enough known plaintext
-    if (plaintext.size() < Attack::CONTIGUOUS_SIZE)
+    if (plaintext.size() < Attack::contiguousSize)
         throw Error("not enough contiguous plaintext (" + std::to_string(plaintext.size()) +
-                    " bytes available, minimum is " + std::to_string(Attack::CONTIGUOUS_SIZE) + ")");
-    if (plaintext.size() + extraPlaintext.size() < Attack::ATTACK_SIZE)
+                    " bytes available, minimum is " + std::to_string(Attack::contiguousSize) + ")");
+    if (plaintext.size() + extraPlaintext.size() < Attack::attackSize)
         throw Error("not enough plaintext (" + std::to_string(plaintext.size() + extraPlaintext.size()) +
-                    " bytes available, minimum is " + std::to_string(Attack::ATTACK_SIZE) + ")");
+                    " bytes available, minimum is " + std::to_string(Attack::attackSize) + ")");
 
     // reorder remaining extra plaintext for filtering
     {
@@ -159,8 +159,8 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
         std::inplace_merge(
             extraPlaintext.begin(), before, extraPlaintext.end(),
             [this](const std::pair<std::size_t, std::uint8_t>& a, const std::pair<std::size_t, std::uint8_t>& b) {
-                return absdiff(a.first, offset + Attack::CONTIGUOUS_SIZE) <
-                       absdiff(b.first, offset + Attack::CONTIGUOUS_SIZE);
+                return absdiff(a.first, offset + Attack::contiguousSize) <
+                       absdiff(b.first, offset + Attack::contiguousSize);
             });
     }
 
