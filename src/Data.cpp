@@ -168,5 +168,5 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 
     // compute keystream
     std::transform(plaintext.begin(), plaintext.end(), ciphertext.begin() + offset, std::back_inserter(keystream),
-                   std::bit_xor<std::uint8_t>());
+                   std::bit_xor<>());
 }
