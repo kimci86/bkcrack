@@ -19,7 +19,7 @@ public:
     explicit Keys(const std::string& password);
 
     /// Update the state with a plaintext byte
-    inline void update(std::uint8_t p)
+    void update(std::uint8_t p)
     {
         x = Crc32Tab::crc32(x, p);
         y = (y + lsb(x)) * MultTab::mult + 1;
@@ -30,7 +30,7 @@ public:
     void update(const std::vector<std::uint8_t>& ciphertext, std::size_t current, std::size_t target);
 
     /// Update the state backward with a ciphertext byte
-    inline void updateBackward(std::uint8_t c)
+    void updateBackward(std::uint8_t c)
     {
         z = Crc32Tab::crc32inv(z, msb(y));
         y = (y - 1) * MultTab::multInv - lsb(x);
@@ -38,7 +38,7 @@ public:
     }
 
     /// Update the state backward with a plaintext byte
-    inline void updateBackwardPlaintext(std::uint8_t p)
+    void updateBackwardPlaintext(std::uint8_t p)
     {
         z = Crc32Tab::crc32inv(z, msb(y));
         y = (y - 1) * MultTab::multInv - lsb(x);
