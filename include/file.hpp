@@ -36,17 +36,17 @@ public:
 
 /// \brief Open an input file stream
 /// \exception FileError if the file cannot be opened
-std::ifstream openInput(const std::string& filename);
+auto openInput(const std::string& filename) -> std::ifstream;
 
 /// Load at most \a size bytes from an input stream
-std::vector<std::uint8_t> loadStream(std::istream& is, std::size_t size);
+auto loadStream(std::istream& is, std::size_t size) -> std::vector<std::uint8_t>;
 
 /// \brief Load at most \a size bytes from a file
 /// \exception FileError if the file cannot be opened
-std::vector<std::uint8_t> loadFile(const std::string& filename, std::size_t size);
+auto loadFile(const std::string& filename, std::size_t size) -> std::vector<std::uint8_t>;
 
 /// \brief Open an output file stream
 /// \exception FileError if the file cannot be opened
-std::ofstream openOutput(const std::string& filename);
+auto openOutput(const std::string& filename) -> std::ofstream;
 
 #endif // BKCRACK_FILE_HPP

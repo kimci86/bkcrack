@@ -7,12 +7,12 @@
 /// \brief Output stream manipulators
 
 /// Insert the current local time into the output stream
-std::ostream& put_time(std::ostream& os);
+auto put_time(std::ostream& os) -> std::ostream&;
 
 class Keys; // forward declaration
 
 /// \brief Insert a representation of keys into the stream \a os
 /// \relates Keys
-std::ostream& operator<<(std::ostream& os, const Keys& keys);
+auto operator<<(std::ostream& os, const Keys& keys) -> std::ostream&;
 
 #endif // BKCRACK_LOG_HPP

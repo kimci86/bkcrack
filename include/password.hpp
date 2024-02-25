@@ -85,8 +85,8 @@ private:
 /// \return A vector of passwords associated with the given keys.
 ///         A vector is needed instead of a single string because there can be
 ///         collisions (i.e. several passwords for the same keys).
-std::vector<std::string> recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset,
-                                         std::size_t minLength, std::size_t maxLength, std::string& start, int jobs,
-                                         bool exhaustive, Progress& progress);
+auto recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset, std::size_t minLength,
+                     std::size_t maxLength, std::string& start, int jobs, bool exhaustive, Progress& progress)
+    -> std::vector<std::string>;
 
 #endif // BKCRACK_PASSWORD_HPP

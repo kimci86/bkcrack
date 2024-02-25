@@ -177,8 +177,8 @@ void Attack::testXlist()
         progress.state = Progress::State::EarlyExit;
 }
 
-std::vector<Keys> attack(const Data& data, const std::vector<std::uint32_t>& zi_2_32_vector, int& start,
-                         std::size_t index, int jobs, const bool exhaustive, Progress& progress)
+auto attack(const Data& data, const std::vector<std::uint32_t>& zi_2_32_vector, int& start, std::size_t index, int jobs,
+            const bool exhaustive, Progress& progress) -> std::vector<Keys>
 {
     const std::uint32_t* candidates = zi_2_32_vector.data();
     const auto           size       = static_cast<int>(zi_2_32_vector.size());

@@ -5,7 +5,7 @@ FileError::FileError(const std::string& description)
 {
 }
 
-std::ifstream openInput(const std::string& filename)
+auto openInput(const std::string& filename) -> std::ifstream
 {
     if (std::ifstream is = std::ifstream(filename, std::ios::binary))
         return is;
@@ -13,7 +13,7 @@ std::ifstream openInput(const std::string& filename)
         throw FileError("could not open input file " + filename);
 }
 
-std::vector<std::uint8_t> loadStream(std::istream& is, std::size_t size)
+auto loadStream(std::istream& is, std::size_t size) -> std::vector<std::uint8_t>
 {
     std::vector<std::uint8_t>      content;
     std::istreambuf_iterator<char> it(is);
@@ -23,13 +23,13 @@ std::vector<std::uint8_t> loadStream(std::istream& is, std::size_t size)
     return content;
 }
 
-std::vector<std::uint8_t> loadFile(const std::string& filename, std::size_t size)
+auto loadFile(const std::string& filename, std::size_t size) -> std::vector<std::uint8_t>
 {
     std::ifstream is = openInput(filename);
     return loadStream(is, size);
 }
 
-std::ofstream openOutput(const std::string& filename)
+auto openOutput(const std::string& filename) -> std::ofstream
 {
     if (std::ofstream os = std::ofstream(filename, std::ios::binary))
         return os;

@@ -386,9 +386,9 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
 
 } // namespace
 
-std::vector<std::string> recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset,
-                                         std::size_t minLength, std::size_t maxLength, std::string& start, int jobs,
-                                         bool exhaustive, Progress& progress)
+auto recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset, std::size_t minLength,
+                     std::size_t maxLength, std::string& start, int jobs, bool exhaustive, Progress& progress)
+    -> std::vector<std::string>
 {
     std::vector<std::string> solutions;
     std::mutex               solutionsMutex;

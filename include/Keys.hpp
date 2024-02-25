@@ -49,25 +49,25 @@ public:
     void updateBackward(const std::vector<std::uint8_t>& ciphertext, std::size_t current, std::size_t target);
 
     /// \return X value
-    std::uint32_t getX() const
+    auto getX() const -> std::uint32_t
     {
         return x;
     }
 
     /// \return Y value
-    std::uint32_t getY() const
+    auto getY() const -> std::uint32_t
     {
         return y;
     }
 
     /// \return Z value
-    std::uint32_t getZ() const
+    auto getZ() const -> std::uint32_t
     {
         return z;
     }
 
     /// \return the keystream byte derived from the keys
-    std::uint8_t getK() const
+    auto getK() const -> std::uint8_t
     {
         return KeystreamTab::getByte(z);
     }

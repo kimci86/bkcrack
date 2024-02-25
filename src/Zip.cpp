@@ -11,7 +11,7 @@ namespace
 {
 
 template <typename T, std::size_t N = sizeof(T)>
-std::istream& read(std::istream& is, T& x)
+auto read(std::istream& is, T& x) -> std::istream&
 {
     static_assert(N <= sizeof(T), "read requires output type to have at least N bytes");
 
@@ -23,14 +23,14 @@ std::istream& read(std::istream& is, T& x)
     return is;
 }
 
-std::istream& read(std::istream& is, std::string& string, std::size_t length)
+auto read(std::istream& is, std::string& string, std::size_t length) -> std::istream&
 {
     string.resize(length);
     return is.read(string.data(), string.size());
 }
 
 template <typename T, std::size_t N = sizeof(T)>
-std::ostream& write(std::ostream& os, const T& x)
+auto write(std::ostream& os, const T& x) -> std::ostream&
 {
     static_assert(N <= sizeof(T), "write requires input type to have at least N bytes");
 
@@ -50,13 +50,13 @@ enum class Signature : std::uint32_t
     Eocd                   = 0x06054b50
 };
 
-bool checkSignature(std::istream& is, const Signature& signature)
+auto checkSignature(std::istream& is, const Signature& signature) -> bool
 {
     std::uint32_t sig;
     return read(is, sig) && sig == static_cast<std::uint32_t>(signature);
 }
 
-std::uint64_t findCentralDirectoryOffset(std::istream& is)
+auto findCentralDirectoryOffset(std::istream& is) -> std::uint64_t
 {
     std::uint64_t centralDirectoryOffset;
 
@@ -137,7 +137,7 @@ Zip::Iterator::Iterator(const Zip& archive)
     ++(*this);
 }
 
-Zip::Iterator& Zip::Iterator::operator++()
+auto Zip::Iterator::operator++() -> Zip::Iterator&
 {
     if (!checkSignature(*m_is, Signature::CentralDirectoryHeader))
         return *this = Iterator{};
@@ -251,7 +251,7 @@ Zip::Iterator& Zip::Iterator::operator++()
     return *this;
 }
 
-Zip::Iterator Zip::Iterator::operator++(int)
+auto Zip::Iterator::operator++(int) -> Zip::Iterator
 {
     auto copy = *this;
     ++(*this);
@@ -272,7 +272,7 @@ Zip::Zip(const std::string& filename)
 {
 }
 
-Zip::Entry Zip::operator[](const std::string& name) const
+auto Zip::operator[](const std::string& name) const -> Zip::Entry
 {
     const auto it = std::find_if(begin(), end(), [&name](const Entry& entry) { return entry.name == name; });
 
@@ -282,7 +282,7 @@ Zip::Entry Zip::operator[](const std::string& name) const
         return *it;
 }
 
-Zip::Entry Zip::operator[](std::size_t index) const
+auto Zip::operator[](std::size_t index) const -> Zip::Entry
 {
     std::size_t nextIndex = 0;
     const auto  it = std::find_if(begin(), end(), [&nextIndex, index](const Entry&) { return nextIndex++ == index; });
@@ -307,7 +307,7 @@ void Zip::checkEncryption(const Entry& entry, Encryption expected)
     }
 }
 
-std::istream& Zip::seek(const Entry& entry) const
+auto Zip::seek(const Entry& entry) const -> std::istream&
 {
     m_is.seekg(entry.offset, std::ios::beg);
     if (!checkSignature(m_is, Signature::LocalFileHeader))
@@ -324,7 +324,7 @@ std::istream& Zip::seek(const Entry& entry) const
     return m_is;
 }
 
-std::vector<std::uint8_t> Zip::load(const Entry& entry, std::size_t count) const
+auto Zip::load(const Entry& entry, std::size_t count) const -> std::vector<std::uint8_t>
 {
     return loadStream(seek(entry), std::min(entry.packedSize, static_cast<std::uint64_t>(count)));
 }

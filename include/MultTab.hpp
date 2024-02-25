@@ -8,27 +8,27 @@ class MultTab
 {
 public:
     /// \return mult * x using a lookup table
-    static std::uint32_t getMult(std::uint8_t x)
+    static auto getMult(std::uint8_t x) -> std::uint32_t
     {
         return instance.multtab[x];
     }
 
     /// \return mult^-1 * x using a lookup table
-    static std::uint32_t getMultinv(std::uint8_t x)
+    static auto getMultinv(std::uint8_t x) -> std::uint32_t
     {
         return instance.multinvtab[x];
     }
 
     /// \return a vector of bytes x such that
     /// msb(x*mult^-1) is equal to msbprod or msbprod-1
-    static const std::vector<std::uint8_t>& getMsbProdFiber2(std::uint8_t msbprodinv)
+    static auto getMsbProdFiber2(std::uint8_t msbprodinv) -> const std::vector<std::uint8_t>&
     {
         return instance.msbprodfiber2[msbprodinv];
     }
 
     /// \return a vector of bytes x such that
     /// msb(x*mult^-1) is equal to msbprod, msbprod-1 or msbprod+1
-    static const std::vector<std::uint8_t>& getMsbProdFiber3(std::uint8_t msbprodinv)
+    static auto getMsbProdFiber3(std::uint8_t msbprodinv) -> const std::vector<std::uint8_t>&
     {
         return instance.msbprodfiber3[msbprodinv];
     }

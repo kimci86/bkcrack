@@ -68,7 +68,7 @@ private:
 /// \param exhaustive True to try and find all valid keys,
 ///                   false to stop searching after the first one is found
 /// \param progress Object to report progress
-std::vector<Keys> attack(const Data& data, const std::vector<std::uint32_t>& zi_2_32_vector, int& start,
-                         std::size_t index, int jobs, bool exhaustive, Progress& progress);
+auto attack(const Data& data, const std::vector<std::uint32_t>& zi_2_32_vector, int& start, std::size_t index, int jobs,
+            bool exhaustive, Progress& progress) -> std::vector<Keys>;
 
 #endif // BKCRACK_ATTACK_HPP

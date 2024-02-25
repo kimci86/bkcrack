@@ -18,10 +18,10 @@ public:
     void generate();
 
     /// \return the generated Zi[2,32) values
-    const std::vector<std::uint32_t>& getCandidates() const;
+    auto getCandidates() const -> const std::vector<std::uint32_t>&;
 
     /// \return the index of the Zi[2,32) values relative to keystream
-    std::size_t getIndex() const;
+    auto getIndex() const -> std::size_t;
 
 private:
     const std::vector<std::uint8_t>& keystream;

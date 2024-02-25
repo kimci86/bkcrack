@@ -117,12 +117,12 @@ void Zreduction::generate()
     }
 }
 
-const std::vector<std::uint32_t>& Zreduction::getCandidates() const
+auto Zreduction::getCandidates() const -> const std::vector<std::uint32_t>&
 {
     return zi_vector;
 }
 
-std::size_t Zreduction::getIndex() const
+auto Zreduction::getIndex() const -> std::size_t
 {
     return index;
 }

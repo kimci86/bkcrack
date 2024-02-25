@@ -5,13 +5,13 @@
 #include <ctime>
 #include <iomanip>
 
-std::ostream& put_time(std::ostream& os)
+auto put_time(std::ostream& os) -> std::ostream&
 {
     const std::time_t t = std::time(nullptr);
     return os << std::put_time(std::localtime(&t), "%T");
 }
 
-std::ostream& operator<<(std::ostream& os, const Keys& keys)
+auto operator<<(std::ostream& os, const Keys& keys) -> std::ostream&
 {
     const auto flagsBefore = os.setf(std::ios::hex, std::ios::basefield);
     const auto fillBefore  = os.fill('0');

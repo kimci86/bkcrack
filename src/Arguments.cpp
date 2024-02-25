@@ -12,7 +12,7 @@
 namespace
 {
 
-std::bitset<256> charRange(char first, char last)
+auto charRange(char first, char last) -> std::bitset<256>
 {
     std::bitset<256> bitset;
 
@@ -41,17 +41,17 @@ auto translateIntParseError(F&& f, const std::string& value)
     }
 }
 
-int parseInt(const std::string& value)
+auto parseInt(const std::string& value) -> int
 {
     return translateIntParseError([](const std::string& value) { return std::stoi(value, nullptr, 0); }, value);
 }
 
-std::size_t parseSize(const std::string& value)
+auto parseSize(const std::string& value) -> std::size_t
 {
     return translateIntParseError([](const std::string& value) { return std::stoull(value, nullptr, 0); }, value);
 }
 
-std::variant<Arguments::LengthInterval, std::size_t> parseInterval(const std::string& value)
+auto parseInterval(const std::string& value) -> std::variant<Arguments::LengthInterval, std::size_t>
 {
     const std::string separator = "..";
 
@@ -145,7 +145,7 @@ Arguments::Arguments(int argc, const char* argv[])
         throw Error("--bruteforce parameter is missing (required by --length)");
 }
 
-Data Arguments::loadData() const
+auto Arguments::loadData() const -> Data
 {
     // load known plaintext
     std::vector<std::uint8_t> plaintext;
@@ -188,12 +188,12 @@ Data Arguments::loadData() const
                 extraPlaintextWithCheckByte.value_or(extraPlaintext));
 }
 
-Arguments::LengthInterval Arguments::LengthInterval::operator&(const Arguments::LengthInterval& other) const
+auto Arguments::LengthInterval::operator&(const Arguments::LengthInterval& other) const -> Arguments::LengthInterval
 {
     return {std::max(minLength, other.minLength), std::min(maxLength, other.maxLength)};
 }
 
-bool Arguments::finished() const
+auto Arguments::finished() const -> bool
 {
     return m_current == m_end;
 }
@@ -309,7 +309,7 @@ void Arguments::parseArgument()
     }
 }
 
-std::string Arguments::readString(const std::string& description)
+auto Arguments::readString(const std::string& description) -> std::string
 {
     if (finished())
         throw Error("expected " + description + ", got nothing");
@@ -317,7 +317,7 @@ std::string Arguments::readString(const std::string& description)
     return *m_current++;
 }
 
-Arguments::Option Arguments::readOption(const std::string& description)
+auto Arguments::readOption(const std::string& description) -> Arguments::Option
 {
     // clang-format off
 #define PAIR(string, option) {#string, Option::option}
@@ -363,17 +363,17 @@ Arguments::Option Arguments::readOption(const std::string& description)
         return it->second;
 }
 
-int Arguments::readInt(const std::string& description)
+auto Arguments::readInt(const std::string& description) -> int
 {
     return parseInt(readString(description));
 }
 
-std::size_t Arguments::readSize(const std::string& description)
+auto Arguments::readSize(const std::string& description) -> std::size_t
 {
     return parseSize(readString(description));
 }
 
-std::vector<std::uint8_t> Arguments::readHex(const std::string& description)
+auto Arguments::readHex(const std::string& description) -> std::vector<std::uint8_t>
 {
     std::string str = readString(description);
 
@@ -389,7 +389,7 @@ std::vector<std::uint8_t> Arguments::readHex(const std::string& description)
     return data;
 }
 
-std::uint32_t Arguments::readKey(const std::string& description)
+auto Arguments::readKey(const std::string& description) -> std::uint32_t
 {
     std::string str = readString(description);
 
@@ -401,7 +401,7 @@ std::uint32_t Arguments::readKey(const std::string& description)
     return static_cast<std::uint32_t>(std::stoul(str, nullptr, 16));
 }
 
-std::vector<std::uint8_t> Arguments::readCharset()
+auto Arguments::readCharset() -> std::vector<std::uint8_t>
 {
     const std::bitset<256> lowercase   = charRange('a', 'z');
     const std::bitset<256> uppercase   = charRange('A', 'Z');

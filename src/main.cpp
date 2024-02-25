@@ -102,7 +102,7 @@ void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostr
 
 } // namespace
 
-int main(int argc, const char* argv[])
+auto main(int argc, const char* argv[]) -> int
 try
 {
     // enable virtual terminal support on Windows, no-op on other platforms
@@ -359,7 +359,7 @@ catch (const BaseError& e)
 namespace
 {
 
-std::string getEncryptionDescription(Zip::Encryption encryption)
+auto getEncryptionDescription(Zip::Encryption encryption) -> std::string
 {
     switch (encryption)
     {
@@ -375,7 +375,7 @@ std::string getEncryptionDescription(Zip::Encryption encryption)
     return "";
 }
 
-std::string getCompressionDescription(Zip::Compression compression)
+auto getCompressionDescription(Zip::Compression compression) -> std::string
 {
     switch (compression)
     {

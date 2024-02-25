@@ -19,7 +19,7 @@ public:
     SigintHandler(const SigintHandler& other) = delete;
 
     /// Deleted assignment operator
-    SigintHandler& operator=(const SigintHandler& other) = delete;
+    auto operator=(const SigintHandler& other) -> SigintHandler& = delete;
 };
 
 #endif // BKCRACK_SIGINTHANDLER_HPP

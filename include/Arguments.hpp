@@ -29,7 +29,7 @@ public:
     /// \exception FileError if a file cannot be opened
     /// \exception ZipError if a zip entry cannot be opened
     /// \exception Data::Error if the loaded data cannot be used to carry out an attack
-    Data loadData() const;
+    auto loadData() const -> Data;
 
     std::optional<std::string> cipherFile;    ///< File containing the ciphertext
     std::optional<std::size_t> cipherIndex;   ///< Index of the zip entry containing ciphertext
@@ -104,7 +104,7 @@ public:
         std::size_t maxLength{std::numeric_limits<std::size_t>::max()};
 
         /// Compute the intersection between this interval and the given \a other interval
-        LengthInterval operator&(const LengthInterval& other) const;
+        auto operator&(const LengthInterval& other) const -> LengthInterval;
     };
     /// \copydoc LengthInterval
     std::optional<LengthInterval> length;
@@ -131,7 +131,7 @@ private:
     const char**       m_current;
     const char** const m_end;
 
-    bool finished() const;
+    auto finished() const -> bool;
 
     void parseArgument();
 
@@ -165,13 +165,13 @@ private:
         help
     };
 
-    std::string               readString(const std::string& description);
-    Option                    readOption(const std::string& description);
-    int                       readInt(const std::string& description);
-    std::size_t               readSize(const std::string& description);
-    std::vector<std::uint8_t> readHex(const std::string& description);
-    std::uint32_t             readKey(const std::string& description);
-    std::vector<std::uint8_t> readCharset();
+    auto readString(const std::string& description) -> std::string;
+    auto readOption(const std::string& description) -> Option;
+    auto readInt(const std::string& description) -> int;
+    auto readSize(const std::string& description) -> std::size_t;
+    auto readHex(const std::string& description) -> std::vector<std::uint8_t>;
+    auto readKey(const std::string& description) -> std::uint32_t;
+    auto readCharset() -> std::vector<std::uint8_t>;
 };
 
 #endif // BKCRACK_ARGUMENTS_HPP

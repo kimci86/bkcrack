@@ -11,12 +11,12 @@ namespace
 
 struct Range
 {
-    std::size_t size() const
+    auto size() const -> std::size_t
     {
         return std::distance(begin, end);
     }
 
-    bool operator<(const Range& other) const
+    auto operator<(const Range& other) const -> bool
     {
         return size() < other.size();
     }
