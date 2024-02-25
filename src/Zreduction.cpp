@@ -21,13 +21,15 @@ Zreduction::Zreduction(const std::vector<std::uint8_t>& keystream)
 void Zreduction::reduce(Progress& progress)
 {
     // variables to keep track of the smallest Zi[2,32) vector
-    bool                       tracking = false;
+    constexpr std::size_t      TRACK_SIZE = 1 << 16;
+    bool                       tracking   = false;
     std::vector<std::uint32_t> bestCopy;
     std::size_t                bestIndex = index, bestSize = TRACK_SIZE;
 
     // variables to wait for a limited number of steps when a small enough vector is found
-    bool        waiting = false;
-    std::size_t wait    = 0;
+    constexpr std::size_t WAIT_SIZE = 1 << 8;
+    bool                  waiting   = false;
+    std::size_t           wait      = 0;
 
     std::vector<std::uint32_t> zim1_10_32_vector;
     zim1_10_32_vector.reserve(1 << 22);

@@ -24,12 +24,6 @@ public:
     std::size_t getIndex() const;
 
 private:
-    enum : std::size_t
-    {
-        WAIT_SIZE  = 1 << 8,
-        TRACK_SIZE = 1 << 16
-    };
-
     const std::vector<std::uint8_t>& keystream;
     // After constructor or reduce(), contains Z[10,32) values.
     // After generate(), contains Zi[2,32) values.

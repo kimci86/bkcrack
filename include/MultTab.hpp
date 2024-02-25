@@ -33,11 +33,12 @@ public:
         return instance.msbprodfiber3[msbprodinv];
     }
 
-    enum : std::uint32_t
-    {
-        MULT    = 0x08088405,
-        MULTINV = 0xd94fa8cd
-    };
+    /// Multiplicative constant used in traditional PKWARE encryption
+    static constexpr std::uint32_t MULT = 0x08088405;
+
+    /// Multiplicative inverse of MULT modulo 2^32
+    static constexpr std::uint32_t MULTINV = 0xd94fa8cd;
+    static_assert(MULT * MULTINV == 1);
 
 private:
     // initialize lookup tables

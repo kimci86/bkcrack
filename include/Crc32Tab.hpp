@@ -39,12 +39,6 @@ private:
     std::array<std::uint32_t, 256> crctab;
     std::array<std::uint32_t, 256> crcinvtab;
 
-    // CRC32 polynomial representation
-    enum : std::uint32_t
-    {
-        CRCPOL = 0xedb88320
-    };
-
     static const Crc32Tab instance;
 };
 

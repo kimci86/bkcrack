@@ -28,14 +28,11 @@ public:
     /// Carry out the attack for the given Z[2,32) value
     void carryout(std::uint32_t z7_2_32);
 
-    enum : std::size_t
-    {
-        /// Number of contiguous known plaintext bytes required by the attack
-        CONTIGUOUS_SIZE = 8,
+    /// Number of contiguous known plaintext bytes required by the attack
+    static constexpr std::size_t CONTIGUOUS_SIZE = 8;
 
-        /// Total number of known plaintext bytes required by the attack
-        ATTACK_SIZE = 12
-    };
+    /// Total number of known plaintext bytes required by the attack
+    static constexpr std::size_t ATTACK_SIZE = 12;
 
 private:
     // iterate recursively over Z-lists

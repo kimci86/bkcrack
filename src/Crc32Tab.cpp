@@ -4,6 +4,9 @@ const Crc32Tab Crc32Tab::instance;
 
 Crc32Tab::Crc32Tab()
 {
+    // CRC32 polynomial representation
+    constexpr std::uint32_t CRCPOL = 0xedb88320;
+
     for (int b = 0; b < 256; b++)
     {
         std::uint32_t crc = b;
