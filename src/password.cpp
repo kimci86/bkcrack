@@ -148,13 +148,13 @@ void Recovery::recursion(int i)
         const std::uint32_t ffy = (fy - 1) * MultTab::MULTINV;
 
         // get possible LSB(Xi)
-        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & MASK_24_32))))
+        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & mask<24, 32>))))
         {
             // compute corresponding Y{i-1}
             const std::uint32_t yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
-            if (ffy - MultTab::getMultinv(xi_0_8) - (y[i - 2] & MASK_24_32) <= MAXDIFF_0_24 &&
+            if (ffy - MultTab::getMultinv(xi_0_8) - (y[i - 2] & mask<24, 32>) <= maxdiff<24> &&
                 msb(yim1) == msb(y[i - 1]))
             {
                 // add Y{i-1} to the Y-list

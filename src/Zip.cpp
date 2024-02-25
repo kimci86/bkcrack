@@ -67,7 +67,7 @@ std::uint64_t findCentralDirectoryOffset(std::istream& is)
         {
             is.seekg(-22 - commentLength, std::ios::end);
         } while (read(is, signature) && signature != static_cast<std::uint32_t>(Signature::EOCD) &&
-                 commentLength++ < MASK_0_16);
+                 commentLength++ < mask<0, 16>);
 
         if (!is || signature != static_cast<std::uint32_t>(Signature::EOCD))
             throw Zip::Error("could not find end of central directory signature");
@@ -185,17 +185,17 @@ Zip::Iterator& Zip::Iterator::operator++()
         switch (id)
         {
         case 0x0001: // Zip64 extended information
-            if (8 <= size && m_entry->uncompressedSize == MASK_0_32)
+            if (8 <= size && m_entry->uncompressedSize == mask<0, 32>)
             {
                 read(*m_is, m_entry->uncompressedSize);
                 size -= 8;
             }
-            if (8 <= size && m_entry->packedSize == MASK_0_32)
+            if (8 <= size && m_entry->packedSize == mask<0, 32>)
             {
                 read(*m_is, m_entry->packedSize);
                 size -= 8;
             }
-            if (8 <= size && m_entry->offset == MASK_0_32)
+            if (8 <= size && m_entry->offset == mask<0, 32>)
             {
                 read(*m_is, m_entry->offset);
                 size -= 8;
@@ -205,10 +205,10 @@ Zip::Iterator& Zip::Iterator::operator++()
         case 0x7075: // Info-ZIP Unicode Path
             if (5 <= size)
             {
-                std::uint32_t nameCrc32 = MASK_0_32;
+                std::uint32_t nameCrc32 = mask<0, 32>;
                 for (std::uint8_t b : m_entry->name)
                     nameCrc32 = Crc32Tab::crc32(nameCrc32, b);
-                nameCrc32 ^= MASK_0_32;
+                nameCrc32 ^= mask<0, 32>;
 
                 std::uint32_t expectedNameCrc32;
                 m_is->seekg(1, std::ios::cur);

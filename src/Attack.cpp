@@ -40,7 +40,7 @@ void Attack::exploreZlists(int i)
             zlist[i - 1] = zim1_10_32 | zim1_2_16;
 
             // find Zi[0,2) from CRC32^1
-            zlist[i] &= MASK_2_32; // discard 2 least significant bits
+            zlist[i] &= mask<2, 32>; // discard 2 least significant bits
             zlist[i] |= (Crc32Tab::crc32inv(zlist[i], 0) ^ zlist[i - 1]) >> 8;
 
             // get Y{i+1}[24,32)
@@ -58,9 +58,9 @@ void Attack::exploreZlists(int i)
             // get possible Y7[0,8) values
             for (std::uint8_t y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
                 // filter Y7[0,8) using Y6[24,32)
-                if (prod + MultTab::getMultinv(y7_0_8) - (ylist[6] & MASK_24_32) <= MAXDIFF_0_24)
+                if (prod + MultTab::getMultinv(y7_0_8) - (ylist[6] & mask<24, 32>) <= maxdiff<24>)
                 {
-                    ylist[7] = y7_0_8 | y7_8_24 | (ylist[7] & MASK_24_32);
+                    ylist[7] = y7_0_8 | y7_8_24 | (ylist[7] & mask<24, 32>);
                     exploreYlists(7);
                 }
     }
@@ -74,13 +74,13 @@ void Attack::exploreYlists(int i)
         std::uint32_t ffy = (fy - 1) * MultTab::MULTINV;
 
         // get possible LSB(Xi)
-        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i - 2] & MASK_24_32))))
+        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i - 2] & mask<24, 32>))))
         {
             // compute corresponding Y{i-1}
             std::uint32_t yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
-            if (ffy - MultTab::getMultinv(xi_0_8) - (ylist[i - 2] & MASK_24_32) <= MAXDIFF_0_24 &&
+            if (ffy - MultTab::getMultinv(xi_0_8) - (ylist[i - 2] & mask<24, 32>) <= maxdiff<24> &&
                 msb(yim1) == msb(ylist[i - 1]))
             {
                 // add Y{i-1} to the Y-list
@@ -101,8 +101,8 @@ void Attack::testXlist()
 {
     // compute X7
     for (int i = 5; i <= 7; i++)
-        xlist[i] = (Crc32Tab::crc32(xlist[i - 1], data.plaintext[index + i - 1]) & MASK_8_32) // discard the LSB
-                   | lsb(xlist[i]);                                                           // set the LSB
+        xlist[i] = (Crc32Tab::crc32(xlist[i - 1], data.plaintext[index + i - 1]) & mask<8, 32>) // discard the LSB
+                   | lsb(xlist[i]);                                                             // set the LSB
 
     // compute X3
     std::uint32_t x = xlist[7];
@@ -110,8 +110,8 @@ void Attack::testXlist()
         x = Crc32Tab::crc32inv(x, data.plaintext[index + i]);
 
     // check that X3 fits with Y1[26,32)
-    std::uint32_t y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & MASK_26_32;
-    if (((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > MAXDIFF_0_26)
+    std::uint32_t y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & mask<26, 32>;
+    if (((ylist[3] - 1) * MultTab::MULTINV - lsb(x) - 1) * MultTab::MULTINV - y1_26_32 > maxdiff<26>)
         return;
 
     // decipher and filter by comparing with remaining contiguous plaintext forward

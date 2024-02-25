@@ -13,7 +13,7 @@ public:
     /// \note Only Zi[2,16) is used
     static inline std::uint8_t getByte(std::uint32_t zi)
     {
-        return instance.keystreamtab[(zi & MASK_0_16) >> 2];
+        return instance.keystreamtab[(zi & mask<0, 16>) >> 2];
     }
 
     /// \return a vector of Zi[2,16) values having given [10,16) bits
@@ -21,14 +21,14 @@ public:
     /// \note the vector contains one element on average
     static inline const std::vector<std::uint32_t>& getZi_2_16_vector(std::uint8_t ki, std::uint32_t zi_10_16)
     {
-        return instance.keystreaminvfiltertab[ki][(zi_10_16 & MASK_0_16) >> 10];
+        return instance.keystreaminvfiltertab[ki][(zi_10_16 & mask<0, 16>) >> 10];
     }
 
     /// \return true if the vector returned by getZi_2_16_vector is not empty,
     /// false otherwise
     static inline bool hasZi_2_16(std::uint8_t ki, std::uint32_t zi_10_16)
     {
-        return instance.keystreaminvexists[ki][(zi_10_16 & MASK_0_16) >> 10];
+        return instance.keystreaminvexists[ki][(zi_10_16 & mask<0, 16>) >> 10];
     }
 
 private:
