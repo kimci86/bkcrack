@@ -23,7 +23,12 @@ set_tests_properties(cli.bruteforce.medium PROPERTIES PASS_REGULAR_EXPRESSION "P
 set_tests_properties(cli.bruteforce.long   PROPERTIES PASS_REGULAR_EXPRESSION "Password: abcdefghijkl\n")
 
 add_test(NAME cli.list COMMAND bkcrack -L secrets.zip WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/example)
-set_tests_properties(cli.list PROPERTIES PASS_REGULAR_EXPRESSION "advice\.jpg.*spiral\.svg")
+set_tests_properties(cli.list PROPERTIES PASS_REGULAR_EXPRESSION "
+Index Encryption Compression CRC32    Uncompressed  Packed size Name
+----- ---------- ----------- -------- ------------ ------------ ----------------
+    0 ZipCrypto  Deflate     7ca9f10a        54799        54700 advice.jpg
+    1 ZipCrypto  Store       a99f1d0d         1265         1277 spiral.svg
+")
 
 add_test(NAME cli.version COMMAND bkcrack --version)
 set_tests_properties(cli.version PROPERTIES PASS_REGULAR_EXPRESSION "^bkcrack ${bkcrack_VERSION} - ${bkcrack_VERSION_DATE}\n\$")
