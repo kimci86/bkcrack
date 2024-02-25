@@ -1,3 +1,13 @@
+add_test(NAME cli.attack
+    COMMAND bkcrack -C secrets.zip -c spiral.svg -x 0 3c3f786d6c2076657273696f6e3d22312e302220 --continue-attack 183500
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/example)
+set_tests_properties(cli.attack PROPERTIES PASS_REGULAR_EXPRESSION "
+.* Z reduction using 13 bytes of known plaintext
+.* Attack on 542303 Z values at index 6
+.* Keys
+c4490e28 b414a23d 91404b31
+")
+
 add_test(NAME cli.password COMMAND bkcrack --password W4sF0rgotten)
 set_tests_properties(cli.password PROPERTIES PASS_REGULAR_EXPRESSION "c4490e28 b414a23d 91404b31")
 
