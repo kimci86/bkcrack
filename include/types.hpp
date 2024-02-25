@@ -36,7 +36,7 @@ constexpr auto msb(std::uint32_t x) -> std::uint8_t
 
 /// Constant value for bit masking
 template <int begin, int end>
-constexpr std::uint32_t mask = ~0u << begin & ~0u >> (32 - end);
+constexpr auto mask = std::uint32_t{~0u << begin & ~0u >> (32 - end)};
 
 /// \brief Maximum difference between 32-bits integers A and B[x,32)
 /// knowing that A = B + b and b is a byte.
@@ -48,6 +48,6 @@ constexpr std::uint32_t mask = ~0u << begin & ~0u >> (32 - end);
 ///     A - B[x,32) = B[0,x) + b
 ///     A - B[x,32) <= 0xffffffff[0,x) + 0xff
 template <int x>
-constexpr std::uint32_t maxdiff = mask<0, x> + 0xff;
+constexpr auto maxdiff = std::uint32_t{mask<0, x> + 0xff};
 
 #endif // BKCRACK_TYPES_HPP

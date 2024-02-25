@@ -28,35 +28,35 @@ struct Range
 } // namespace
 
 Data::Error::Error(const std::string& description)
-: BaseError("Data error", description)
+: BaseError{"Data error", description}
 {
 }
 
 Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> plaintextArg, int offsetArg,
            const std::map<int, std::uint8_t>& extraPlaintextArg)
-: ciphertext(std::move(ciphertextArg))
-, plaintext(std::move(plaintextArg))
+: ciphertext{std::move(ciphertextArg)}
+, plaintext{std::move(plaintextArg)}
 {
     // validate lengths
     if (ciphertext.size() < Attack::attackSize)
-        throw Error("ciphertext is too small for an attack (minimum length is " + std::to_string(Attack::attackSize) +
-                    ")");
+        throw Error{"ciphertext is too small for an attack (minimum length is " + std::to_string(Attack::attackSize) +
+                    ")"};
     if (ciphertext.size() < plaintext.size())
-        throw Error("ciphertext is smaller than plaintext");
+        throw Error{"ciphertext is smaller than plaintext"};
 
     // validate offsets
-    constexpr int minimumOffset = -static_cast<int>(encryptionHeaderSize);
+    constexpr auto minimumOffset = -static_cast<int>(encryptionHeaderSize);
     if (offsetArg < minimumOffset)
-        throw Error("plaintext offset " + std::to_string(offsetArg) + " is too small (minimum is " +
-                    std::to_string(minimumOffset) + ")");
+        throw Error{"plaintext offset " + std::to_string(offsetArg) + " is too small (minimum is " +
+                    std::to_string(minimumOffset) + ")"};
     if (ciphertext.size() < encryptionHeaderSize + offsetArg + plaintext.size())
-        throw Error("plaintext offset " + std::to_string(offsetArg) + " is too large");
+        throw Error{"plaintext offset " + std::to_string(offsetArg) + " is too large"};
 
     if (!extraPlaintextArg.empty() && extraPlaintextArg.begin()->first < minimumOffset)
-        throw Error("extra plaintext offset " + std::to_string(extraPlaintextArg.begin()->first) +
-                    " is too small (minimum is " + std::to_string(minimumOffset) + ")");
+        throw Error{"extra plaintext offset " + std::to_string(extraPlaintextArg.begin()->first) +
+                    " is too small (minimum is " + std::to_string(minimumOffset) + ")"};
     if (!extraPlaintextArg.empty() && ciphertext.size() <= encryptionHeaderSize + extraPlaintextArg.rbegin()->first)
-        throw Error("extra plaintext offset " + std::to_string(extraPlaintextArg.rbegin()->first) + " is too large");
+        throw Error{"extra plaintext offset " + std::to_string(extraPlaintextArg.rbegin()->first) + " is too large"};
 
     // shift offsets to absolute values
     offset = encryptionHeaderSize + offsetArg;
@@ -99,11 +99,11 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 
     // find the longest contiguous sequence in extra plaintext and use is as contiguous plaintext if sensible
     {
-        Range range = {extraPlaintext.begin(), extraPlaintext.begin()}; // empty
+        auto range = Range{extraPlaintext.begin(), extraPlaintext.begin()}; // empty
 
         for (auto it = extraPlaintext.begin(); it != extraPlaintext.end();)
         {
-            Range current = {it, ++it};
+            auto current = Range{it, ++it};
             while (it != extraPlaintext.end() && it->first == (current.end - 1)->first + 1)
                 current.end = ++it;
 
@@ -112,11 +112,11 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 
         if (plaintext.size() < range.size())
         {
-            const std::size_t plaintextSize = plaintext.size();
-            const std::size_t rangeOffset   = range.begin->first;
+            const auto plaintextSize = plaintext.size();
+            const auto rangeOffset   = range.begin->first;
 
             // append last bytes from the range to contiguous plaintext
-            for (std::size_t i = plaintextSize; i < range.size(); i++)
+            for (auto i = plaintextSize; i < range.size(); i++)
                 plaintext.push_back(range.begin[i].second);
 
             // remove those bytes from the range
@@ -135,7 +135,7 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
             }
 
             // swap bytes between the former contiguous plaintext and the beginning of the range
-            for (std::size_t i = 0; i < plaintextSize; i++)
+            for (auto i = std::size_t{}; i < plaintextSize; i++)
             {
                 range.begin[i].first = offset + i;
                 std::swap(plaintext[i], range.begin[i].second);
@@ -147,11 +147,11 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 
     // check that there is enough known plaintext
     if (plaintext.size() < Attack::contiguousSize)
-        throw Error("not enough contiguous plaintext (" + std::to_string(plaintext.size()) +
-                    " bytes available, minimum is " + std::to_string(Attack::contiguousSize) + ")");
+        throw Error{"not enough contiguous plaintext (" + std::to_string(plaintext.size()) +
+                    " bytes available, minimum is " + std::to_string(Attack::contiguousSize) + ")"};
     if (plaintext.size() + extraPlaintext.size() < Attack::attackSize)
-        throw Error("not enough plaintext (" + std::to_string(plaintext.size() + extraPlaintext.size()) +
-                    " bytes available, minimum is " + std::to_string(Attack::attackSize) + ")");
+        throw Error{"not enough plaintext (" + std::to_string(plaintext.size() + extraPlaintext.size()) +
+                    " bytes available, minimum is " + std::to_string(Attack::attackSize) + ")"};
 
     // reorder remaining extra plaintext for filtering
     {

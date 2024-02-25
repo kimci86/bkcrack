@@ -1,15 +1,15 @@
 #include "Keys.hpp"
 
 Keys::Keys(std::uint32_t x, std::uint32_t y, std::uint32_t z)
-: x(x)
-, y(y)
-, z(z)
+: x{x}
+, y{y}
+, z{z}
 {
 }
 
 Keys::Keys(const std::string& password)
 {
-    for (const char p : password)
+    for (const auto p : password)
         update(p);
 }
 
