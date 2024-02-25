@@ -61,7 +61,7 @@ private:
     // cipher state (X,Y,Z)_i for index i in [0, 6] where the last state (X,Y,Z)_6 is
     // the representation of the password to recover
     std::array<std::uint32_t, 7> x, y, z;
-    std::uint32_t                x0; // backup of candidate X value for convenience
+    std::uint32_t                candidateX0; // backup of candidate X value for convenience
 
     std::array<std::uint8_t, 6> p; // password last 6 bytes
 

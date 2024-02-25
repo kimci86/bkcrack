@@ -226,12 +226,12 @@ Zip::Iterator& Zip::Iterator::operator++()
         case 0x9901: // AE-x encryption structure
             if (7 <= size)
             {
-                std::uint16_t method;
+                std::uint16_t actualMethod;
                 m_is->seekg(5, std::ios::cur);
-                read(*m_is, method);
+                read(*m_is, actualMethod);
                 size -= 7;
 
-                m_entry->compression = static_cast<Compression>(method);
+                m_entry->compression = static_cast<Compression>(actualMethod);
             }
             break;
 

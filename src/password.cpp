@@ -56,9 +56,9 @@ void Recovery::recoverShortPassword(const Keys& initial)
         return;
 
     // initialize starting X, Y and Z values
-    x[0] = x0 = initial.getX();
-    y[0]      = initial.getY();
-    z[0]      = initial.getZ();
+    x[0] = candidateX0 = initial.getX();
+    y[0]               = initial.getY();
+    z[0]               = initial.getZ();
 
     // complete Z values and derive Y[24,32) values
     for (int i = 1; i <= 4; i++)
@@ -102,9 +102,9 @@ void Recovery::recoverLongPassword(const Keys& initial)
             prefix.back() = pi;
 
             // initialize starting X, Y and Z values
-            x[0] = this->x0 = x0;
-            y[0]            = y0;
-            z[0]            = z0;
+            x[0] = candidateX0 = x0;
+            y[0]               = y0;
+            z[0]               = z0;
 
             // complete Z values and derive Y[24,32) values
             y[1] = Crc32Tab::getYi_24_32(z[1], z[1 - 1]);
@@ -175,14 +175,14 @@ void Recovery::recursion(int i)
             return;
 
         // complete X values and derive password
-        for (int i = 5; 0 <= i; i--)
+        for (int j = 5; 0 <= j; j--)
         {
-            const std::uint32_t xi_xor_pi = Crc32Tab::crc32inv(x[i + 1], 0);
-            p[i]                          = lsb(xi_xor_pi ^ x[i]);
-            x[i]                          = xi_xor_pi ^ p[i];
+            const std::uint32_t xi_xor_pi = Crc32Tab::crc32inv(x[j + 1], 0);
+            p[j]                          = lsb(xi_xor_pi ^ x[j]);
+            x[j]                          = xi_xor_pi ^ p[j];
         }
 
-        if (x[0] == x0) // the password is successfully recovered
+        if (x[0] == candidateX0) // the password is successfully recovered
         {
             std::string password = std::string(prefix.begin(), prefix.end());
             password.append(p.begin(), p.end());
