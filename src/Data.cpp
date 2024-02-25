@@ -158,7 +158,9 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
         std::reverse(extraPlaintext.begin(), before);
         std::inplace_merge(
             extraPlaintext.begin(), before, extraPlaintext.end(),
-            [this](const std::pair<std::size_t, std::uint8_t>& a, const std::pair<std::size_t, std::uint8_t>& b) {
+            [this](const std::pair<std::size_t, std::uint8_t>& a, const std::pair<std::size_t, std::uint8_t>& b)
+            {
+                constexpr auto absdiff = [](std::size_t x, std::size_t y) { return x < y ? y - x : x - y; };
                 return absdiff(a.first, offset + Attack::contiguousSize) <
                        absdiff(b.first, offset + Attack::contiguousSize);
             });

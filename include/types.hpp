@@ -32,12 +32,6 @@ constexpr std::uint8_t msb(std::uint32_t x)
     return x >> 24;
 }
 
-/// \return the absolute difference between two unsigned values
-inline std::size_t absdiff(std::size_t x, std::size_t y)
-{
-    return x < y ? y - x : x - y;
-}
-
 // constants
 
 /// Constant value for bit masking
