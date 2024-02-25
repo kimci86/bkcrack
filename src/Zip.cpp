@@ -314,7 +314,8 @@ std::istream& Zip::seek(const Entry& entry) const
         throw Error("could not find local file header");
 
     // skip local file header
-    std::uint16_t nameSize, extraSize;
+    std::uint16_t nameSize;
+    std::uint16_t extraSize;
     m_is.seekg(22, std::ios::cur);
     read(m_is, nameSize);
     read(m_is, extraSize);
@@ -361,7 +362,8 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
         std::copy_n(std::istreambuf_iterator<char>(m_is), 22, std::ostreambuf_iterator<char>(os));
         m_is.get();
 
-        std::uint16_t filenameLength, extraSize;
+        std::uint16_t filenameLength;
+        std::uint16_t extraSize;
         read(m_is, filenameLength);
         read(m_is, extraSize);
         write(os, filenameLength);

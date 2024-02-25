@@ -21,7 +21,8 @@ struct Range
         return size() < other.size();
     }
 
-    std::vector<std::pair<std::size_t, std::uint8_t>>::iterator begin, end;
+    std::vector<std::pair<std::size_t, std::uint8_t>>::iterator begin;
+    std::vector<std::pair<std::size_t, std::uint8_t>>::iterator end;
 };
 
 } // namespace

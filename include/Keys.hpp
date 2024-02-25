@@ -73,7 +73,9 @@ public:
     }
 
 private:
-    std::uint32_t x = 0x12345678, y = 0x23456789, z = 0x34567890;
+    std::uint32_t x = 0x12345678;
+    std::uint32_t y = 0x23456789;
+    std::uint32_t z = 0x34567890;
 };
 
 #endif // BKCRACK_KEYS_HPP

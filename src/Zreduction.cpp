@@ -24,7 +24,8 @@ void Zreduction::reduce(Progress& progress)
     constexpr std::size_t      trackSizeThreshold = 1 << 16;
     bool                       tracking           = false;
     std::vector<std::uint32_t> bestCopy;
-    std::size_t                bestIndex = index, bestSize = trackSizeThreshold;
+    std::size_t                bestIndex = index;
+    std::size_t                bestSize  = trackSizeThreshold;
 
     // variables to wait for a limited number of steps when a small enough vector is found
     constexpr std::size_t waitSizeThreshold = 1 << 8;
