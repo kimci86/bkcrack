@@ -380,8 +380,8 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
         std::generate_n(std::ostreambuf_iterator<char>(os), packedSize,
                         [&in, &decrypt, &encrypt]() -> char
                         {
-                            std::uint8_t p = *in++ ^ decrypt.getK();
-                            std::uint8_t c = p ^ encrypt.getK();
+                            const std::uint8_t p = *in++ ^ decrypt.getK();
+                            const std::uint8_t c = p ^ encrypt.getK();
                             decrypt.update(p);
                             encrypt.update(p);
                             return c;

@@ -31,10 +31,10 @@ void Attack::exploreZlists(int i)
     if (i != 0) // the Z-list is not complete so generate Z{i-1}[2,32) values
     {
         // get Z{i-1}[10,32) from CRC32^-1
-        std::uint32_t zim1_10_32 = Crc32Tab::getZim1_10_32(zlist[i]);
+        const std::uint32_t zim1_10_32 = Crc32Tab::getZim1_10_32(zlist[i]);
 
         // get Z{i-1}[2,16) values from keystream byte k{i-1} and Z{i-1}[10,16)
-        for (std::uint32_t zim1_2_16 : KeystreamTab::getZi_2_16_vector(data.keystream[index + i - 1], zim1_10_32))
+        for (const std::uint32_t zim1_2_16 : KeystreamTab::getZi_2_16_vector(data.keystream[index + i - 1], zim1_10_32))
         {
             // add Z{i-1}[2,32) to the Z-list
             zlist[i - 1] = zim1_10_32 | zim1_2_16;
@@ -56,7 +56,7 @@ void Attack::exploreZlists(int i)
         for (std::uint32_t y7_8_24 = 0, prod = (MultTab::getMultinv(msb(ylist[7])) << 24) - MultTab::multInv;
              y7_8_24 < 1 << 24; y7_8_24 += 1 << 8, prod += MultTab::multInv << 8)
             // get possible Y7[0,8) values
-            for (std::uint8_t y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
+            for (const std::uint8_t y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
                 // filter Y7[0,8) using Y6[24,32)
                 if (prod + MultTab::getMultinv(y7_0_8) - (ylist[6] & mask<24, 32>) <= maxdiff<24>)
                 {
@@ -70,14 +70,14 @@ void Attack::exploreYlists(int i)
 {
     if (i != 3) // the Y-list is not complete so generate Y{i-1} values
     {
-        std::uint32_t fy  = (ylist[i] - 1) * MultTab::multInv;
-        std::uint32_t ffy = (fy - 1) * MultTab::multInv;
+        const std::uint32_t fy  = (ylist[i] - 1) * MultTab::multInv;
+        const std::uint32_t ffy = (fy - 1) * MultTab::multInv;
 
         // get possible LSB(Xi)
-        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i - 2] & mask<24, 32>))))
+        for (const std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (ylist[i - 2] & mask<24, 32>))))
         {
             // compute corresponding Y{i-1}
-            std::uint32_t yim1 = fy - xi_0_8;
+            const std::uint32_t yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
             if (ffy - MultTab::getMultinv(xi_0_8) - (ylist[i - 2] & mask<24, 32>) <= maxdiff<24> &&
@@ -110,7 +110,7 @@ void Attack::testXlist()
         x = Crc32Tab::crc32inv(x, data.plaintext[index + i]);
 
     // check that X3 fits with Y1[26,32)
-    std::uint32_t y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & mask<26, 32>;
+    const std::uint32_t y1_26_32 = Crc32Tab::getYi_24_32(zlist[1], zlist[0]) & mask<26, 32>;
     if (((ylist[3] - 1) * MultTab::multInv - lsb(x) - 1) * MultTab::multInv - y1_26_32 > maxdiff<26>)
         return;
 

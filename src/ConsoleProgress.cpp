@@ -13,7 +13,7 @@ ConsoleProgress::ConsoleProgress(std::ostream& os, const std::chrono::millisecon
 ConsoleProgress::~ConsoleProgress()
 {
     {
-        std::scoped_lock lock{m_in_destructor_mutex};
+        const std::scoped_lock lock{m_in_destructor_mutex};
         m_in_destructor = true;
     }
 
@@ -34,7 +34,7 @@ void ConsoleProgress::printerFunction()
 
     while (repeat)
     {
-        if (int total = this->total.load())
+        if (const int total = this->total.load())
             log(
                 [done = done.load(), total](std::ostream& os)
                 {
@@ -52,7 +52,7 @@ void ConsoleProgress::printerFunction()
         repeat = !m_in_destructor_cv.wait_for(lock, m_interval, [this] { return m_in_destructor; });
     }
 
-    if (int total = this->total.load())
+    if (const int total = this->total.load())
         log(
             [done = done.load(), total](std::ostream& os)
             {

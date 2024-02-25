@@ -29,13 +29,13 @@ Recovery::Recovery(const Keys& keys, const std::vector<std::uint8_t>& charset, s
         z[i - 1] = Crc32Tab::crc32inv(z[i], msb(y[i]));
 
     // precompute possible Z0[16,32) and Z{-1}[24,32)
-    for (std::uint8_t p5 : charset)
+    for (const std::uint8_t p5 : charset)
     {
         x[5] = Crc32Tab::crc32inv(x[6], p5);
         y[4] = (y[5] - 1) * MultTab::multInv - lsb(x[5]);
         z[3] = Crc32Tab::crc32inv(z[4], msb(y[4]));
 
-        for (std::uint8_t p4 : charset)
+        for (const std::uint8_t p4 : charset)
         {
             x[4] = Crc32Tab::crc32inv(x[5], p4);
             y[3] = (y[4] - 1) * MultTab::multInv - lsb(x[4]);
@@ -86,7 +86,7 @@ void Recovery::recoverLongPassword(const Keys& initial)
         const std::uint32_t y0_partial = initial.getY() * MultTab::mult + 1;
         const std::uint32_t z0_partial = Crc32Tab::crc32(initial.getZ(), 0);
 
-        for (std::uint8_t pi : charset)
+        for (const std::uint8_t pi : charset)
         {
             // finish to update the cipher state
             const std::uint32_t x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
@@ -126,7 +126,7 @@ void Recovery::recoverLongPassword(const Keys& initial)
     {
         prefix.push_back(charset[0]);
 
-        for (std::uint8_t pi : charset)
+        for (const std::uint8_t pi : charset)
         {
             Keys init = initial;
             init.update(pi);
@@ -148,7 +148,7 @@ void Recovery::recursion(int i)
         const std::uint32_t ffy = (fy - 1) * MultTab::multInv;
 
         // get possible LSB(Xi)
-        for (std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & mask<24, 32>))))
+        for (const std::uint8_t xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & mask<24, 32>))))
         {
             // compute corresponding Y{i-1}
             const std::uint32_t yim1 = fy - xi_0_8;
@@ -201,7 +201,7 @@ void Recovery::recursion(int i)
                         const auto fillBefore  = os.fill('0');
 
                         os << "Password: " << password << " (as bytes:";
-                        for (std::uint8_t c : password)
+                        for (const std::uint8_t c : password)
                             os << ' ' << std::setw(2) << static_cast<int>(c);
                         os << ')' << std::endl;
 
@@ -256,7 +256,7 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
                 {
                     for (auto i = nextCandidateIndex++; i < charsetSize; i = nextCandidateIndex++)
                     {
-                        std::uint8_t pm4 = worker.charset[i];
+                        const std::uint8_t pm4 = worker.charset[i];
 
                         Keys init = initial;
                         init.update(pm4);
@@ -315,8 +315,8 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
                 {
                     for (auto i = nextCandidateIndex++; i < charsetSize * charsetSize; i = nextCandidateIndex++)
                     {
-                        std::uint8_t pm4 = worker.charset[i / charsetSize];
-                        std::uint8_t pm3 = worker.charset[i % charsetSize];
+                        const std::uint8_t pm4 = worker.charset[i / charsetSize];
+                        const std::uint8_t pm3 = worker.charset[i % charsetSize];
 
                         Keys init = initial;
                         init.update(pm4);
@@ -361,7 +361,7 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
 
         for (int i = index_start; i < charsetSize; i++)
         {
-            std::uint8_t pi = worker.charset[i];
+            const std::uint8_t pi = worker.charset[i];
 
             Keys init = initial;
             init.update(pi);

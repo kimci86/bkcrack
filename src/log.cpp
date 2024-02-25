@@ -7,7 +7,7 @@
 
 std::ostream& put_time(std::ostream& os)
 {
-    std::time_t t = std::time(nullptr);
+    const std::time_t t = std::time(nullptr);
     return os << std::put_time(std::localtime(&t), "%T");
 }
 

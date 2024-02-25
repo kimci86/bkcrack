@@ -25,7 +25,7 @@ public:
     template <typename F>
     void log(F f)
     {
-        std::scoped_lock lock{m_os_mutex};
+        const std::scoped_lock lock{m_os_mutex};
         f(m_os);
     }
 

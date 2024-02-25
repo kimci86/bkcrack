@@ -229,7 +229,7 @@ void Arguments::parseArgument()
     case Option::extraPlaintext:
     {
         int i = readInt("offset");
-        for (std::uint8_t b : readHex("data"))
+        for (const std::uint8_t b : readHex("data"))
             extraPlaintext[i++] = b;
         break;
     }
@@ -356,8 +356,8 @@ Arguments::Option Arguments::readOption(const std::string& description)
 #undef PAIR
 #undef PAIRS
 
-    std::string str = readString(description);
-    if (auto it = stringToOption.find(str); it == stringToOption.end())
+    const std::string str = readString(description);
+    if (const auto it = stringToOption.find(str); it == stringToOption.end())
         throw Error("unknown option " + str);
     else
         return it->second;

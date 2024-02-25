@@ -18,7 +18,7 @@
 namespace
 {
 
-const char* usage = R"_(usage: bkcrack [options]
+const char* const usage = R"_(usage: bkcrack [options]
 Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
 
 Options to get the internal password representation:
@@ -165,9 +165,9 @@ try
 
         const auto [state, restart] = [&]() -> std::pair<Progress::State, int>
         {
-            int             start = args.attackStart;
-            ConsoleProgress progress(std::cout);
-            SigintHandler   sigintHandler{progress.state};
+            int                 start = args.attackStart;
+            ConsoleProgress     progress(std::cout);
+            const SigintHandler sigintHandler{progress.state};
             keysvec = attack(data, zr.getCandidates(), start, zr.getIndex(), args.jobs, args.exhaustive, progress);
             return {progress.state, start};
         }();
@@ -286,8 +286,8 @@ try
             const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
             std::string start                  = args.recoveryStart;
 
-            ConsoleProgress progress(std::cout);
-            SigintHandler   sigintHandler(progress.state);
+            ConsoleProgress     progress(std::cout);
+            const SigintHandler sigintHandler(progress.state);
             passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs,
                                         args.exhaustive, progress);
             return {progress.state, start};
@@ -449,7 +449,7 @@ void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostr
     for (std::ostreambuf_iterator<char> plain(os); i < size && cipher != std::istreambuf_iterator<char>();
          i++, ++cipher, ++plain)
     {
-        std::uint8_t p = *cipher ^ keys.getK();
+        const std::uint8_t p = *cipher ^ keys.getK();
         keys.update(p);
         *plain = p;
     }
