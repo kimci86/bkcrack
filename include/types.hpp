@@ -21,13 +21,13 @@ public:
 // utility functions
 
 /// \return the least significant byte of x
-inline std::uint8_t lsb(std::uint32_t x)
+constexpr std::uint8_t lsb(std::uint32_t x)
 {
     return x;
 }
 
 /// \return the most significant byte of x
-inline std::uint8_t msb(std::uint32_t x)
+constexpr std::uint8_t msb(std::uint32_t x)
 {
     return x >> 24;
 }
