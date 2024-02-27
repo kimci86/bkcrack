@@ -10,14 +10,12 @@
 namespace
 {
 
-template <typename T, std::size_t N = sizeof(T)>
+template <typename T>
 auto read(std::istream& is) -> T
 {
-    static_assert(N <= sizeof(T), "read requires output type to have at least N bytes");
-
     // We make no assumption about platform endianness.
     auto x = T{};
-    for (auto index = std::size_t{}; index < N; index++)
+    for (auto index = std::size_t{}; index < sizeof(T); index++)
         x |= static_cast<T>(is.get()) << (8 * index);
 
     return x;
@@ -31,13 +29,11 @@ auto read(std::istream& is, std::size_t length) -> std::string
     return string;
 }
 
-template <typename T, std::size_t N = sizeof(T)>
+template <typename T>
 auto write(std::ostream& os, const T& x) -> std::ostream&
 {
-    static_assert(N <= sizeof(T), "write requires input type to have at least N bytes");
-
     // We make no assumption about platform endianness.
-    for (auto index = std::size_t{}; index < N; index++)
+    for (auto index = std::size_t{}; index < sizeof(T); index++)
         os.put(lsb(x >> (8 * index)));
 
     return os;
@@ -80,7 +76,7 @@ auto findCentralDirectoryOffset(std::istream& is) -> std::uint64_t
     {
         const auto disk = read<std::uint16_t>(is);
         is.seekg(10, std::ios::cur);
-        centralDirectoryOffset = read<std::uint64_t, 4>(is);
+        centralDirectoryOffset = read<std::uint32_t>(is);
 
         if (!is)
             throw Zip::Error{"could not read end of central directory record"};
@@ -144,13 +140,13 @@ auto Zip::Iterator::operator++() -> Zip::Iterator&
     const auto lastModTime = read<std::uint16_t>(*m_is);
     m_is->seekg(2, std::ios::cur);
     m_entry->crc32               = read<std::uint32_t>(*m_is);
-    m_entry->packedSize          = read<std::uint64_t, 4>(*m_is);
-    m_entry->uncompressedSize    = read<std::uint64_t, 4>(*m_is);
+    m_entry->packedSize          = read<std::uint32_t>(*m_is);
+    m_entry->uncompressedSize    = read<std::uint32_t>(*m_is);
     const auto filenameLength    = read<std::uint16_t>(*m_is);
     const auto extraFieldLength  = read<std::uint16_t>(*m_is);
     const auto fileCommentLength = read<std::uint16_t>(*m_is);
     m_is->seekg(8, std::ios::cur);
-    m_entry->offset = read<std::uint64_t, 4>(*m_is);
+    m_entry->offset = read<std::uint32_t>(*m_is);
     m_entry->name   = read(*m_is, filenameLength);
 
     m_entry->encryption = flags & 1
