@@ -13,7 +13,7 @@ ConsoleProgress::ConsoleProgress(std::ostream& os, const std::chrono::millisecon
 ConsoleProgress::~ConsoleProgress()
 {
     {
-        std::scoped_lock lock{m_in_destructor_mutex};
+        const auto lock = std::scoped_lock{m_in_destructor_mutex};
         m_in_destructor = true;
     }
 
@@ -23,18 +23,18 @@ ConsoleProgress::~ConsoleProgress()
 
 void ConsoleProgress::printerFunction()
 {
-    bool repeat = true;
+    auto repeat = true;
 
     // Give a small delay before the first time progress is printed so that
     // the running operation is likely to have initialized the total number of steps.
     {
-        std::unique_lock<std::mutex> lock(m_in_destructor_mutex);
-        repeat = !m_in_destructor_cv.wait_for(lock, std::chrono::milliseconds(1), [this] { return m_in_destructor; });
+        auto lock = std::unique_lock{m_in_destructor_mutex};
+        repeat = !m_in_destructor_cv.wait_for(lock, std::chrono::milliseconds{1}, [this] { return m_in_destructor; });
     }
 
     while (repeat)
     {
-        if (int total = this->total.load())
+        if (const auto total = this->total.load())
             log(
                 [done = done.load(), total](std::ostream& os)
                 {
@@ -48,11 +48,11 @@ void ConsoleProgress::printerFunction()
                     os.flags(flagsBefore);
                 });
 
-        std::unique_lock<std::mutex> lock(m_in_destructor_mutex);
-        repeat = !m_in_destructor_cv.wait_for(lock, m_interval, [this] { return m_in_destructor; });
+        auto lock = std::unique_lock{m_in_destructor_mutex};
+        repeat    = !m_in_destructor_cv.wait_for(lock, m_interval, [this] { return m_in_destructor; });
     }
 
-    if (int total = this->total.load())
+    if (const auto total = this->total.load())
         log(
             [done = done.load(), total](std::ostream& os)
             {

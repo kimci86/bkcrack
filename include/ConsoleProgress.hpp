@@ -12,7 +12,8 @@ class ConsoleProgress : public Progress
 {
 public:
     /// Start a thread to print progress
-    ConsoleProgress(std::ostream& os, const std::chrono::milliseconds& interval = std::chrono::milliseconds(200));
+    explicit ConsoleProgress(std::ostream&                    os,
+                             const std::chrono::milliseconds& interval = std::chrono::milliseconds{200});
 
     /// Notify and stop the printing thread
     ~ConsoleProgress();

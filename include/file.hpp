@@ -12,11 +12,11 @@
 ///
 ///     input [ label="filename" ];
 ///     output [ label="filename" ];
-///     bytevec [ URL="\ref bytevec" ];
+///     buffer [ label="std::vector<std::uint8_t>" ];
 ///
 ///     input -> "std::ifstream" [ label="openInput", URL="\ref openInput"];
-///     "std::ifstream" -> bytevec [ label="loadStream", URL="\ref loadStream"];
-///     input -> bytevec [ label="loadFile", URL="\ref loadFile"];
+///     "std::ifstream" -> buffer [ label="loadStream", URL="\ref loadStream"];
+///     input -> buffer [ label="loadFile", URL="\ref loadFile"];
 ///
 ///     output -> "std::ofstream" [ label="openOutput", URL="\ref openOutput"];
 /// }
@@ -31,22 +31,22 @@ class FileError : public BaseError
 {
 public:
     /// Constructor
-    FileError(const std::string& description);
+    explicit FileError(const std::string& description);
 };
 
 /// \brief Open an input file stream
 /// \exception FileError if the file cannot be opened
-std::ifstream openInput(const std::string& filename);
+auto openInput(const std::string& filename) -> std::ifstream;
 
 /// Load at most \a size bytes from an input stream
-bytevec loadStream(std::istream& is, std::size_t size);
+auto loadStream(std::istream& is, std::size_t size) -> std::vector<std::uint8_t>;
 
 /// \brief Load at most \a size bytes from a file
 /// \exception FileError if the file cannot be opened
-bytevec loadFile(const std::string& filename, std::size_t size);
+auto loadFile(const std::string& filename, std::size_t size) -> std::vector<std::uint8_t>;
 
 /// \brief Open an output file stream
 /// \exception FileError if the file cannot be opened
-std::ofstream openOutput(const std::string& filename);
+auto openOutput(const std::string& filename) -> std::ofstream;
 
 #endif // BKCRACK_FILE_HPP

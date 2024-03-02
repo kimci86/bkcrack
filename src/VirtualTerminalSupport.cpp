@@ -12,7 +12,7 @@ public:
     : hStdOut{GetStdHandle(STD_OUTPUT_HANDLE)}
     , originalMode{[this]
                    {
-                       DWORD mode;
+                       auto mode = DWORD{};
                        return GetConsoleMode(hStdOut, &mode) ? std::optional{mode} : std::nullopt;
                    }()}
     {

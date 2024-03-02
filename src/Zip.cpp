@@ -5,118 +5,111 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <numeric>
 
 namespace
 {
 
-template <typename T, std::size_t N = sizeof(T)>
-std::istream& read(std::istream& is, T& x)
+template <typename T>
+auto read(std::istream& is) -> T
 {
-    static_assert(N <= sizeof(T), "read requires output type to have at least N bytes");
-
     // We make no assumption about platform endianness.
-    x = T();
-    for (std::size_t index = 0; index < N; index++)
+    auto x = T{};
+    for (auto index = std::size_t{}; index < sizeof(T); index++)
         x |= static_cast<T>(is.get()) << (8 * index);
 
-    return is;
+    return x;
 }
 
-std::istream& read(std::istream& is, std::string& string, std::size_t length)
+auto read(std::istream& is, std::size_t length) -> std::string
 {
+    auto string = std::string{};
     string.resize(length);
-    return is.read(&string[0], string.size());
+    is.read(string.data(), string.size());
+    return string;
 }
 
-template <typename T, std::size_t N = sizeof(T)>
-std::ostream& write(std::ostream& os, const T& x)
+template <typename T>
+auto write(std::ostream& os, const T& x) -> std::ostream&
 {
-    static_assert(N <= sizeof(T), "write requires input type to have at least N bytes");
-
     // We make no assumption about platform endianness.
-    for (std::size_t index = 0; index < N; index++)
+    for (auto index = std::size_t{}; index < sizeof(T); index++)
         os.put(lsb(x >> (8 * index)));
 
     return os;
 }
 
-enum class Signature : uint32
+enum class Signature : std::uint32_t
 {
-    LOCAL_FILE_HEADER        = 0x04034b50,
-    CENTRAL_DIRECTORY_HEADER = 0x02014b50,
-    ZIP64_EOCD               = 0x06064b50,
-    ZIP64_EOCD_LOCATOR       = 0x07064b50,
-    EOCD                     = 0x06054b50
+    LocalFileHeader        = 0x04034b50,
+    CentralDirectoryHeader = 0x02014b50,
+    Zip64Eocd              = 0x06064b50,
+    Zip64EocdLocator       = 0x07064b50,
+    Eocd                   = 0x06054b50
 };
 
-bool checkSignature(std::istream& is, const Signature& signature)
+auto checkSignature(std::istream& is, const Signature& signature) -> bool
 {
-    uint32 sig;
-    return read(is, sig) && sig == static_cast<uint32>(signature);
+    const auto sig = read<std::uint32_t>(is);
+    return is && sig == static_cast<std::uint32_t>(signature);
 }
 
-uint64 findCentralDirectoryOffset(std::istream& is)
+auto findCentralDirectoryOffset(std::istream& is) -> std::uint64_t
 {
-    uint64 centralDirectoryOffset;
+    auto centralDirectoryOffset = std::uint64_t{};
 
     // find end of central directory signature
     {
-        uint32 signature;
-        uint16 commentLength = 0;
+        auto signature     = std::uint32_t{};
+        auto commentLength = std::uint16_t{};
         do
         {
             is.seekg(-22 - commentLength, std::ios::end);
-        } while (read(is, signature) && signature != static_cast<uint32>(Signature::EOCD) &&
-                 commentLength++ < MASK_0_16);
+            signature = read<std::uint32_t>(is);
+        } while (is && signature != static_cast<std::uint32_t>(Signature::Eocd) && commentLength++ < mask<0, 16>);
 
-        if (!is || signature != static_cast<uint32>(Signature::EOCD))
-            throw Zip::Error("could not find end of central directory signature");
+        if (!is || signature != static_cast<std::uint32_t>(Signature::Eocd))
+            throw Zip::Error{"could not find end of central directory signature"};
     }
 
     // read end of central directory record
     {
-        uint16 disk;
-
-        read(is, disk);
+        const auto disk = read<std::uint16_t>(is);
         is.seekg(10, std::ios::cur);
-        read<uint64, 4>(is, centralDirectoryOffset);
+        centralDirectoryOffset = read<std::uint32_t>(is);
 
         if (!is)
-            throw Zip::Error("could not read end of central directory record");
+            throw Zip::Error{"could not read end of central directory record"};
         if (disk != 0)
-            throw Zip::Error("split zip archives are not supported");
+            throw Zip::Error{"split zip archives are not supported"};
     }
 
     // look for Zip64 end of central directory locator
     is.seekg(-40, std::ios::cur);
-    if (checkSignature(is, Signature::ZIP64_EOCD_LOCATOR))
+    if (checkSignature(is, Signature::Zip64EocdLocator))
     {
-        uint64 zip64EndOfCentralDirectoryOffset;
-
         is.seekg(4, std::ios::cur);
-        read(is, zip64EndOfCentralDirectoryOffset);
+        const auto zip64EndOfCentralDirectoryOffset = read<std::uint64_t>(is);
 
         if (!is)
-            throw Zip::Error("could not read Zip64 end of central directory locator record");
+            throw Zip::Error{"could not read Zip64 end of central directory locator record"};
 
         // read Zip64 end of central directory record
         is.seekg(zip64EndOfCentralDirectoryOffset, std::ios::beg);
-        if (checkSignature(is, Signature::ZIP64_EOCD))
+        if (checkSignature(is, Signature::Zip64Eocd))
         {
-            uint16 versionNeededToExtract;
-
             is.seekg(10, std::ios::cur);
-            read(is, versionNeededToExtract);
+            const auto versionNeededToExtract = read<std::uint16_t>(is);
             is.seekg(32, std::ios::cur);
-            read(is, centralDirectoryOffset);
+            centralDirectoryOffset = read<std::uint64_t>(is);
 
             if (!is)
-                throw Zip::Error("could not read Zip64 end of central directory record");
+                throw Zip::Error{"could not read Zip64 end of central directory record"};
             if (versionNeededToExtract >= 62) // Version 6.2 introduces central directory encryption.
-                throw Zip::Error("central directory encryption is not supported");
+                throw Zip::Error{"central directory encryption is not supported"};
         }
         else
-            throw Zip::Error("could not find Zip64 end of central directory record");
+            throw Zip::Error{"could not find Zip64 end of central directory record"};
     }
 
     return centralDirectoryOffset;
@@ -125,7 +118,7 @@ uint64 findCentralDirectoryOffset(std::istream& is)
 } // namespace
 
 Zip::Error::Error(const std::string& description)
-: BaseError("Zip error", description)
+: BaseError{"Zip error", description}
 {
 }
 
@@ -136,34 +129,25 @@ Zip::Iterator::Iterator(const Zip& archive)
     ++(*this);
 }
 
-Zip::Iterator& Zip::Iterator::operator++()
+auto Zip::Iterator::operator++() -> Zip::Iterator&
 {
-    if (!checkSignature(*m_is, Signature::CENTRAL_DIRECTORY_HEADER))
+    if (!checkSignature(*m_is, Signature::CentralDirectoryHeader))
         return *this = Iterator{};
 
-    uint16 flags;
-    uint16 method;
-    uint16 lastModTime;
-    uint16 lastModDate;
-
-    uint16 filenameLength;
-    uint16 extraFieldLength;
-    uint16 fileCommentLength;
-
     m_is->seekg(4, std::ios::cur);
-    read(*m_is, flags);
-    read(*m_is, method);
-    read(*m_is, lastModTime);
-    read(*m_is, lastModDate);
-    read(*m_is, m_entry->crc32);
-    read<uint64, 4>(*m_is, m_entry->packedSize);
-    read<uint64, 4>(*m_is, m_entry->uncompressedSize);
-    read(*m_is, filenameLength);
-    read(*m_is, extraFieldLength);
-    read(*m_is, fileCommentLength);
+    const auto flags       = read<std::uint16_t>(*m_is);
+    const auto method      = read<std::uint16_t>(*m_is);
+    const auto lastModTime = read<std::uint16_t>(*m_is);
+    m_is->seekg(2, std::ios::cur);
+    m_entry->crc32               = read<std::uint32_t>(*m_is);
+    m_entry->packedSize          = read<std::uint32_t>(*m_is);
+    m_entry->uncompressedSize    = read<std::uint32_t>(*m_is);
+    const auto filenameLength    = read<std::uint16_t>(*m_is);
+    const auto extraFieldLength  = read<std::uint16_t>(*m_is);
+    const auto fileCommentLength = read<std::uint16_t>(*m_is);
     m_is->seekg(8, std::ios::cur);
-    read<uint64, 4>(*m_is, m_entry->offset);
-    read(*m_is, m_entry->name, filenameLength);
+    m_entry->offset = read<std::uint32_t>(*m_is);
+    m_entry->name   = read(*m_is, filenameLength);
 
     m_entry->encryption = flags & 1
                               ? method == 99 || (flags >> 6) & 1 ? Encryption::Unsupported : Encryption::Traditional
@@ -171,33 +155,31 @@ Zip::Iterator& Zip::Iterator::operator++()
 
     m_entry->compression = static_cast<Compression>(method);
 
-    m_entry->checkByte = (flags >> 3) & 1 ? static_cast<byte>(lastModTime >> 8) : msb(m_entry->crc32);
+    m_entry->checkByte = (flags >> 3) & 1 ? static_cast<std::uint8_t>(lastModTime >> 8) : msb(m_entry->crc32);
 
-    for (int remaining = extraFieldLength; remaining > 0;)
+    for (auto remaining = extraFieldLength; remaining > 0;)
     {
         // read extra field header
-        uint16 id;
-        uint16 size;
-        read(*m_is, id);
-        read(*m_is, size);
+        const auto id   = read<std::uint16_t>(*m_is);
+        auto       size = read<std::uint16_t>(*m_is);
         remaining -= 4 + size;
 
         switch (id)
         {
         case 0x0001: // Zip64 extended information
-            if (8 <= size && m_entry->uncompressedSize == MASK_0_32)
+            if (8 <= size && m_entry->uncompressedSize == mask<0, 32>)
             {
-                read(*m_is, m_entry->uncompressedSize);
+                m_entry->uncompressedSize = read<std::uint64_t>(*m_is);
                 size -= 8;
             }
-            if (8 <= size && m_entry->packedSize == MASK_0_32)
+            if (8 <= size && m_entry->packedSize == mask<0, 32>)
             {
-                read(*m_is, m_entry->packedSize);
+                m_entry->packedSize = read<std::uint64_t>(*m_is);
                 size -= 8;
             }
-            if (8 <= size && m_entry->offset == MASK_0_32)
+            if (8 <= size && m_entry->offset == mask<0, 32>)
             {
-                read(*m_is, m_entry->offset);
+                m_entry->offset = read<std::uint64_t>(*m_is);
                 size -= 8;
             }
             break;
@@ -205,20 +187,18 @@ Zip::Iterator& Zip::Iterator::operator++()
         case 0x7075: // Info-ZIP Unicode Path
             if (5 <= size)
             {
-                uint32 nameCrc32 = MASK_0_32;
-                for (byte b : m_entry->name)
-                    nameCrc32 = Crc32Tab::crc32(nameCrc32, b);
-                nameCrc32 ^= MASK_0_32;
+                const auto nameCrc32 =
+                    std::accumulate(m_entry->name.begin(), m_entry->name.end(), mask<0, 32>, Crc32Tab::crc32) ^
+                    mask<0, 32>;
 
-                uint32 expectedNameCrc32;
                 m_is->seekg(1, std::ios::cur);
-                read(*m_is, expectedNameCrc32);
+                const auto expectedNameCrc32 = read<std::uint32_t>(*m_is);
                 size -= 5;
 
                 if (nameCrc32 == expectedNameCrc32)
                 {
-                    read(*m_is, m_entry->name, size);
-                    size = 0;
+                    m_entry->name = read(*m_is, size);
+                    size          = 0;
                 }
             }
             break;
@@ -226,12 +206,11 @@ Zip::Iterator& Zip::Iterator::operator++()
         case 0x9901: // AE-x encryption structure
             if (7 <= size)
             {
-                uint16 method;
                 m_is->seekg(5, std::ios::cur);
-                read(*m_is, method);
+                const auto actualMethod = read<std::uint16_t>(*m_is);
                 size -= 7;
 
-                m_entry->compression = static_cast<Compression>(method);
+                m_entry->compression = static_cast<Compression>(actualMethod);
             }
             break;
 
@@ -246,12 +225,12 @@ Zip::Iterator& Zip::Iterator::operator++()
     m_is->seekg(fileCommentLength, std::ios::cur);
 
     if (!*m_is)
-        throw Error("could not read central directory header");
+        throw Error{"could not read central directory header"};
 
     return *this;
 }
 
-Zip::Iterator Zip::Iterator::operator++(int)
+auto Zip::Iterator::operator++(int) -> Zip::Iterator
 {
     auto copy = *this;
     ++(*this);
@@ -272,24 +251,24 @@ Zip::Zip(const std::string& filename)
 {
 }
 
-Zip::Entry Zip::operator[](const std::string& name) const
+auto Zip::operator[](const std::string& name) const -> Zip::Entry
 {
     const auto it = std::find_if(begin(), end(), [&name](const Entry& entry) { return entry.name == name; });
 
     if (it == end())
-        throw Error("found no entry named \"" + name + "\"");
+        throw Error{"found no entry named \"" + name + "\""};
     else
         return *it;
 }
 
-Zip::Entry Zip::operator[](std::size_t index) const
+auto Zip::operator[](std::size_t index) const -> Zip::Entry
 {
-    std::size_t nextIndex = 0;
-    const auto  it = std::find_if(begin(), end(), [&nextIndex, index](const Entry&) { return nextIndex++ == index; });
+    auto       nextIndex = std::size_t{};
+    const auto it = std::find_if(begin(), end(), [&nextIndex, index](const Entry&) { return nextIndex++ == index; });
 
     if (it == end())
-        throw Error("found no entry at index " + std::to_string(index) + " (maximum index for this archive is " +
-                    std::to_string(nextIndex - 1) + ")");
+        throw Error{"found no entry at index " + std::to_string(index) + " (maximum index for this archive is " +
+                    std::to_string(nextIndex - 1) + ")"};
     else
         return *it;
 }
@@ -299,47 +278,46 @@ void Zip::checkEncryption(const Entry& entry, Encryption expected)
     if (entry.encryption != expected)
     {
         if (entry.encryption == Encryption::None)
-            throw Error("entry \"" + entry.name + "\" is not encrypted");
+            throw Error{"entry \"" + entry.name + "\" is not encrypted"};
         else if (expected == Encryption::None)
-            throw Error("entry \"" + entry.name + "\" is encrypted");
+            throw Error{"entry \"" + entry.name + "\" is encrypted"};
         else
-            throw Error("entry \"" + entry.name + "\" is encrypted with an unsupported algorithm");
+            throw Error{"entry \"" + entry.name + "\" is encrypted with an unsupported algorithm"};
     }
 }
 
-std::istream& Zip::seek(const Entry& entry) const
+auto Zip::seek(const Entry& entry) const -> std::istream&
 {
     m_is.seekg(entry.offset, std::ios::beg);
-    if (!checkSignature(m_is, Signature::LOCAL_FILE_HEADER))
-        throw Error("could not find local file header");
+    if (!checkSignature(m_is, Signature::LocalFileHeader))
+        throw Error{"could not find local file header"};
 
     // skip local file header
-    uint16 nameSize, extraSize;
     m_is.seekg(22, std::ios::cur);
-    read(m_is, nameSize);
-    read(m_is, extraSize);
+    const auto nameSize  = read<std::uint16_t>(m_is);
+    const auto extraSize = read<std::uint16_t>(m_is);
     m_is.seekg(nameSize + extraSize, std::ios::cur);
 
     return m_is;
 }
 
-bytevec Zip::load(const Entry& entry, std::size_t count) const
+auto Zip::load(const Entry& entry, std::size_t count) const -> std::vector<std::uint8_t>
 {
-    return loadStream(seek(entry), std::min(entry.packedSize, static_cast<uint64>(count)));
+    return loadStream(seek(entry), std::min(entry.packedSize, static_cast<std::uint64_t>(count)));
 }
 
 void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys, Progress& progress) const
 {
     // Store encrypted entries local file header offset and packed size.
     // Use std::map to sort them by local file header offset.
-    std::map<uint64, uint64> packedSizeByLocalOffset;
+    auto packedSizeByLocalOffset = std::map<std::uint64_t, std::uint64_t>{};
     for (const auto& entry : *this)
         if (entry.encryption == Encryption::Traditional)
             packedSizeByLocalOffset.insert({entry.offset, entry.packedSize});
 
     // Rewind input stream and iterate on encrypted entries to change the keys, copy the rest.
     m_is.seekg(0, std::ios::beg);
-    uint64 currentOffset = 0;
+    auto currentOffset = std::uint64_t{};
 
     progress.done  = 0;
     progress.total = packedSizeByLocalOffset.size();
@@ -348,40 +326,38 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
     {
         if (currentOffset < localHeaderOffset)
         {
-            std::copy_n(std::istreambuf_iterator<char>(m_is), localHeaderOffset - currentOffset,
-                        std::ostreambuf_iterator<char>(os));
+            std::copy_n(std::istreambuf_iterator{m_is}, localHeaderOffset - currentOffset,
+                        std::ostreambuf_iterator{os});
             m_is.get();
         }
 
-        if (!checkSignature(m_is, Signature::LOCAL_FILE_HEADER))
-            throw Error("could not find local file header");
+        if (!checkSignature(m_is, Signature::LocalFileHeader))
+            throw Error{"could not find local file header"};
 
-        write(os, static_cast<uint32>(Signature::LOCAL_FILE_HEADER));
+        write(os, static_cast<std::uint32_t>(Signature::LocalFileHeader));
 
-        std::copy_n(std::istreambuf_iterator<char>(m_is), 22, std::ostreambuf_iterator<char>(os));
+        std::copy_n(std::istreambuf_iterator{m_is}, 22, std::ostreambuf_iterator{os});
         m_is.get();
 
-        uint16 filenameLength, extraSize;
-        read(m_is, filenameLength);
-        read(m_is, extraSize);
+        const auto filenameLength = read<std::uint16_t>(m_is);
+        const auto extraSize      = read<std::uint16_t>(m_is);
         write(os, filenameLength);
         write(os, extraSize);
 
         if (0 < filenameLength + extraSize)
         {
-            std::copy_n(std::istreambuf_iterator<char>(m_is), filenameLength + extraSize,
-                        std::ostreambuf_iterator<char>(os));
+            std::copy_n(std::istreambuf_iterator{m_is}, filenameLength + extraSize, std::ostreambuf_iterator{os});
             m_is.get();
         }
 
-        Keys                           decrypt = oldKeys;
-        Keys                           encrypt = newKeys;
-        std::istreambuf_iterator<char> in(m_is);
-        std::generate_n(std::ostreambuf_iterator<char>(os), packedSize,
+        auto decrypt = oldKeys;
+        auto encrypt = newKeys;
+        auto in      = std::istreambuf_iterator{m_is};
+        std::generate_n(std::ostreambuf_iterator{os}, packedSize,
                         [&in, &decrypt, &encrypt]() -> char
                         {
-                            byte p = *in++ ^ decrypt.getK();
-                            byte c = p ^ encrypt.getK();
+                            const auto p = *in++ ^ decrypt.getK();
+                            const auto c = p ^ encrypt.getK();
                             decrypt.update(p);
                             encrypt.update(p);
                             return c;
@@ -392,6 +368,5 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
         progress.done++;
     }
 
-    std::copy(std::istreambuf_iterator<char>(m_is), std::istreambuf_iterator<char>(),
-              std::ostreambuf_iterator<char>(os));
+    std::copy(std::istreambuf_iterator{m_is}, {}, std::ostreambuf_iterator{os});
 }

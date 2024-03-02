@@ -1,38 +1,38 @@
 #include "file.hpp"
 
 FileError::FileError(const std::string& description)
-: BaseError("File error", description)
+: BaseError{"File error", description}
 {
 }
 
-std::ifstream openInput(const std::string& filename)
+auto openInput(const std::string& filename) -> std::ifstream
 {
-    if (std::ifstream is = std::ifstream(filename, std::ios::binary))
+    if (auto is = std::ifstream{filename, std::ios::binary})
         return is;
     else
-        throw FileError("could not open input file " + filename);
+        throw FileError{"could not open input file " + filename};
 }
 
-bytevec loadStream(std::istream& is, std::size_t size)
+auto loadStream(std::istream& is, std::size_t size) -> std::vector<std::uint8_t>
 {
-    bytevec                        content;
-    std::istreambuf_iterator<char> it(is);
-    for (std::size_t i = 0; i < size && it != std::istreambuf_iterator<char>(); i++, ++it)
+    auto content = std::vector<std::uint8_t>{};
+    auto it      = std::istreambuf_iterator{is};
+    for (auto i = std::size_t{}; i < size && it != std::istreambuf_iterator<char>{}; i++, ++it)
         content.push_back(*it);
 
     return content;
 }
 
-bytevec loadFile(const std::string& filename, std::size_t size)
+auto loadFile(const std::string& filename, std::size_t size) -> std::vector<std::uint8_t>
 {
-    std::ifstream is = openInput(filename);
+    auto is = openInput(filename);
     return loadStream(is, size);
 }
 
-std::ofstream openOutput(const std::string& filename)
+auto openOutput(const std::string& filename) -> std::ofstream
 {
-    if (std::ofstream os = std::ofstream(filename, std::ios::binary))
+    if (auto os = std::ofstream{filename, std::ios::binary})
         return os;
     else
-        throw FileError("could not open output file " + filename);
+        throw FileError{"could not open output file " + filename};
 }

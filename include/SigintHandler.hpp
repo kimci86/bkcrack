@@ -10,7 +10,7 @@ class SigintHandler
 {
 public:
     /// Enable the signal handler
-    SigintHandler(std::atomic<Progress::State>& destination);
+    explicit SigintHandler(std::atomic<Progress::State>& destination);
 
     /// Disable the signal handler
     ~SigintHandler();
@@ -19,7 +19,7 @@ public:
     SigintHandler(const SigintHandler& other) = delete;
 
     /// Deleted assignment operator
-    SigintHandler& operator=(const SigintHandler& other) = delete;
+    auto operator=(const SigintHandler& other) -> SigintHandler& = delete;
 };
 
 #endif // BKCRACK_SIGINTHANDLER_HPP

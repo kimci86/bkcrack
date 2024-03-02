@@ -18,7 +18,7 @@
 namespace
 {
 
-const char* usage = R"_(usage: bkcrack [options]
+const char* const usage = R"_(usage: bkcrack [options]
 Crack legacy zip encryption with Biham and Kocher's known plaintext attack.
 
 Options to get the internal password representation:
@@ -102,16 +102,16 @@ void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostr
 
 } // namespace
 
-int main(int argc, const char* argv[])
+auto main(int argc, const char* argv[]) -> int
 try
 {
     // enable virtual terminal support on Windows, no-op on other platforms
-    VirtualTerminalSupport vtSupport;
+    const auto vtSupport = VirtualTerminalSupport{};
 
     // version information
-    std::cout << "bkcrack " BKCRACK_VERSION " - " BKCRACK_VERSION_DATE << std::endl;
+    std::cout << "bkcrack " << bkcrackVersion << " - " << bkcrackVersionDate << std::endl;
 
-    const Arguments args(argc, argv);
+    const auto args = Arguments{argc, argv};
     if (args.help)
     {
         std::cout << usage << std::endl;
@@ -130,7 +130,7 @@ try
         return 0;
     }
 
-    std::vector<Keys> keysvec;
+    auto keysvec = std::vector<Keys>{};
     if (args.keys)
         keysvec.push_back(*args.keys);
     else if (args.password)
@@ -142,16 +142,16 @@ try
     else
     // find keys from known plaintext
     {
-        const Data data = args.loadData();
+        const auto data = args.loadData();
 
         // generate and reduce Zi[10,32) values
-        Zreduction zr(data.keystream);
-        if (data.keystream.size() > Attack::CONTIGUOUS_SIZE)
+        auto zr = Zreduction{data.keystream};
+        if (data.keystream.size() > Attack::contiguousSize)
         {
-            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::CONTIGUOUS_SIZE)
+            std::cout << "[" << put_time << "] Z reduction using " << (data.keystream.size() - Attack::contiguousSize)
                       << " bytes of known plaintext" << std::endl;
 
-            ConsoleProgress progress(std::cout);
+            auto progress = ConsoleProgress{std::cout};
             zr.reduce(progress);
         }
 
@@ -160,14 +160,14 @@ try
 
         // carry out the attack on the remaining Zi[2,32) values
         std::cout << "[" << put_time << "] Attack on " << zr.getCandidates().size() << " Z values at index "
-                  << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::ENCRYPTION_HEADER_SIZE))
+                  << (static_cast<int>(data.offset + zr.getIndex()) - static_cast<int>(Data::encryptionHeaderSize))
                   << std::endl;
 
         const auto [state, restart] = [&]() -> std::pair<Progress::State, int>
         {
-            int             start = args.attackStart;
-            ConsoleProgress progress(std::cout);
-            SigintHandler   sigintHandler{progress.state};
+            auto       start         = args.attackStart;
+            auto       progress      = ConsoleProgress{std::cout};
+            const auto sigintHandler = SigintHandler{progress.state};
             keysvec = attack(data, zr.getCandidates(), start, zr.getIndex(), args.jobs, args.exhaustive, progress);
             return {progress.state, start};
         }();
@@ -192,14 +192,14 @@ try
         else
         {
             std::cout << "Keys" << std::endl;
-            for (const Keys& keys : keysvec)
+            for (const auto& keys : keysvec)
                 std::cout << keys << std::endl;
         }
     }
 
     // From there, keysvec is not empty.
 
-    const Keys keys = keysvec.front();
+    const auto keys = keysvec.front();
     if ((args.decipheredFile || args.changePassword || args.changeKeys || args.bruteforce) && keysvec.size() > 1)
         std::cout << "Continuing with keys " << keys << "\n"
                   << "Use the command line option -k to provide other keys." << std::endl;
@@ -213,8 +213,8 @@ try
         std::cout << std::endl;
 
         {
-            std::ifstream cipherstream = openInput(args.cipherArchive ? *args.cipherArchive : *args.cipherFile);
-            std::size_t   ciphersize   = std::numeric_limits<std::size_t>::max();
+            auto cipherstream = openInput(args.cipherArchive ? *args.cipherArchive : *args.cipherFile);
+            auto ciphersize   = std::numeric_limits<std::size_t>::max();
 
             if (args.cipherArchive)
             {
@@ -226,10 +226,10 @@ try
                 ciphersize = entry.packedSize;
             }
 
-            std::ofstream decipheredstream = openOutput(*args.decipheredFile);
+            auto decipheredstream = openOutput(*args.decipheredFile);
 
             decipher(cipherstream, ciphersize,
-                     args.keepHeader ? 0 : static_cast<std::size_t>(Data::ENCRYPTION_HEADER_SIZE), decipheredstream,
+                     args.keepHeader ? 0 : static_cast<std::size_t>(Data::encryptionHeaderSize), decipheredstream,
                      keys);
         }
 
@@ -245,10 +245,10 @@ try
                   << newPassword << "\"" << std::endl;
 
         {
-            const auto    archive  = Zip{*args.cipherArchive};
-            std::ofstream unlocked = openOutput(unlockedArchive);
+            const auto archive  = Zip{*args.cipherArchive};
+            auto       unlocked = openOutput(unlockedArchive);
 
-            ConsoleProgress progress(std::cout);
+            auto progress = ConsoleProgress{std::cout};
             archive.changeKeys(unlocked, keys, Keys{newPassword}, progress);
         }
 
@@ -263,10 +263,10 @@ try
                   << std::endl;
 
         {
-            const auto    archive  = Zip{*args.cipherArchive};
-            std::ofstream unlocked = openOutput(unlockedArchive);
+            const auto archive  = Zip{*args.cipherArchive};
+            auto       unlocked = openOutput(unlockedArchive);
 
-            ConsoleProgress progress(std::cout);
+            auto progress = ConsoleProgress{std::cout};
             archive.changeKeys(unlocked, keys, newKeys, progress);
         }
 
@@ -278,16 +278,15 @@ try
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
 
-        std::vector<std::string> passwords;
+        auto passwords = std::vector<std::string>{};
 
         const auto [state, restart] = [&]() -> std::pair<Progress::State, std::string>
         {
             const auto& charset                = *args.bruteforce;
             const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
-            std::string start                  = args.recoveryStart;
-
-            ConsoleProgress progress(std::cout);
-            SigintHandler   sigintHandler(progress.state);
+            auto       start                   = args.recoveryStart;
+            auto       progress                = ConsoleProgress{std::cout};
+            const auto sigintHandler           = SigintHandler{progress.state};
             passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs,
                                         args.exhaustive, progress);
             return {progress.state, start};
@@ -306,7 +305,7 @@ try
                 const auto fillBefore  = std::cout.fill('0');
 
                 std::cout << "You may resume the password recovery with the option: --continue-recovery ";
-                for (byte c : restart)
+                for (const auto c : restart)
                     std::cout << std::setw(2) << static_cast<int>(c);
                 std::cout << std::endl;
 
@@ -331,7 +330,7 @@ try
             for (const auto& password : passwords)
             {
                 std::cout << "as bytes: ";
-                for (byte c : password)
+                for (const auto c : password)
                     std::cout << std::setw(2) << static_cast<int>(c) << ' ';
                 std::cout << std::endl;
                 std::cout << "as text: " << password << std::endl;
@@ -359,7 +358,7 @@ catch (const BaseError& e)
 namespace
 {
 
-std::string getEncryptionDescription(Zip::Encryption encryption)
+auto getEncryptionDescription(Zip::Encryption encryption) -> std::string
 {
     switch (encryption)
     {
@@ -375,7 +374,7 @@ std::string getEncryptionDescription(Zip::Encryption encryption)
     return "";
 }
 
-std::string getCompressionDescription(Zip::Compression compression)
+auto getCompressionDescription(Zip::Compression compression) -> std::string
 {
     switch (compression)
     {
@@ -403,7 +402,7 @@ std::string getCompressionDescription(Zip::Compression compression)
 
 void listEntries(const std::string& archiveFilename)
 {
-    auto archive = Zip{archiveFilename};
+    const auto archive = Zip{archiveFilename};
 
     std::cout << "Archive: " << archiveFilename << "\n"
               << "Index Encryption Compression CRC32    Uncompressed  Packed size Name\n"
@@ -413,7 +412,7 @@ void listEntries(const std::string& archiveFilename)
         std::cout.setf(std::ios::right | std::ios::dec, std::ios::adjustfield | std::ios::basefield);
     const auto fillBefore = std::cout.fill(' ');
 
-    std::size_t index = 0;
+    auto index = std::size_t{};
     for (const auto& entry : archive)
     {
         // clang-format off
@@ -440,16 +439,16 @@ void listEntries(const std::string& archiveFilename)
 
 void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys)
 {
-    std::istreambuf_iterator<char> cipher(is);
-    std::size_t                    i;
+    auto cipher = std::istreambuf_iterator{is};
+    auto i      = std::size_t{};
 
-    for (i = 0; i < discard && i < size && cipher != std::istreambuf_iterator<char>(); i++, ++cipher)
+    for (; i < discard && i < size && cipher != std::istreambuf_iterator<char>{}; i++, ++cipher)
         keys.update(*cipher ^ keys.getK());
 
-    for (std::ostreambuf_iterator<char> plain(os); i < size && cipher != std::istreambuf_iterator<char>();
+    for (auto plain = std::ostreambuf_iterator{os}; i < size && cipher != std::istreambuf_iterator<char>{};
          i++, ++cipher, ++plain)
     {
-        byte p = *cipher ^ keys.getK();
+        const auto p = *cipher ^ keys.getK();
         keys.update(p);
         *plain = p;
     }

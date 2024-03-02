@@ -7,47 +7,48 @@
 class MultTab
 {
 public:
-    /// \return MULT * x using a lookup table
-    static inline uint32 getMult(byte x)
+    /// \return mult * x using a lookup table
+    static auto getMult(std::uint8_t x) -> std::uint32_t
     {
         return instance.multtab[x];
     }
 
-    /// \return MULT^-1 * x using a lookup table
-    static inline uint32 getMultinv(byte x)
+    /// \return mult^-1 * x using a lookup table
+    static auto getMultinv(std::uint8_t x) -> std::uint32_t
     {
         return instance.multinvtab[x];
     }
 
     /// \return a vector of bytes x such that
-    /// msb(x*MULT^-1) is equal to msbprod or msbprod-1
-    static inline const bytevec& getMsbProdFiber2(byte msbprodinv)
+    /// msb(x*mult^-1) is equal to msbprod or msbprod-1
+    static auto getMsbProdFiber2(std::uint8_t msbprodinv) -> const std::vector<std::uint8_t>&
     {
         return instance.msbprodfiber2[msbprodinv];
     }
 
     /// \return a vector of bytes x such that
-    /// msb(x*MULT^-1) is equal to msbprod, msbprod-1 or msbprod+1
-    static inline const bytevec& getMsbProdFiber3(byte msbprodinv)
+    /// msb(x*mult^-1) is equal to msbprod, msbprod-1 or msbprod+1
+    static auto getMsbProdFiber3(std::uint8_t msbprodinv) -> const std::vector<std::uint8_t>&
     {
         return instance.msbprodfiber3[msbprodinv];
     }
 
-    enum : uint32
-    {
-        MULT    = 0x08088405,
-        MULTINV = 0xd94fa8cd
-    };
+    /// Multiplicative constant used in traditional PKWARE encryption
+    static constexpr std::uint32_t mult = 0x08088405;
+
+    /// Multiplicative inverse of mult modulo 2^32
+    static constexpr std::uint32_t multInv = 0xd94fa8cd;
+    static_assert(mult * multInv == 1);
 
 private:
     // initialize lookup tables
     MultTab();
 
     // lookup tables
-    u32arr<256>              multtab;
-    u32arr<256>              multinvtab;
-    std::array<bytevec, 256> msbprodfiber2;
-    std::array<bytevec, 256> msbprodfiber3;
+    std::array<std::uint32_t, 256>             multtab;
+    std::array<std::uint32_t, 256>             multinvtab;
+    std::array<std::vector<std::uint8_t>, 256> msbprodfiber2;
+    std::array<std::vector<std::uint8_t>, 256> msbprodfiber3;
 
     static const MultTab instance;
 };

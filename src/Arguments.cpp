@@ -12,9 +12,9 @@
 namespace
 {
 
-std::bitset<256> charRange(char first, char last)
+auto charRange(char first, char last) -> std::bitset<256>
 {
-    std::bitset<256> bitset;
+    auto bitset = std::bitset<256>{};
 
     do
     {
@@ -33,31 +33,31 @@ auto translateIntParseError(F&& f, const std::string& value)
     }
     catch (const std::invalid_argument&)
     {
-        throw Arguments::Error("expected an integer, got \"" + value + "\"");
+        throw Arguments::Error{"expected an integer, got \"" + value + "\""};
     }
     catch (const std::out_of_range&)
     {
-        throw Arguments::Error("integer value " + value + " is out of range");
+        throw Arguments::Error{"integer value " + value + " is out of range"};
     }
 }
 
-int parseInt(const std::string& value)
+auto parseInt(const std::string& value) -> int
 {
     return translateIntParseError([](const std::string& value) { return std::stoi(value, nullptr, 0); }, value);
 }
 
-std::size_t parseSize(const std::string& value)
+auto parseSize(const std::string& value) -> std::size_t
 {
     return translateIntParseError([](const std::string& value) { return std::stoull(value, nullptr, 0); }, value);
 }
 
-std::variant<Arguments::LengthInterval, std::size_t> parseInterval(const std::string& value)
+auto parseInterval(const std::string& value) -> std::variant<Arguments::LengthInterval, std::size_t>
 {
-    const std::string separator = "..";
+    const auto separator = std::string{".."};
 
     if (const auto minEnd = value.find(separator); minEnd != std::string::npos)
     {
-        Arguments::LengthInterval interval;
+        auto interval = Arguments::LengthInterval{};
 
         if (0 < minEnd)
             interval.minLength = parseSize(value.substr(0, minEnd));
@@ -74,7 +74,7 @@ std::variant<Arguments::LengthInterval, std::size_t> parseInterval(const std::st
 } // namespace
 
 Arguments::Error::Error(const std::string& description)
-: BaseError("Arguments error", description)
+: BaseError{"Arguments error", description}
 {
 }
 
@@ -98,57 +98,57 @@ Arguments::Arguments(int argc, const char* argv[])
     if (keys)
     {
         if (!decipheredFile && !changePassword && !changeKeys && !bruteforce)
-            throw Error("-d, -U, --change-keys or --bruteforce parameter is missing (required by -k)");
+            throw Error{"-d, -U, --change-keys or --bruteforce parameter is missing (required by -k)"};
     }
     else if (!password)
     {
         if (cipherFile && cipherIndex)
-            throw Error("-c and --cipher-index cannot be used at the same time");
+            throw Error{"-c and --cipher-index cannot be used at the same time"};
         if (plainFile && plainIndex)
-            throw Error("-p and --plain-index cannot be used at the same time");
+            throw Error{"-p and --plain-index cannot be used at the same time"};
 
         if (!cipherFile && !cipherIndex)
-            throw Error("-c or --cipher-index parameter is missing");
+            throw Error{"-c or --cipher-index parameter is missing"};
         if (!plainFile && !plainIndex && extraPlaintext.empty())
-            throw Error("-p, --plain-index or -x parameter is missing");
+            throw Error{"-p, --plain-index or -x parameter is missing"};
 
         if (plainArchive && !plainFile && !plainIndex)
-            throw Error("-p or --plain-index parameter is missing (required by -P)");
+            throw Error{"-p or --plain-index parameter is missing (required by -P)"};
 
         if (cipherIndex && !cipherArchive)
-            throw Error("-C parameter is missing (required by --cipher-index)");
+            throw Error{"-C parameter is missing (required by --cipher-index)"};
         if (plainIndex && !plainArchive)
-            throw Error("-P parameter is missing (required by --plain-index)");
+            throw Error{"-P parameter is missing (required by --plain-index)"};
 
-        constexpr int minimumOffset = -static_cast<int>(Data::ENCRYPTION_HEADER_SIZE);
+        constexpr auto minimumOffset = -static_cast<int>(Data::encryptionHeaderSize);
         if (offset < minimumOffset)
-            throw Error("plaintext offset " + std::to_string(offset) + " is too small (minimum is " +
-                        std::to_string(minimumOffset) + ")");
+            throw Error{"plaintext offset " + std::to_string(offset) + " is too small (minimum is " +
+                        std::to_string(minimumOffset) + ")"};
     }
 
     if (decipheredFile && !cipherFile && !cipherIndex)
-        throw Error("-c or --cipher-index parameter is missing (required by -d)");
+        throw Error{"-c or --cipher-index parameter is missing (required by -d)"};
     if (decipheredFile && !cipherArchive && decipheredFile == cipherFile)
-        throw Error("-c and -d parameters must point to different files");
+        throw Error{"-c and -d parameters must point to different files"};
 
     if (changePassword && !cipherArchive)
-        throw Error("-C parameter is missing (required by -U)");
+        throw Error{"-C parameter is missing (required by -U)"};
     if (changePassword && changePassword->unlockedArchive == cipherArchive)
-        throw Error("-C and -U parameters must point to different files");
+        throw Error{"-C and -U parameters must point to different files"};
 
     if (changeKeys && !cipherArchive)
-        throw Error("-C parameter is missing (required by --change-keys)");
+        throw Error{"-C parameter is missing (required by --change-keys)"};
     if (changeKeys && changeKeys->unlockedArchive == cipherArchive)
-        throw Error("-C and --change-keys parameters must point to different files");
+        throw Error{"-C and --change-keys parameters must point to different files"};
 
     if (length && !bruteforce)
-        throw Error("--bruteforce parameter is missing (required by --length)");
+        throw Error{"--bruteforce parameter is missing (required by --length)"};
 }
 
-Data Arguments::loadData() const
+auto Arguments::loadData() const -> Data
 {
     // load known plaintext
-    bytevec plaintext;
+    auto plaintext = std::vector<std::uint8_t>{};
     if (plainArchive)
     {
         const auto archive = Zip{*plainArchive};
@@ -160,14 +160,14 @@ Data Arguments::loadData() const
         plaintext = loadFile(*plainFile, plainFilePrefix);
 
     // load ciphertext needed by the attack
-    std::size_t needed = Data::ENCRYPTION_HEADER_SIZE;
+    auto needed = Data::encryptionHeaderSize;
     if (!plaintext.empty())
-        needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + offset + plaintext.size());
+        needed = std::max(needed, Data::encryptionHeaderSize + offset + plaintext.size());
     if (!extraPlaintext.empty())
-        needed = std::max(needed, Data::ENCRYPTION_HEADER_SIZE + extraPlaintext.rbegin()->first + 1);
+        needed = std::max(needed, Data::encryptionHeaderSize + extraPlaintext.rbegin()->first + 1);
 
-    bytevec                            ciphertext;
-    std::optional<std::map<int, byte>> extraPlaintextWithCheckByte;
+    auto ciphertext                  = std::vector<std::uint8_t>{};
+    auto extraPlaintextWithCheckByte = std::optional<std::map<int, std::uint8_t>>{};
     if (cipherArchive)
     {
         const auto archive = Zip{*cipherArchive};
@@ -184,16 +184,15 @@ Data Arguments::loadData() const
     else
         ciphertext = loadFile(*cipherFile, needed);
 
-    return Data(std::move(ciphertext), std::move(plaintext), offset,
-                extraPlaintextWithCheckByte.value_or(extraPlaintext));
+    return {std::move(ciphertext), std::move(plaintext), offset, extraPlaintextWithCheckByte.value_or(extraPlaintext)};
 }
 
-Arguments::LengthInterval Arguments::LengthInterval::operator&(const Arguments::LengthInterval& other) const
+auto Arguments::LengthInterval::operator&(const Arguments::LengthInterval& other) const -> Arguments::LengthInterval
 {
     return {std::max(minLength, other.minLength), std::min(maxLength, other.maxLength)};
 }
 
-bool Arguments::finished() const
+auto Arguments::finished() const -> bool
 {
     return m_current == m_end;
 }
@@ -228,8 +227,8 @@ void Arguments::parseArgument()
         break;
     case Option::extraPlaintext:
     {
-        int i = readInt("offset");
-        for (byte b : readHex("data"))
+        auto i = readInt("offset");
+        for (const auto b : readHex("data"))
             extraPlaintext[i++] = b;
         break;
     }
@@ -255,7 +254,7 @@ void Arguments::parseArgument()
         changePassword = {readString("unlockedzip"), readString("password")};
         break;
     case Option::changeKeys:
-        changeKeys = {readString("unlockedzip"), Keys{readKey("X"), readKey("Y"), readKey("Z")}};
+        changeKeys = {readString("unlockedzip"), {readKey("X"), readKey("Y"), readKey("Z")}};
         break;
     case Option::bruteforce:
         bruteforce = readCharset();
@@ -287,7 +286,7 @@ void Arguments::parseArgument()
         break;
     case Option::recoveryStart:
     {
-        const bytevec checkpoint = readHex("checkpoint");
+        const auto checkpoint = readHex("checkpoint");
         recoveryStart.assign(checkpoint.begin(), checkpoint.end());
         break;
     }
@@ -309,21 +308,21 @@ void Arguments::parseArgument()
     }
 }
 
-std::string Arguments::readString(const std::string& description)
+auto Arguments::readString(const std::string& description) -> std::string
 {
     if (finished())
-        throw Error("expected " + description + ", got nothing");
+        throw Error{"expected " + description + ", got nothing"};
 
     return *m_current++;
 }
 
-Arguments::Option Arguments::readOption(const std::string& description)
+auto Arguments::readOption(const std::string& description) -> Arguments::Option
 {
     // clang-format off
 #define PAIR(string, option) {#string, Option::option}
 #define PAIRS(short, long, option) PAIR(short, option), PAIR(long, option)
 
-    static const std::map<std::string, Option> stringToOption = {
+    static const auto stringToOption = std::map<std::string, Option>{
         PAIRS(-c, --cipher-file,       cipherFile),
         PAIR (    --cipher-index,      cipherIndex),
         PAIRS(-C, --cipher-zip,        cipherArchive),
@@ -356,65 +355,65 @@ Arguments::Option Arguments::readOption(const std::string& description)
 #undef PAIR
 #undef PAIRS
 
-    std::string str = readString(description);
-    if (auto it = stringToOption.find(str); it == stringToOption.end())
-        throw Error("unknown option " + str);
+    const auto str = readString(description);
+    if (const auto it = stringToOption.find(str); it == stringToOption.end())
+        throw Error{"unknown option " + str};
     else
         return it->second;
 }
 
-int Arguments::readInt(const std::string& description)
+auto Arguments::readInt(const std::string& description) -> int
 {
     return parseInt(readString(description));
 }
 
-std::size_t Arguments::readSize(const std::string& description)
+auto Arguments::readSize(const std::string& description) -> std::size_t
 {
     return parseSize(readString(description));
 }
 
-bytevec Arguments::readHex(const std::string& description)
+auto Arguments::readHex(const std::string& description) -> std::vector<std::uint8_t>
 {
-    std::string str = readString(description);
+    const auto str = readString(description);
 
     if (str.size() % 2)
-        throw Error("expected an even-length string, got " + str);
-    if (!std::all_of(str.begin(), str.end(), [](unsigned char c) { return std::isxdigit(c); }))
-        throw Error("expected " + description + " in hexadecimal, got " + str);
+        throw Error{"expected an even-length string, got " + str};
+    if (!std::all_of(str.begin(), str.end(), [](char c) { return std::isxdigit(static_cast<unsigned char>(c)); }))
+        throw Error{"expected " + description + " in hexadecimal, got " + str};
 
-    bytevec data;
-    for (std::size_t i = 0; i < str.length(); i += 2)
-        data.push_back(static_cast<byte>(std::stoul(str.substr(i, 2), nullptr, 16)));
+    auto data = std::vector<std::uint8_t>{};
+    for (auto i = std::size_t{}; i < str.length(); i += 2)
+        data.push_back(static_cast<std::uint8_t>(std::stoul(str.substr(i, 2), nullptr, 16)));
 
     return data;
 }
 
-uint32 Arguments::readKey(const std::string& description)
+auto Arguments::readKey(const std::string& description) -> std::uint32_t
 {
-    std::string str = readString(description);
+    const auto str = readString(description);
 
     if (str.size() > 8)
-        throw Error("expected a string of length 8 or less, got " + str);
-    if (!std::all_of(str.begin(), str.end(), [](unsigned char c) { return std::isxdigit(c); }))
-        throw Error("expected " + description + " in hexadecimal, got " + str);
+        throw Error{"expected a string of length 8 or less, got " + str};
+    if (!std::all_of(str.begin(), str.end(), [](char c) { return std::isxdigit(static_cast<unsigned char>(c)); }))
+        throw Error{"expected " + description + " in hexadecimal, got " + str};
 
-    return static_cast<uint32>(std::stoul(str, nullptr, 16));
+    return static_cast<std::uint32_t>(std::stoul(str, nullptr, 16));
 }
 
-bytevec Arguments::readCharset()
+auto Arguments::readCharset() -> std::vector<std::uint8_t>
 {
-    const std::bitset<256> lowercase   = charRange('a', 'z');
-    const std::bitset<256> uppercase   = charRange('A', 'Z');
-    const std::bitset<256> digits      = charRange('0', '9');
-    const std::bitset<256> alphanum    = lowercase | uppercase | digits;
-    const std::bitset<256> printable   = charRange(' ', '~');
-    const std::bitset<256> punctuation = printable & ~alphanum;
+    const auto lowercase   = charRange('a', 'z');
+    const auto uppercase   = charRange('A', 'Z');
+    const auto digits      = charRange('0', '9');
+    const auto alphanum    = lowercase | uppercase | digits;
+    const auto printable   = charRange(' ', '~');
+    const auto punctuation = printable & ~alphanum;
 
-    const std::string charsetArg = readString("charset");
+    const auto charsetArg = readString("charset");
     if (charsetArg.empty())
-        throw Error("the charset for password recovery is empty");
+        throw Error{"the charset for password recovery is empty"};
 
-    std::bitset<256> charset;
+    auto charset = std::bitset<256>{};
 
     for (auto it = charsetArg.begin(); it != charsetArg.end(); ++it)
     {
@@ -439,15 +438,15 @@ bytevec Arguments::readCharset()
             case '?': charset.set('?');       break;
                 // clang-format on
             default:
-                throw Error(std::string("unknown charset ?") + *it);
+                throw Error{std::string{"unknown charset ?"} + *it};
             }
         }
         else
             charset.set(*it);
     }
 
-    bytevec result;
-    for (int c = 0; c < 256; c++)
+    auto result = std::vector<std::uint8_t>{};
+    for (auto c = 0; c < 256; c++)
         if (charset[c])
             result.push_back(c);
 

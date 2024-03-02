@@ -8,13 +8,13 @@
 #include <iomanip>
 #include <thread>
 
-Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::string>& solutions,
+Recovery::Recovery(const Keys& keys, const std::vector<std::uint8_t>& charset, std::vector<std::string>& solutions,
                    std::mutex& solutionsMutex, bool exhaustive, Progress& progress)
-: charset(charset)
-, solutions(solutions)
-, solutionsMutex(solutionsMutex)
-, exhaustive(exhaustive)
-, progress(progress)
+: charset{charset}
+, solutions{solutions}
+, solutionsMutex{solutionsMutex}
+, exhaustive{exhaustive}
+, progress{progress}
 {
     // initialize target X, Y and Z values
     x[6] = keys.getX();
@@ -22,23 +22,23 @@ Recovery::Recovery(const Keys& keys, const bytevec& charset, std::vector<std::st
     z[6] = keys.getZ();
 
     // derive Y5
-    y[5] = (y[6] - 1) * MultTab::MULTINV - lsb(x[6]);
+    y[5] = (y[6] - 1) * MultTab::multInv - lsb(x[6]);
 
     // derive more Z bytes
-    for (int i = 6; 1 < i; i--)
+    for (auto i = 6; 1 < i; i--)
         z[i - 1] = Crc32Tab::crc32inv(z[i], msb(y[i]));
 
     // precompute possible Z0[16,32) and Z{-1}[24,32)
-    for (byte p5 : charset)
+    for (const auto p5 : charset)
     {
         x[5] = Crc32Tab::crc32inv(x[6], p5);
-        y[4] = (y[5] - 1) * MultTab::MULTINV - lsb(x[5]);
+        y[4] = (y[5] - 1) * MultTab::multInv - lsb(x[5]);
         z[3] = Crc32Tab::crc32inv(z[4], msb(y[4]));
 
-        for (byte p4 : charset)
+        for (const auto p4 : charset)
         {
             x[4] = Crc32Tab::crc32inv(x[5], p4);
-            y[3] = (y[4] - 1) * MultTab::MULTINV - lsb(x[4]);
+            y[3] = (y[4] - 1) * MultTab::multInv - lsb(x[4]);
             z[2] = Crc32Tab::crc32inv(z[3], msb(y[3]));
             z[1] = Crc32Tab::crc32inv(z[2], 0);
             z[0] = Crc32Tab::crc32inv(z[1], 0);
@@ -56,12 +56,12 @@ void Recovery::recoverShortPassword(const Keys& initial)
         return;
 
     // initialize starting X, Y and Z values
-    x[0] = x0 = initial.getX();
-    y[0]      = initial.getY();
-    z[0]      = initial.getZ();
+    x[0] = candidateX0 = initial.getX();
+    y[0]               = initial.getY();
+    z[0]               = initial.getZ();
 
     // complete Z values and derive Y[24,32) values
-    for (int i = 1; i <= 4; i++)
+    for (auto i = 1; i <= 4; i++)
     {
         y[i] = Crc32Tab::getYi_24_32(z[i], z[i - 1]);
         z[i] = Crc32Tab::crc32(z[i - 1], msb(y[i]));
@@ -82,16 +82,16 @@ void Recovery::recoverLongPassword(const Keys& initial)
         prefix.push_back(charset[0]);
 
         // precompute as much as we can about the next cipher state without knowing the password byte
-        const uint32 x0_partial = Crc32Tab::crc32(initial.getX(), 0);
-        const uint32 y0_partial = initial.getY() * MultTab::MULT + 1;
-        const uint32 z0_partial = Crc32Tab::crc32(initial.getZ(), 0);
+        const auto x0_partial = Crc32Tab::crc32(initial.getX(), 0);
+        const auto y0_partial = initial.getY() * MultTab::mult + 1;
+        const auto z0_partial = Crc32Tab::crc32(initial.getZ(), 0);
 
-        for (byte pi : charset)
+        for (const auto pi : charset)
         {
             // finish to update the cipher state
-            const uint32 x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
-            const uint32 y0 = y0_partial + MultTab::getMult(lsb(x0));
-            const uint32 z0 = z0_partial ^ Crc32Tab::crc32(0, msb(y0));
+            const auto x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
+            const auto y0 = y0_partial + MultTab::getMult(lsb(x0));
+            const auto z0 = z0_partial ^ Crc32Tab::crc32(0, msb(y0));
 
             // recoverShortPassword is inlined below for performance
 
@@ -102,9 +102,9 @@ void Recovery::recoverLongPassword(const Keys& initial)
             prefix.back() = pi;
 
             // initialize starting X, Y and Z values
-            x[0] = this->x0 = x0;
-            y[0]            = y0;
-            z[0]            = z0;
+            x[0] = candidateX0 = x0;
+            y[0]               = y0;
+            z[0]               = z0;
 
             // complete Z values and derive Y[24,32) values
             y[1] = Crc32Tab::getYi_24_32(z[1], z[1 - 1]);
@@ -126,7 +126,7 @@ void Recovery::recoverLongPassword(const Keys& initial)
     {
         prefix.push_back(charset[0]);
 
-        for (byte pi : charset)
+        for (const auto pi : charset)
         {
             Keys init = initial;
             init.update(pi);
@@ -144,17 +144,17 @@ void Recovery::recursion(int i)
 {
     if (i != 1) // the Y-list is not complete so generate Y{i-1} values
     {
-        uint32 fy  = (y[i] - 1) * MultTab::MULTINV;
-        uint32 ffy = (fy - 1) * MultTab::MULTINV;
+        const auto fy  = (y[i] - 1) * MultTab::multInv;
+        const auto ffy = (fy - 1) * MultTab::multInv;
 
         // get possible LSB(Xi)
-        for (byte xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & MASK_24_32))))
+        for (const auto xi_0_8 : MultTab::getMsbProdFiber2(msb(ffy - (y[i - 2] & mask<24, 32>))))
         {
             // compute corresponding Y{i-1}
-            uint32 yim1 = fy - xi_0_8;
+            const auto yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
-            if (ffy - MultTab::getMultinv(xi_0_8) - (y[i - 2] & MASK_24_32) <= MAXDIFF_0_24 &&
+            if (ffy - MultTab::getMultinv(xi_0_8) - (y[i - 2] & mask<24, 32>) <= maxdiff<24> &&
                 msb(yim1) == msb(y[i - 1]))
             {
                 // add Y{i-1} to the Y-list
@@ -170,27 +170,29 @@ void Recovery::recursion(int i)
     else // the Y-list is complete
     {
         // only the X1 LSB was not set yet, so do it here
-        x[1] = (y[1] - 1) * MultTab::MULTINV - y[0];
+        x[1] = (y[1] - 1) * MultTab::multInv - y[0];
         if (x[1] > 0xff)
             return;
 
         // complete X values and derive password
-        for (int i = 5; 0 <= i; i--)
+        for (auto j = 5; 0 <= j; j--)
         {
-            uint32 xi_xor_pi = Crc32Tab::crc32inv(x[i + 1], 0);
-            p[i]             = lsb(xi_xor_pi ^ x[i]);
-            x[i]             = xi_xor_pi ^ p[i];
+            const auto xi_xor_pi = Crc32Tab::crc32inv(x[j + 1], 0);
+            p[j]                 = lsb(xi_xor_pi ^ x[j]);
+            x[j]                 = xi_xor_pi ^ p[j];
         }
 
-        if (x[0] == x0) // the password is successfully recovered
+        if (x[0] == candidateX0) // the password is successfully recovered
         {
-            std::string password = std::string(prefix.begin(), prefix.end());
+            auto password = prefix;
             password.append(p.begin(), p.end());
             password.erase(password.begin(), password.end() - length);
 
-            const bool isInCharset =
+            const auto isInCharset =
                 std::all_of(password.begin(), password.end(),
-                            [this](unsigned char c) { return std::binary_search(charset.begin(), charset.end(), c); });
+                            [this](char c) {
+                                return std::binary_search(charset.begin(), charset.end(), static_cast<std::uint8_t>(c));
+                            });
 
             if (!isInCharset)
             {
@@ -201,7 +203,7 @@ void Recovery::recursion(int i)
                         const auto fillBefore  = os.fill('0');
 
                         os << "Password: " << password << " (as bytes:";
-                        for (byte c : password)
+                        for (const auto c : password)
                             os << ' ' << std::setw(2) << static_cast<int>(c);
                         os << ')' << std::endl;
 
@@ -233,9 +235,9 @@ namespace
 void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, const std::string& start,
                               std::string& restart, Progress& progress)
 {
-    const int charsetSize = worker.charset.size();
+    const auto charsetSize = static_cast<int>(worker.charset.size());
 
-    int index_start = 0;
+    auto index_start = 0;
     if (worker.prefix.size() < start.size())
         while (index_start < charsetSize &&
                worker.charset[index_start] < static_cast<unsigned char>(start[worker.prefix.size()]))
@@ -256,9 +258,9 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
                 {
                     for (auto i = nextCandidateIndex++; i < charsetSize; i = nextCandidateIndex++)
                     {
-                        byte pm4 = worker.charset[i];
+                        const auto pm4 = worker.charset[i];
 
-                        Keys init = initial;
+                        auto init = initial;
                         init.update(pm4);
 
                         worker.prefix.back() = pm4;
@@ -297,8 +299,8 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
         worker.prefix.push_back(worker.charset[0]);
         worker.prefix.push_back(worker.charset[0]);
 
-        const bool reportProgress       = worker.prefix.size() == 2;
-        const bool reportProgressCoarse = worker.prefix.size() == 3;
+        const auto reportProgress       = worker.prefix.size() == 2;
+        const auto reportProgressCoarse = worker.prefix.size() == 3;
 
         if (reportProgress)
             progress.done += index_start;
@@ -315,10 +317,10 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
                 {
                     for (auto i = nextCandidateIndex++; i < charsetSize * charsetSize; i = nextCandidateIndex++)
                     {
-                        byte pm4 = worker.charset[i / charsetSize];
-                        byte pm3 = worker.charset[i % charsetSize];
+                        const auto pm4 = worker.charset[i / charsetSize];
+                        const auto pm3 = worker.charset[i % charsetSize];
 
-                        Keys init = initial;
+                        auto init = initial;
                         init.update(pm4);
                         init.update(pm3);
 
@@ -352,18 +354,18 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
     {
         worker.prefix.push_back(worker.charset[0]);
 
-        const bool reportProgress = worker.prefix.size() == 2;
+        const auto reportProgress = worker.prefix.size() == 2;
 
         if (worker.prefix.size() == 1)
             progress.done += index_start * charsetSize;
         else if (reportProgress)
             progress.done += index_start;
 
-        for (int i = index_start; i < charsetSize; i++)
+        for (auto i = index_start; i < charsetSize; i++)
         {
-            byte pi = worker.charset[i];
+            const auto pi = worker.charset[i];
 
-            Keys init = initial;
+            auto init = initial;
             init.update(pi);
 
             worker.prefix.back() = pi;
@@ -386,17 +388,17 @@ void recoverPasswordRecursive(Recovery& worker, int jobs, const Keys& initial, c
 
 } // namespace
 
-std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charset, std::size_t minLength,
-                                         std::size_t maxLength, std::string& start, int jobs, bool exhaustive,
-                                         Progress& progress)
+auto recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset, std::size_t minLength,
+                     std::size_t maxLength, std::string& start, int jobs, bool exhaustive, Progress& progress)
+    -> std::vector<std::string>
 {
-    std::vector<std::string> solutions;
-    std::mutex               solutionsMutex;
-    Recovery                 worker(keys, charset, solutions, solutionsMutex, exhaustive, progress);
+    auto solutions      = std::vector<std::string>{};
+    auto solutionsMutex = std::mutex{};
+    auto worker         = Recovery{keys, charset, solutions, solutionsMutex, exhaustive, progress};
 
-    std::string       restart;
-    const std::size_t startLength = std::max(minLength, start.empty() ? 0 : start.size() + 6);
-    for (std::size_t length = startLength; length <= maxLength; length++)
+    auto       restart     = std::string{};
+    const auto startLength = std::max(minLength, start.empty() ? 0 : start.size() + 6);
+    for (auto length = startLength; length <= maxLength; length++)
     {
         if (progress.state != Progress::State::Normal)
             break;
@@ -405,10 +407,10 @@ std::vector<std::string> recoverPassword(const Keys& keys, const bytevec& charse
         {
             progress.log([](std::ostream& os) { os << "length 0-6..." << std::endl; });
 
-            Keys initial;
+            auto initial = Keys{};
 
             // look for a password of length between 0 and 6
-            for (int l = 6; l >= 0; l--)
+            for (auto l = 6; l >= 0; l--)
             {
                 worker.length = l;
                 worker.recoverShortPassword(initial);
