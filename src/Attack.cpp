@@ -209,7 +209,7 @@ auto attack(const Data& data, const std::vector<std::uint32_t>& zi_2_32_vector, 
     for (auto& thread : threads)
         thread.join();
 
-    start = nextCandidateIndex;
+    start = std::min(nextCandidateIndex.load(), size);
 
     return solutions;
 }

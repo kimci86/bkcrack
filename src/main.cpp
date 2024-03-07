@@ -179,7 +179,8 @@ try
             else if (state == Progress::State::EarlyExit)
                 std::cout << "Found a solution. Stopping." << std::endl;
 
-            std::cout << "You may resume the attack with the option: --continue-attack " << restart << std::endl;
+            if (restart < static_cast<int>(zr.getCandidates().size()))
+                std::cout << "You may resume the attack with the option: --continue-attack " << restart << std::endl;
         }
 
         // print the keys
