@@ -30,13 +30,11 @@ auto read(std::istream& is, std::size_t length) -> std::string
 }
 
 template <typename T>
-auto write(std::ostream& os, const T& x) -> std::ostream&
+void write(std::ostream& os, const T& x)
 {
     // We make no assumption about platform endianness.
     for (auto index = std::size_t{}; index < sizeof(T); index++)
         os.put(lsb(x >> (8 * index)));
-
-    return os;
 }
 
 enum class Signature : std::uint32_t
