@@ -155,11 +155,14 @@ auto Zip::Iterator::operator++() -> Zip::Iterator&
 
     m_entry->checkByte = (flags >> 3) & 1 ? static_cast<std::uint8_t>(lastModTime >> 8) : msb(m_entry->crc32);
 
-    for (auto remaining = extraFieldLength; remaining > 0;)
+    for (auto remaining = extraFieldLength; remaining;)
     {
         // read extra field header
         const auto id   = read<std::uint16_t>(*m_is);
         auto       size = read<std::uint16_t>(*m_is);
+
+        if (remaining < 4 + size)
+            throw Error{"could not read central directory header"};
         remaining -= 4 + size;
 
         switch (id)
