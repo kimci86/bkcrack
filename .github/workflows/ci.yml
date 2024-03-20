@@ -71,7 +71,7 @@ jobs:
         merge-multiple: true
 
     - name: Create release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         name: Release ${{ github.ref_name }}
         files: packages/*
