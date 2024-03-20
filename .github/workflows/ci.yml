@@ -10,51 +10,51 @@ jobs:
     strategy:
       matrix:
         platform:
-          - { name: Ubuntu,         os: ubuntu-latest }
-          - { name: MacOS,          os: macos-latest }
+          - { name: Ubuntu, os: ubuntu-latest }
+          - { name: MacOS, os: macos-latest }
           - { name: Windows 64-bit, os: windows-latest, cmake-config: -A x64 }
           - { name: Windows 32-bit, os: windows-latest, cmake-config: -A Win32 }
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Configure project
-      run: cmake -S . -B build -DBKCRACK_BUILD_TESTING=ON ${{matrix.platform.cmake-config}}
+      - name: Configure project
+        run: cmake -S . -B build -DBKCRACK_BUILD_TESTING=ON ${{ matrix.platform.cmake-config }}
 
-    - name: Build project
-      run: cmake --build build --config Release
+      - name: Build project
+        run: cmake --build build --config Release
 
-    - name: Run tests
-      run: ctest --test-dir build -C Release --output-on-failure
+      - name: Run tests
+        run: ctest --test-dir build -C Release --output-on-failure
 
-    - name: Create package
-      run: cmake --build build --config Release --target package
+      - name: Create package
+        run: cmake --build build --config Release --target package
 
-    - name: Upload package
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.platform.name }} package
-        path: |
-          build/*.zip
-          build/*.tar.gz
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.name }} package
+          path: |
+            build/*.zip
+            build/*.tar.gz
 
   format:
     name: Formatting
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Configure project
-      run: cmake -S . -B build -DBKCRACK_CLANG_FORMAT_EXECUTABLE=/usr/bin/clang-format-15
+      - name: Configure project
+        run: cmake -S . -B build -DBKCRACK_CLANG_FORMAT_EXECUTABLE=/usr/bin/clang-format-15
 
-    - name: Format C++ code
-      run: cmake --build build --target format
+      - name: Format C++ code
+        run: cmake --build build --target format
 
-    - name: Check for difference
-      run: git diff --exit-code
+      - name: Check for difference
+        run: git diff --exit-code
 
   release:
     name: Release
@@ -63,17 +63,17 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-    - name: Download packages
-      uses: actions/download-artifact@v4
-      with:
-        pattern: "* package"
-        path: packages
-        merge-multiple: true
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "* package"
+          path: packages
+          merge-multiple: true
 
-    - name: Create release
-      uses: softprops/action-gh-release@v2
-      with:
-        name: Release ${{ github.ref_name }}
-        files: packages/*
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          files: packages/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
