@@ -16,6 +16,16 @@ add_test(NAME cli.decipher COMMAND ${CMAKE_COMMAND}
     -DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/decipher.cmake)
 
+add_test(NAME cli.change-password COMMAND ${CMAKE_COMMAND}
+    -DBKCRACK_COMMAND=$<TARGET_FILE:bkcrack>
+    -DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/change-password.cmake)
+
+add_test(NAME cli.change-keys COMMAND ${CMAKE_COMMAND}
+    -DBKCRACK_COMMAND=$<TARGET_FILE:bkcrack>
+    -DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/change-keys.cmake)
+
 add_test(NAME cli.bruteforce.empty  COMMAND bkcrack -k 12345678 23456789 34567890 -r 0 ?b)
 add_test(NAME cli.bruteforce.tiny   COMMAND bkcrack -k 1b226dfe c089e0a3 6af00ee6 -r 4 ?b)
 add_test(NAME cli.bruteforce.small  COMMAND bkcrack -k 9bcb20c6 10a97ca5 103c0614 -r 8 ?p)
