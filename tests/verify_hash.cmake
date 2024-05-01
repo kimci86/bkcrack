@@ -1,0 +1,8 @@
+function(verify_hash INPUT_FILE APPROVED_HASH)
+    file(SHA256 ${INPUT_FILE} RECEIVED_HASH)
+    if(RECEIVED_HASH STREQUAL ${APPROVED_HASH})
+        message(STATUS "${INPUT_FILE} hash verification succeeded")
+    else()
+        message(FATAL_ERROR "${INPUT_FILE} hash verification failed:\n  approved: ${APPROVED_HASH}\n  received: ${RECEIVED_HASH}")
+    endif()
+endfunction()
