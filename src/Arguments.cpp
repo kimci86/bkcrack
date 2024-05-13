@@ -97,8 +97,8 @@ Arguments::Arguments(int argc, const char* argv[])
     // check constraints on arguments
     if (keys)
     {
-        if (!decipheredFile && !changePassword && !changeKeys && !bruteforce)
-            throw Error{"-d, -U, --change-keys or --bruteforce parameter is missing (required by -k)"};
+        if (!decipheredFile && !decryptedArchive && !changePassword && !changeKeys && !bruteforce)
+            throw Error{"-d, -D, -U, --change-keys or --bruteforce parameter is missing (required by -k)"};
     }
     else if (!password)
     {
@@ -130,6 +130,11 @@ Arguments::Arguments(int argc, const char* argv[])
         throw Error{"-c or --cipher-index parameter is missing (required by -d)"};
     if (decipheredFile && !cipherArchive && decipheredFile == cipherFile)
         throw Error{"-c and -d parameters must point to different files"};
+
+    if (decryptedArchive && !cipherArchive)
+        throw Error{"-C parameter is missing (required by -D)"};
+    if (decryptedArchive && decryptedArchive == cipherArchive)
+        throw Error{"-C and -D parameters must point to different files"};
 
     if (changePassword && !cipherArchive)
         throw Error{"-C parameter is missing (required by -U)"};
@@ -250,6 +255,9 @@ void Arguments::parseArgument()
     case Option::keepHeader:
         keepHeader = true;
         break;
+    case Option::decryptedArchive:
+        decryptedArchive = readString("decipheredzip");
+        break;
     case Option::changePassword:
         changePassword = {readString("unlockedzip"), readString("password")};
         break;
@@ -338,6 +346,7 @@ auto Arguments::readOption(const std::string& description) -> Arguments::Option
         PAIRS(-k, --keys,              keys),
         PAIRS(-d, --decipher,          decipheredFile),
         PAIR (    --keep-header,       keepHeader),
+        PAIRS(-D, --decrypt,           decryptedArchive),
         PAIRS(-U, --change-password,   changePassword),
         PAIR (    --change-keys,       changeKeys),
         PAIRS(-b, --bruteforce,        bruteforce),

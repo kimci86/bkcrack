@@ -70,6 +70,9 @@ public:
     /// Tell whether to keep the encryption header or discard it when writing the deciphered text
     bool keepHeader = false;
 
+    /// File to write an unencrypted copy of the encrypted archive
+    std::optional<std::string> decryptedArchive;
+
     /// Arguments needed to change an archive's password
     struct ChangePassword
     {
@@ -152,6 +155,7 @@ private:
         keys,
         decipheredFile,
         keepHeader,
+        decryptedArchive,
         changePassword,
         changeKeys,
         bruteforce,

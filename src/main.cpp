@@ -55,6 +55,10 @@ Options to use the internal password representation:
      --keep-header           Write the encryption header at the beginning of
                               deciphered data instead of discarding it
 
+ -D, --decrypt <archive>
+        Create a copy of the encrypted zip archive with deciphered entries,
+        removing the password protection (requires -C)
+
  -U, --change-password <archive> <password>
         Create a copy of the encrypted zip archive with the password set to the
         given new password (requires -C)
@@ -234,6 +238,18 @@ try
         }
 
         std::cout << "Wrote deciphered data." << std::endl;
+    }
+
+    // decrypt
+    if (args.decryptedArchive)
+    {
+        std::cout << "[" << put_time << "] Writing decrypted archive " << *args.decryptedArchive << std::endl;
+
+        auto encrypted = Zip{*args.cipherArchive};
+        auto decrypted = openOutput(*args.decryptedArchive);
+
+        auto progress = ConsoleProgress{std::cout};
+        encrypted.decrypt(decrypted, keys, progress);
     }
 
     // unlock

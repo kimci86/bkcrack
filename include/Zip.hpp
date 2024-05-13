@@ -171,6 +171,10 @@ public:
     /// \exception Error if the archive is not a valid zip archive
     void changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys, Progress& progress) const;
 
+    /// \brief Copy the zip file into \a os removing encryption using the given keys
+    /// \exception Error if the archive is not a valid zip archive
+    void decrypt(std::ostream& os, const Keys& keys, Progress& progress) const;
+
 private:
     std::optional<std::ifstream> m_file; // optionally own the stream
     std::istream&                m_is;
