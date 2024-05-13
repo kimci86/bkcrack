@@ -98,7 +98,6 @@ Other options:
  -h, --help                  Show this help and exit)_";
 
 void listEntries(const std::string& archiveFilename);
-void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys);
 
 } // namespace
 
@@ -436,23 +435,6 @@ void listEntries(const std::string& archiveFilename)
 
     std::cout.fill(fillBefore);
     std::cout.flags(flagsBefore);
-}
-
-void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys)
-{
-    auto cipher = std::istreambuf_iterator{is};
-    auto i      = std::size_t{};
-
-    for (; i < discard && i < size && cipher != std::istreambuf_iterator<char>{}; i++, ++cipher)
-        keys.update(*cipher ^ keys.getK());
-
-    for (auto plain = std::ostreambuf_iterator{os}; i < size && cipher != std::istreambuf_iterator<char>{};
-         i++, ++cipher, ++plain)
-    {
-        const auto p = *cipher ^ keys.getK();
-        keys.update(p);
-        *plain = p;
-    }
 }
 
 } // namespace

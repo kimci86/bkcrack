@@ -371,3 +371,20 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
 
     std::copy(std::istreambuf_iterator{m_is}, {}, std::ostreambuf_iterator{os});
 }
+
+void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys)
+{
+    auto cipher = std::istreambuf_iterator{is};
+    auto i      = std::size_t{};
+
+    for (; i < discard && i < size && cipher != std::istreambuf_iterator<char>{}; i++, ++cipher)
+        keys.update(*cipher ^ keys.getK());
+
+    for (auto plain = std::ostreambuf_iterator{os}; i < size && cipher != std::istreambuf_iterator<char>{};
+         i++, ++cipher, ++plain)
+    {
+        const auto p = *cipher ^ keys.getK();
+        keys.update(p);
+        *plain = p;
+    }
+}
