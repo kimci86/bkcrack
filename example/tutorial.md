@@ -84,14 +84,22 @@ After a little while, the keys will appear!
 
 Once we have the keys, we can recover the original files.
 
-## Choose a new password
+## Remove the password
 
 We assume that the same keys were used for all the files in the zip file.
-We can create a new encrypted archive based on `secret.zip`, but with a new password, `easy` in this example.
+We can create a new archive based on `secrets.zip`, but without password protection.
+
+    $ ../bkcrack -C secrets.zip -k c4490e28 b414a23d 91404b31 -D secrets_without_password.zip
+
+Then, any zip file utility can extract the created archive.
+
+## Choose a new password
+
+We can also create a new encrypted archive, but with a new password, `easy` in this example.
 
     $ ../bkcrack -C secrets.zip -k c4490e28 b414a23d 91404b31 -U secrets_with_new_password.zip easy
 
-Then, any zip file utility can extract the created archive. You will just have to type the chosen password when prompted.
+Then, you will just have to type the chosen password when prompted to extract the created archive.
 
 ## Or decipher files
 
