@@ -24,7 +24,7 @@ It can also be used to bruteforce the password with a complexity of *n<sup>l-6</
 The main features are:
 
 - Recover internal state from ciphertext and plaintext.
-- Change a ZIP archive's password using the internal state.
+- Remove or change a ZIP archive's password using the internal state.
 - Recover the original password from the internal state.
 
 Install
@@ -120,14 +120,27 @@ If deflate compression was used, a Python 3 script provided in the `tools` folde
 
     python3 tools/inflate.py < decipheredfile > decompressedfile
 
-### Unlock encrypted archive
+### Remove password
+
+To get access to all the entries of the encrypted archive in a single step, you can generate a new archive with the same content but without encryption.
+It assumes that every entry was originally encrypted with the same password.
+
+    bkcrack -C encrypted.zip -k 12345678 23456789 34567890 -D decrypted.zip
+
+### Change password
 
 It is also possible to generate a new encrypted archive with the password of your choice:
 
-    bkcrack -C encrypted.zip -k 12345678 23456789 34567890 -U unlocked.zip password
+    bkcrack -C encrypted.zip -k 12345678 23456789 34567890 -U unlocked.zip new_password
 
-The archive generated this way can be extracted using any zip file utility with the new password.
-It assumes that every entry was originally encrypted with the same password.
+You can also define the new password by its corresponding internal representation.
+
+    bkcrack -C encrypted.zip -k 12345678 23456789 34567890 --change-keys unlocked.zip 581da44e 8e40167f 50c009a0
+
+Those two commands can be used together to change the contents of an encrypted archive without knowing the password but knowing only the internal keys:
+you can make a copy encrypted with the password of you choice,
+then edit the copy with an archive manager entering the chosen password when prompted,
+and finally make a copy of the modified archive back with the original encryption keys.
 
 ### Recover password
 
