@@ -465,7 +465,12 @@ auto findCentralDirectoryOffset(std::istream& is) -> std::uint64_t
 
     // look for Zip64 end of central directory locator
     is.seekg(-40, std::ios::cur);
-    if (checkSignature(is, Signature::Zip64EocdLocator))
+    if (is.fail())
+    {
+        // Ignore seekg error when file is too small (e.g. an archive with no entry)
+        is.clear();
+    }
+    else if (checkSignature(is, Signature::Zip64EocdLocator))
     {
         is.seekg(4, std::ios::cur);
         const auto zip64EndOfCentralDirectoryOffset = readInt<std::uint64_t>(is);
