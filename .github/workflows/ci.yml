@@ -11,7 +11,16 @@ jobs:
       matrix:
         platform:
           - { name: Ubuntu, os: ubuntu-latest }
-          - { name: MacOS, os: macos-latest }
+          - {
+              name: macOS x64,
+              os: macos-latest,
+              cmake-config: -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64,
+            }
+          - {
+              name: macOS arm64,
+              os: macos-latest,
+              cmake-config: -DCMAKE_APPLE_SILICON_PROCESSOR=arm64,
+            }
           - { name: Windows 64-bit, os: windows-latest, cmake-config: -A x64 }
           - { name: Windows 32-bit, os: windows-latest, cmake-config: -A Win32 }
 
