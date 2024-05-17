@@ -101,6 +101,7 @@ Other options:
      --version               Show version information and exit
  -h, --help                  Show this help and exit)_";
 
+auto getCompressionDescription(Zip::Compression compression) -> std::string;
 void listEntries(const std::string& archiveFilename);
 
 } // namespace
@@ -211,10 +212,12 @@ try
     // decipher
     if (args.decipheredFile)
     {
-        std::cout << "[" << put_time << "] Writing deciphered data " << *args.decipheredFile << " (maybe compressed)";
+        std::cout << "[" << put_time << "] Writing deciphered data " << *args.decipheredFile;
         if (args.keepHeader)
             std::cout << " with encryption header";
         std::cout << std::endl;
+
+        auto compression = std::optional<Zip::Compression>{};
 
         {
             auto cipherstream = openInput(args.cipherArchive ? *args.cipherArchive : *args.cipherFile);
@@ -225,6 +228,7 @@ try
                 const auto archive = Zip{cipherstream};
                 const auto entry   = args.cipherFile ? archive[*args.cipherFile] : archive[*args.cipherIndex];
                 Zip::checkEncryption(entry, Zip::Encryption::Traditional);
+                compression = entry.compression;
 
                 archive.seek(entry);
                 ciphersize = entry.packedSize;
@@ -237,7 +241,15 @@ try
                      keys);
         }
 
-        std::cout << "Wrote deciphered data." << std::endl;
+        std::cout << "Wrote deciphered data";
+        if (compression)
+        {
+            if (compression == Zip::Compression::Store)
+                std::cout << " (not compressed)";
+            else
+                std::cout << " (compressed with " << getCompressionDescription(*compression) << " method)";
+        }
+        std::cout << "." << std::endl;
     }
 
     // decrypt
