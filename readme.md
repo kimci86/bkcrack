@@ -53,7 +53,7 @@ cmake --build build --config Release
 cmake --build build --config Release --target install
 ```
 
-### Thrid-party packages
+### Third-party packages
 
 bkcrack is available in the package repositories listed below.
 Those packages are provided by external maintainers.

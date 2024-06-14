@@ -33,7 +33,7 @@ Resources {#resources}
   [DOI](https://doi.org/10.1007/3-540-45473-X_10)
 
   Reviews Biham and Kocher attack.
-  Suggests a small improvement to require 12 bytes instead of 13 bytes (not throwing aways 6 known bits in Y7).
+  Suggests a small improvement to require 12 bytes instead of 13 bytes (not throwing away 6 known bits in Y7).
   Suggests using CRC-32 check bytes from several files as known plaintext.
 
   Then, it presents other approaches.
@@ -131,7 +131,7 @@ Resources {#resources}
 - [Aloxaf/p7zip](https://github.com/Aloxaf/p7zip)
 
   A patched p7zip by Aloxaf.
-  Supports ZIP file extraction using the interal keys with the following syntax:
+  Supports ZIP file extraction using the internal keys with the following syntax:
 
       7za e cipher.zip '-p[12345678_23456789_34567890]'
 
