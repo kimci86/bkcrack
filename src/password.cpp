@@ -446,6 +446,13 @@ private:
 
                 prefix.back() = pi;
 
+                if (progress.state != Progress::State::Normal)
+                {
+                    restart = prefix;
+                    restart.resize(length - 6, charset[0]);
+                    break;
+                }
+
                 searchLongParallelRecursive(init, i == index_start ? start : "", restart, jobs);
 
                 // Because the recursive call may explore only a fraction of its
