@@ -88,6 +88,15 @@ Options to use the internal password representation:
  -r, --recover-password [ <min>..<max> | <min>.. | ..<max> | <max> ] <charset>
         Shortcut for --length and --bruteforce options
 
+ -m, --mask <mask>
+        Try to recover the password or an equivalent one by generating and
+        testing password candidates according to the given mask.
+        The mask is sequence of fixed characters or character sets (predefined
+        or custom charsets). Example: -m ?u?l?l?l?l-?d?d?d?d
+
+ -s, --charset <identifier> <charset>
+        Define a custom character set. Example: -s h abcdef?d
+
      --continue-recovery <checkpoint>
         Starting point of the password recovery. Useful to continue a previous
         non-exhaustive or interrupted password recovery.
