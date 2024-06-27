@@ -24,4 +24,7 @@ auto recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset,
                      std::size_t maxLength, std::string& start, int jobs, bool exhaustive, Progress& progress)
     -> std::vector<std::string>;
 
+auto recoverPassword(const Keys& keys, const std::vector<std::vector<std::uint8_t>>& mask, std::string& start, int jobs,
+                     bool exhaustive, Progress& progress) -> std::vector<std::string>;
+
 #endif // BKCRACK_PASSWORD_HPP

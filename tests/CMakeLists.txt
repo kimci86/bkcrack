@@ -42,6 +42,18 @@ set_tests_properties(cli.bruteforce.small  PROPERTIES PASS_REGULAR_EXPRESSION "P
 set_tests_properties(cli.bruteforce.medium PROPERTIES PASS_REGULAR_EXPRESSION "Password: q1w2e3r4t5\n")
 set_tests_properties(cli.bruteforce.long   PROPERTIES PASS_REGULAR_EXPRESSION "Password: abcdefghijkl\n")
 
+add_test(NAME cli.mask.constant COMMAND bkcrack -k c80f5189 ce16bd43 38247eb5 -m Lorem\ ipsum\ dolor\ sit\ amet)
+add_test(NAME cli.mask.prefix   COMMAND bkcrack -k c80f5189 ce16bd43 38247eb5 -s 1 ?s?l -m Lorem\ ipsum\ dolor\ ?1?1?1?1?1?1?1?1)
+add_test(NAME cli.mask.suffix   COMMAND bkcrack -k c80f5189 ce16bd43 38247eb5 -s 1 ?s?l -m ?u?1?1?1?1\ ipsum\ dolor\ sit\ amet)
+add_test(NAME cli.mask.factor   COMMAND bkcrack -k c80f5189 ce16bd43 38247eb5 -s 1 ?s?l -m Lorem\ ipsum\ ?1?1?1?1?1?1?1?1?1\ amet)
+set_tests_properties(cli.mask.constant PROPERTIES PASS_REGULAR_EXPRESSION "Password: Lorem ipsum dolor sit amet\n")
+set_tests_properties(cli.mask.prefix   PROPERTIES PASS_REGULAR_EXPRESSION "Password: Lorem ipsum dolor sit amet\n")
+set_tests_properties(cli.mask.suffix   PROPERTIES PASS_REGULAR_EXPRESSION "Password: Lorem ipsum dolor sit amet\n")
+set_tests_properties(cli.mask.factor   PROPERTIES PASS_REGULAR_EXPRESSION "Password: Lorem ipsum dolor sit amet\n")
+
+add_test(NAME cli.mask.letters-digits COMMAND bkcrack -k 2cd417a0 37238582 7f1df897 -m ?l?l?l?l?l?l?l?l-?d?d?d?d?d)
+set_tests_properties(cli.mask.letters-digits PROPERTIES PASS_REGULAR_EXPRESSION "Password: password-12345\n")
+
 add_test(NAME cli.list COMMAND bkcrack -L secrets.zip WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/example)
 set_tests_properties(cli.list PROPERTIES PASS_REGULAR_EXPRESSION "
 Index Encryption Compression CRC32    Uncompressed  Packed size Name

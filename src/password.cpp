@@ -9,6 +9,7 @@
 #include <bitset>
 #include <iomanip>
 #include <mutex>
+#include <numeric>
 #include <thread>
 
 template <typename Derived /* must implement onSolutionFound() method */>
@@ -517,6 +518,455 @@ auto recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset,
             worker.search(length, length == startLength ? start : "", restart, jobs);
         }
     }
+
+    start = restart;
+
+    return solutions;
+}
+
+class MaskRecovery : public SixCharactersRecovery<MaskRecovery>
+{
+public:
+    MaskRecovery(const Keys& keys, const std::vector<std::vector<std::uint8_t>>& mask,
+                 std::vector<std::string>& solutions, std::mutex& solutionsMutex, bool exhaustive, Progress& progress)
+    : target{keys}
+    , mask{mask}
+    , solutions{solutions}
+    , solutionsMutex{solutionsMutex}
+    , exhaustive{exhaustive}
+    , progress{progress}
+    {
+    }
+
+    void search(const std::string& start, std::string& restart, int jobs)
+    {
+        decisions.clear();
+
+        if (getSuffixSize() == 0)
+            setTarget(target, mask[factorIndex + 4], mask[factorIndex + 5]);
+
+        if (parallelDepth == -1)
+            searchLongRecursive(Keys{}, target);
+        else
+        {
+            if (progressDepth)
+            {
+                auto product = int{1};
+                for (auto i = 0; i < progressDepth; ++i)
+                    product *= getCharsetAtDepth(i).size();
+
+                progress.done  = 0;
+                progress.total = product;
+            }
+            searchLongParallelRecursive(Keys{}, target, start, restart, jobs);
+        }
+    }
+
+    void onSolutionFound()
+    {
+        auto password = std::string{};
+        password.append(decisions.begin() + getSuffixSize(), decisions.end());
+        password.append(p.begin(), p.end());
+        password.append(decisions.rbegin() + factorIndex, decisions.rend());
+
+        const auto isInSearchSpace =
+            std::all_of(p.begin(), p.end(),
+                        [this, i = factorIndex](char c) mutable
+                        {
+                            const auto& charset = mask[i++];
+                            return std::binary_search(charset.begin(), charset.end(), static_cast<std::uint8_t>(c));
+                        });
+
+        if (!isInSearchSpace)
+        {
+            progress.log(
+                [&password](std::ostream& os)
+                {
+                    const auto flagsBefore = os.setf(std::ios::hex, std::ios::basefield);
+                    const auto fillBefore  = os.fill('0');
+
+                    os << "Password: " << password << " (as bytes:";
+                    for (const auto c : password)
+                        os << ' ' << std::setw(2) << static_cast<int>(c);
+                    os << ')' << std::endl;
+
+                    os.fill(fillBefore);
+                    os.flags(flagsBefore);
+
+                    os << "Some characters do not match the given mask. Continuing." << std::endl;
+                });
+
+            return;
+        }
+
+        {
+            const auto lock = std::scoped_lock{solutionsMutex};
+            solutions.push_back(password);
+        }
+
+        progress.log([&password](std::ostream& os) { os << "Password: " << password << std::endl; });
+
+        if (!exhaustive)
+            progress.state = Progress::State::EarlyExit;
+    }
+
+private:
+    void searchLongRecursive(const Keys& afterPrefix, const Keys& beforeSuffix)
+    {
+        const auto depth = decisions.size();
+
+        if (depth + 7 == mask.size()) // there is only one more character to bruteforce
+        {
+            if (factorIndex)
+            {
+                // check compatible Z{-1}[24, 32)
+                if (!zm1_24_32[afterPrefix.getZ() >> 24])
+                    return;
+
+                decisions.emplace_back();
+
+                // precompute as much as we can about the next cipher state without knowing the password byte
+                const auto x0_partial = Crc32Tab::crc32(afterPrefix.getX(), 0);
+                const auto y0_partial = afterPrefix.getY() * MultTab::mult + 1;
+                const auto z0_partial = Crc32Tab::crc32(afterPrefix.getZ(), 0);
+
+                for (const auto pi : getCharsetAtDepth(depth))
+                {
+                    // finish to update the cipher state
+                    const auto x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
+                    const auto y0 = y0_partial + MultTab::getMult(lsb(x0));
+                    const auto z0 = z0_partial ^ Crc32Tab::crc32(0, msb(y0));
+
+                    // SixCharactersRecovery::search is inlined below for performance
+
+                    // check compatible Z0[16,32)
+                    if (!z0_16_32[z0 >> 16])
+                        continue;
+
+                    decisions.back() = pi;
+
+                    // initialize starting X, Y and Z values
+                    x[0] = candidateX0 = x0;
+                    y[0]               = y0;
+                    z[0]               = z0;
+
+                    // complete Z values and derive Y[24,32) values
+                    y[1] = Crc32Tab::getYi_24_32(z[1], z[1 - 1]);
+                    z[1] = Crc32Tab::crc32(z[1 - 1], msb(y[1]));
+                    y[2] = Crc32Tab::getYi_24_32(z[2], z[2 - 1]);
+                    z[2] = Crc32Tab::crc32(z[2 - 1], msb(y[2]));
+                    y[3] = Crc32Tab::getYi_24_32(z[3], z[3 - 1]);
+                    z[3] = Crc32Tab::crc32(z[3 - 1], msb(y[3]));
+                    y[4] = Crc32Tab::getYi_24_32(z[4], z[4 - 1]);
+                    // z[4] = Crc32Tab::crc32(z[4 - 1], msb(y[4])); // this one is already known
+
+                    // recursively complete Y values and derive password
+                    searchRecursive(5);
+                }
+
+                decisions.pop_back();
+            }
+            else
+            {
+                decisions.emplace_back();
+
+                for (const auto pi : getCharsetAtDepth(depth))
+                {
+                    auto beforeSuffix2 = beforeSuffix;
+                    beforeSuffix2.updateBackwardPlaintext(pi);
+                    if (depth + 1 == getSuffixSize())
+                        setTarget(beforeSuffix2, mask[factorIndex + 4], mask[factorIndex + 5]);
+
+                    decisions.back() = pi;
+
+                    SixCharactersRecovery::search(afterPrefix);
+                }
+
+                decisions.pop_back();
+            }
+        }
+        else // bruteforce the next character and continue recursively
+        {
+            decisions.emplace_back();
+
+            for (const auto pi : getCharsetAtDepth(depth))
+            {
+                auto afterPrefix2  = afterPrefix;
+                auto beforeSuffix2 = beforeSuffix;
+
+                if (depth < getSuffixSize())
+                {
+                    beforeSuffix2.updateBackwardPlaintext(pi);
+                    if (depth + 1 == getSuffixSize())
+                        setTarget(beforeSuffix2, mask[factorIndex + 4], mask[factorIndex + 5]);
+                }
+                else
+                    afterPrefix2.update(pi);
+
+                decisions.back() = pi;
+
+                searchLongRecursive(afterPrefix2, beforeSuffix2);
+            }
+
+            decisions.pop_back();
+        }
+    }
+
+    void searchLongParallelRecursive(const Keys& afterPrefix, const Keys& beforeSuffix, const std::string& start,
+                                     std::string& restart, int jobs)
+    {
+        const auto  depth   = decisions.size();
+        const auto& charset = getCharsetAtDepth(depth);
+
+        auto index_start = 0;
+        if (decisions.size() < start.size())
+            while (index_start < static_cast<int>(charset.size()) &&
+                   charset[index_start] < static_cast<unsigned char>(start[decisions.size()]))
+                ++index_start;
+
+        if (static_cast<int>(depth) == parallelDepth) // parallelize the next two decisions
+        {
+            const auto& nextCharset       = getCharsetAtDepth(depth + 1);
+            const auto  parallelSpaceSize = static_cast<int>(charset.size() * nextCharset.size());
+
+            index_start *= charset.size();
+            if (decisions.size() + 1 < start.size())
+            {
+                const auto maxIndex = std::min(parallelSpaceSize, index_start + static_cast<int>(nextCharset.size()));
+                while (index_start < static_cast<int>(maxIndex) &&
+                       nextCharset[index_start % charset.size()] <
+                           static_cast<unsigned char>(start[decisions.size() + 1]))
+                    ++index_start;
+            }
+
+            decisions.resize(depth + 2);
+
+            const auto reportProgress       = static_cast<int>(decisions.size()) == progressDepth;
+            const auto reportProgressCoarse = static_cast<int>(decisions.size()) == progressDepth + 1;
+
+            const auto& mask4 = mask[factorIndex + 4];
+            const auto& mask5 = mask[factorIndex + 5];
+
+            const auto threadCount        = std::clamp(jobs, 1, parallelSpaceSize);
+            auto       threads            = std::vector<std::thread>{};
+            auto       nextCandidateIndex = std::atomic<int>{index_start};
+            for (auto i = 0; i < threadCount; ++i)
+                threads.emplace_back(
+                    [beforeSuffix, afterPrefix, &nextCandidateIndex, &charset, &nextCharset, &mask4, &mask5, depth,
+                     suffixSize = getSuffixSize(), parallelSpaceSize, clone = *this, reportProgress,
+                     reportProgressCoarse]() mutable
+                    {
+                        for (auto i = nextCandidateIndex++; i < parallelSpaceSize; i = nextCandidateIndex++)
+                        {
+                            const auto firstChoice  = charset[i / nextCharset.size()];
+                            const auto secondChoice = nextCharset[i % nextCharset.size()];
+
+                            clone.decisions[depth]     = firstChoice;
+                            clone.decisions[depth + 1] = secondChoice;
+
+                            auto afterPrefix2  = afterPrefix;
+                            auto beforeSuffix2 = beforeSuffix;
+
+                            if (depth < suffixSize)
+                            {
+                                beforeSuffix2.updateBackwardPlaintext(firstChoice);
+                                if (depth + 1 == suffixSize)
+                                    clone.setTarget(beforeSuffix2, mask4, mask5);
+                            }
+                            else
+                                afterPrefix2.update(firstChoice);
+
+                            if (depth + 1 < suffixSize)
+                            {
+                                beforeSuffix2.updateBackwardPlaintext(secondChoice);
+                                if (depth + 2 == suffixSize)
+                                    clone.setTarget(beforeSuffix2, mask4, mask5);
+                            }
+                            else
+                                afterPrefix2.update(secondChoice);
+
+                            clone.searchLongRecursive(afterPrefix2, beforeSuffix2);
+
+                            if (reportProgress || (reportProgressCoarse && i % charset.size() == 0))
+                                clone.progress.done++;
+
+                            if (clone.progress.state != Progress::State::Normal)
+                                break;
+                        }
+                    });
+            for (auto& thread : threads)
+                thread.join();
+
+            decisions.resize(depth);
+
+            if (nextCandidateIndex < parallelSpaceSize)
+            {
+                restart = std::string{decisions.begin(), decisions.end()};
+                restart.push_back(charset[nextCandidateIndex / charset.size()]);
+                restart.push_back(charset[nextCandidateIndex % charset.size()]);
+                while (restart.size() < mask.size() - 6)
+                    restart.push_back(getCharsetAtDepth(restart.size())[0]);
+            }
+        }
+        else // take next decisions recursively
+        {
+            decisions.emplace_back();
+
+            const auto reportProgress = static_cast<int>(depth + 1) == progressDepth;
+
+            if (static_cast<int>(depth + 1) < progressDepth)
+            {
+                auto subSearchSize = 1;
+                for (auto i = static_cast<int>(depth) + 1; i < progressDepth; ++i)
+                    subSearchSize *= getCharsetAtDepth(i).size();
+                progress.done += index_start * subSearchSize;
+            }
+            if (reportProgress)
+                progress.done += index_start;
+
+            for (auto i = index_start; i < static_cast<int>(charset.size()); i++)
+            {
+                const auto pi = charset[i];
+
+                auto afterPrefix2  = afterPrefix;
+                auto beforeSuffix2 = beforeSuffix;
+                if (depth < getSuffixSize())
+                {
+                    beforeSuffix2.updateBackwardPlaintext(pi);
+                    if (depth + 1 == getSuffixSize())
+                        setTarget(beforeSuffix2, mask[factorIndex + 4], mask[factorIndex + 5]);
+                }
+                else
+                    afterPrefix2.update(pi);
+
+                decisions.back() = pi;
+
+                if (progress.state != Progress::State::Normal)
+                {
+                    restart = std::string{decisions.begin(), decisions.end()};
+                    while (restart.size() < mask.size() - 6)
+                        restart.push_back(getCharsetAtDepth(restart.size())[0]);
+                    break;
+                }
+
+                searchLongParallelRecursive(afterPrefix2, beforeSuffix2, i == index_start ? start : "", restart, jobs);
+
+                // Because the recursive call may explore only a fraction of its
+                // search space, check that it was run in full before counting progress.
+                if (!restart.empty())
+                    break;
+
+                if (reportProgress)
+                    progress.done++;
+            }
+
+            decisions.pop_back();
+        }
+    }
+
+    const Keys target;
+
+    const std::vector<std::vector<std::uint8_t>>& mask;
+
+    const std::size_t factorIndex = [this]
+    {
+        // Split mask in three parts (prefix, 6 characters factor, suffix) that minimizes the search space.
+        // The search space size being the size of suffix space and prefix space combined,
+        // we minimize search space size by maximizing the factor space size.
+
+        auto product = std::accumulate(mask.begin(), mask.begin() + 6, std::uint64_t{1},
+                                       [](std::uint64_t acc, const std::vector<std::uint8_t>& charset)
+                                       { return acc * charset.size(); });
+        auto best    = std::pair{product, std::size_t{0}};
+        for (auto i = std::size_t{1}; i + 6 <= mask.size(); ++i)
+        {
+            product = product / mask[i - 1].size() * mask[i + 5].size();
+            best    = std::max(best, std::pair{product, i});
+        }
+
+        return best.second;
+    }();
+
+    auto getSuffixSize() const -> std::size_t
+    {
+        return mask.size() - factorIndex - 6;
+    }
+
+    const std::vector<std::uint8_t>& getCharsetAtDepth(int i)
+    {
+        if (static_cast<std::size_t>(i) < getSuffixSize())
+            return mask[mask.size() - 1 - i];
+        else
+            return mask[i - getSuffixSize()];
+    }
+
+    int atomicWorkDepth = [this]
+    {
+        auto product = int{1};
+        for (auto i = mask.size() - 6; 0 < i; --i)
+        {
+            product *= getCharsetAtDepth(i - 1).size();
+            if (1 << 16 <= product)
+                return static_cast<int>(i) - 1;
+        }
+        return 0;
+    }();
+
+    int parallelDepth = [this]
+    {
+        if (atomicWorkDepth < 2)
+            return -1;
+
+        auto product = static_cast<int>(getCharsetAtDepth(0).size() * getCharsetAtDepth(1).size());
+        auto best    = std::pair{product, std::size_t{0}};
+        for (auto i = std::size_t{1}; i + 1 != static_cast<std::size_t>(atomicWorkDepth); ++i)
+        {
+            product = product / getCharsetAtDepth(i - 1).size() * getCharsetAtDepth(i + 1).size();
+            best    = std::max(best, std::pair{product, i});
+        }
+
+        return (1 < best.first) ? static_cast<int>(best.second) : -1;
+    }();
+
+    int progressDepth = [this]
+    {
+        if (parallelDepth < 0)
+            return 0;
+
+        auto product = int{1};
+        for (auto i = 0; i < parallelDepth + 2; ++i)
+        {
+            product *= getCharsetAtDepth(i).size();
+            if (100 <= product)
+                return i + 1;
+        }
+        return 0;
+    }();
+
+    std::vector<std::uint8_t> decisions{}; // sequence of choices to build reversed(suffix) + prefix
+
+    std::vector<std::string>& solutions; // shared output vector of valid passwords
+    std::mutex&               solutionsMutex;
+    const bool                exhaustive;
+    Progress&                 progress;
+};
+
+auto recoverPassword(const Keys& keys, const std::vector<std::vector<std::uint8_t>>& mask,
+                     [[maybe_unused]] std::string& start, int jobs, bool exhaustive, Progress& progress)
+    -> std::vector<std::string>
+{
+    if (mask.size() <= 6)
+    {
+        progress.log([](std::ostream& os) { os << "mask is too short !" << std::endl; });
+        return {};
+    }
+
+    auto solutions      = std::vector<std::string>{};
+    auto solutionsMutex = std::mutex{};
+    auto restart        = std::string{};
+    auto worker         = MaskRecovery{keys, mask, solutions, solutionsMutex, exhaustive, progress};
+
+    worker.search(start, restart, jobs);
 
     start = restart;
 
