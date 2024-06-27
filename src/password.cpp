@@ -149,26 +149,26 @@ public:
     {
     }
 
-    void search(const Keys& initial, std::size_t length)
+    void search(std::size_t length)
     {
         auto restart = std::string{};
-        search(initial, length, "", restart, 1);
+        search(length, "", restart, 1);
     }
 
-    void search(const Keys& initial, std::size_t length, const std::string& start, std::string& restart, int jobs)
+    void search(std::size_t length, const std::string& start, std::string& restart, int jobs)
     {
         prefix.clear();
         this->length = length;
 
         if (length <= 6)
-            searchShort(initial);
+            searchShort();
         else if (length <= 9)
-            searchLongRecursive(initial);
+            searchLongRecursive(Keys{});
         else
         {
             progress.done  = 0;
             progress.total = charset.size() * charset.size();
-            searchLongParallelRecursive(initial, start, restart, jobs);
+            searchLongParallelRecursive(Keys{}, start, restart, jobs);
         }
     }
 
@@ -220,8 +220,9 @@ private:
     /// \brief Look for a password of length 6 or less
     ///
     /// \pre prefix.empty() && length <= 6
-    void searchShort(Keys initial)
+    void searchShort()
     {
+        auto initial = Keys{};
         // update initial state backward so that there are exactly 6 updates between it and the target state
         for (auto i = length; i < 6; i++)
             initial.updateBackwardPlaintext(charset.front());
@@ -504,14 +505,14 @@ auto recoverPassword(const Keys& keys, const std::vector<std::uint8_t>& charset,
 
             // look for a password of length between 0 and 6
             for (auto l = 0; l <= 6; l++)
-                worker.search(Keys{}, l);
+                worker.search(l);
 
             length = 6; // searching up to length 6 is done
         }
         else
         {
             progress.log([length](std::ostream& os) { os << "length " << length << "..." << std::endl; });
-            worker.search(Keys{}, length, length == startLength ? start : "", restart, jobs);
+            worker.search(length, length == startLength ? start : "", restart, jobs);
         }
     }
 
