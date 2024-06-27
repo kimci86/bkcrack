@@ -88,6 +88,15 @@ Options to use the internal password representation:
  -r, --recover-password [ <min>..<max> | <min>.. | ..<max> | <max> ] <charset>
         Shortcut for --length and --bruteforce options
 
+ -m, --mask <mask>
+        Try to recover the password or an equivalent one by generating and
+        testing password candidates according to the given mask.
+        The mask is sequence of fixed characters or character sets (predefined
+        or custom charsets). Example: -m ?u?l?l?l?l-?d?d?d?d
+
+ -s, --charset <identifier> <charset>
+        Define a custom character set. Example: -s h abcdef?d
+
      --continue-recovery <checkpoint>
         Starting point of the password recovery. Useful to continue a previous
         non-exhaustive or interrupted password recovery.
@@ -302,7 +311,7 @@ try
     }
 
     // recover password
-    if (args.bruteforce)
+    if (args.bruteforce || args.mask)
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
 
@@ -310,13 +319,22 @@ try
 
         const auto [state, restart] = [&]() -> std::pair<Progress::State, std::string>
         {
-            const auto& charset                = *args.bruteforce;
-            const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
-            auto       start                   = args.recoveryStart;
-            auto       progress                = ConsoleProgress{std::cout};
-            const auto sigintHandler           = SigintHandler{progress.state};
-            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs,
-                                        args.exhaustive, progress);
+            auto       start         = args.recoveryStart;
+            auto       progress      = ConsoleProgress{std::cout};
+            const auto sigintHandler = SigintHandler{progress.state};
+
+            if (args.bruteforce)
+            {
+                const auto& charset                = *args.bruteforce;
+                const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
+                passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs,
+                                            args.exhaustive, progress);
+            }
+            else
+            {
+                passwords = recoverPassword(keysvec.front(), *args.mask, start, args.jobs, args.exhaustive, progress);
+            }
+
             return {progress.state, start};
         }();
 
