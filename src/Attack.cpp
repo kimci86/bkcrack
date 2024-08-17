@@ -53,12 +53,12 @@ void Attack::exploreZlists(int i)
     else // the Z-list is complete so iterate over possible Y values
     {
         // guess Y7[8,24) and keep prod == (Y7[8,32) - 1) * mult^-1
-        for (auto y7_8_24 = std::uint32_t{}, prod = (MultTab::getMultinv(msb(ylist[7])) << 24) - MultTab::multInv;
+        for (auto y7_8_24 = std::uint32_t{}, prod = (MultTab::multInv * msb(ylist[7]) << 24) - MultTab::multInv;
              y7_8_24 < 1 << 24; y7_8_24 += 1 << 8, prod += MultTab::multInv << 8)
             // get possible Y7[0,8) values
             for (const auto y7_0_8 : MultTab::getMsbProdFiber3(msb(ylist[6]) - msb(prod)))
                 // filter Y7[0,8) using Y6[24,32)
-                if (prod + MultTab::getMultinv(y7_0_8) - (ylist[6] & mask<24, 32>) <= maxdiff<24>)
+                if (prod + MultTab::multInv * y7_0_8 - (ylist[6] & mask<24, 32>) <= maxdiff<24>)
                 {
                     ylist[7] = y7_0_8 | y7_8_24 | (ylist[7] & mask<24, 32>);
                     exploreYlists(7);
@@ -80,7 +80,7 @@ void Attack::exploreYlists(int i)
             const auto yim1 = fy - xi_0_8;
 
             // filter values with Y{i-2}[24,32)
-            if (ffy - MultTab::getMultinv(xi_0_8) - (ylist[i - 2] & mask<24, 32>) <= maxdiff<24> &&
+            if (ffy - MultTab::multInv * xi_0_8 - (ylist[i - 2] & mask<24, 32>) <= maxdiff<24> &&
                 msb(yim1) == msb(ylist[i - 1]))
             {
                 // add Y{i-1} to the Y-list

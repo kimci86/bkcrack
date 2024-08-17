@@ -88,7 +88,7 @@ protected:
                 const auto yim1 = fy - xi_0_8;
 
                 // filter values with Y{i-2}[24,32)
-                if (ffy - MultTab::getMultinv(xi_0_8) - (y[i - 2] & mask<24, 32>) <= maxdiff<24> &&
+                if (ffy - MultTab::multInv * xi_0_8 - (y[i - 2] & mask<24, 32>) <= maxdiff<24> &&
                     msb(yim1) == msb(y[i - 1]))
                 {
                     // add Y{i-1} to the Y-list
@@ -255,7 +255,7 @@ private:
             {
                 // finish to update the cipher state
                 const auto x0 = x0_partial ^ Crc32Tab::crc32(0, pi);
-                const auto y0 = y0_partial + MultTab::getMult(lsb(x0));
+                const auto y0 = y0_partial + MultTab::mult * lsb(x0);
                 const auto z0 = z0_partial ^ Crc32Tab::crc32(0, msb(y0));
 
                 // SixCharactersRecovery::search is inlined below for performance
