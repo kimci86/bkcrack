@@ -193,7 +193,7 @@ public:
 
                     os << "Password: " << password << " (as bytes:";
                     for (const auto c : password)
-                        os << ' ' << std::setw(2) << static_cast<int>(c);
+                        os << ' ' << std::setw(2) << int{static_cast<std::uint8_t>(c)};
                     os << ')' << std::endl;
 
                     os.fill(fillBefore);

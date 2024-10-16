@@ -37,7 +37,7 @@ add_test(NAME cli.bruteforce.small  COMMAND bkcrack -k 9bcb20c6 10a97ca5 103c061
 add_test(NAME cli.bruteforce.medium COMMAND bkcrack -k edb43a00 9ce6e179 8cf2cbba -r 10 ?a)
 add_test(NAME cli.bruteforce.long   COMMAND bkcrack -k dcce7593 b8a2e617 b2bd4365 -r 12 ?l)
 set_tests_properties(cli.bruteforce.empty  PROPERTIES PASS_REGULAR_EXPRESSION "Password: \n")
-set_tests_properties(cli.bruteforce.tiny   PROPERTIES PASS_REGULAR_EXPRESSION "Password: 🔐\n")
+set_tests_properties(cli.bruteforce.tiny   PROPERTIES PASS_REGULAR_EXPRESSION "Password: 🔐\n.*Password\nas bytes: f0 9f 94 90 \nas text: 🔐\n")
 set_tests_properties(cli.bruteforce.small  PROPERTIES PASS_REGULAR_EXPRESSION "Password: _S#cr3t!\n")
 set_tests_properties(cli.bruteforce.medium PROPERTIES PASS_REGULAR_EXPRESSION "Password: q1w2e3r4t5\n")
 set_tests_properties(cli.bruteforce.long   PROPERTIES PASS_REGULAR_EXPRESSION "Password: abcdefghijkl\n")

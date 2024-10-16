@@ -334,7 +334,7 @@ try
 
                 std::cout << "You may resume the password recovery with the option: --continue-recovery ";
                 for (const auto c : restart)
-                    std::cout << std::setw(2) << static_cast<int>(c);
+                    std::cout << std::setw(2) << int{static_cast<std::uint8_t>(c)};
                 std::cout << std::endl;
 
                 std::cout.fill(fillBefore);
@@ -359,7 +359,7 @@ try
             {
                 std::cout << "as bytes: ";
                 for (const auto c : password)
-                    std::cout << std::setw(2) << static_cast<int>(c) << ' ';
+                    std::cout << std::setw(2) << int{static_cast<std::uint8_t>(c)} << ' ';
                 std::cout << std::endl;
                 std::cout << "as text: " << password << std::endl;
             }
