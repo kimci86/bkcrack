@@ -357,9 +357,9 @@ try
 
             for (const auto& password : passwords)
             {
-                std::cout << "as bytes: ";
+                std::cout << "as bytes:";
                 for (const auto c : password)
-                    std::cout << std::setw(2) << int{static_cast<std::uint8_t>(c)} << ' ';
+                    std::cout << ' ' << std::setw(2) << int{static_cast<std::uint8_t>(c)};
                 std::cout << std::endl;
                 std::cout << "as text: " << password << std::endl;
             }
