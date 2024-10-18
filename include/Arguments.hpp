@@ -5,9 +5,11 @@
 #include "Keys.hpp"
 #include "types.hpp"
 
+#include <bitset>
 #include <limits>
 #include <map>
 #include <optional>
+#include <unordered_map>
 
 /// Parse and store arguments
 class Arguments
@@ -115,6 +117,9 @@ public:
     /// Starting point for password recovery
     std::string recoveryStart;
 
+    /// Mask for password recovery, alternative to bruteforce and length
+    std::optional<std::vector<std::vector<std::uint8_t>>> mask;
+
     /// Number of threads to use for parallelized operations
     int jobs;
 
@@ -133,6 +138,8 @@ public:
 private:
     const char**       m_current;
     const char** const m_end;
+
+    std::unordered_map<char, std::bitset<256>> m_charsets;
 
     auto finished() const -> bool;
 
@@ -162,6 +169,8 @@ private:
         length,
         recoverPassword,
         recoveryStart,
+        mask,
+        charset,
         jobs,
         exhaustive,
         infoArchive,
@@ -175,7 +184,7 @@ private:
     auto readSize(const std::string& description) -> std::size_t;
     auto readHex(const std::string& description) -> std::vector<std::uint8_t>;
     auto readKey(const std::string& description) -> std::uint32_t;
-    auto readCharset() -> std::vector<std::uint8_t>;
+    auto readCharset() -> std::bitset<256>;
 };
 
 #endif // BKCRACK_ARGUMENTS_HPP
