@@ -48,7 +48,7 @@ Options to get the internal password representation:
 
 Options to use the internal password representation:
  -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
-                              integers in hexadecimal (requires -d, -U,
+                              integers in hexadecimal (requires -d, -D, -U,
                               --change-keys or --bruteforce)
 
  -d, --decipher <file>       File to write the deciphered data (requires -c)
