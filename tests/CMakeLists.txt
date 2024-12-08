@@ -42,6 +42,16 @@ set_tests_properties(cli.bruteforce.small  PROPERTIES PASS_REGULAR_EXPRESSION "P
 set_tests_properties(cli.bruteforce.medium PROPERTIES PASS_REGULAR_EXPRESSION "Password: q1w2e3r4t5\n")
 set_tests_properties(cli.bruteforce.long   PROPERTIES PASS_REGULAR_EXPRESSION "Password: abcdefghijkl\n")
 
+add_test(NAME cli.charset.one-letter    COMMAND bkcrack --password aaaaaa -r 6 ?0 -s 0 a)
+add_test(NAME cli.charset.four-letters  COMMAND bkcrack --password abcabc -r 6 ?0 -s 0 abcd)
+add_test(NAME cli.charset.hexadecimal   COMMAND bkcrack --password 1a2b3c -r 6 ?h -s h ?dabcdef)
+add_test(NAME cli.charset.question-mark COMMAND bkcrack --password hello? -r 6 ?h -s h ?l?)
+
+add_test(NAME cli.charset.short-cycle COMMAND bkcrack --password "" -r 0 ?0 -s 0 ?0)
+add_test(NAME cli.charset.long-cycle  COMMAND bkcrack --password "" -r 0 ?0 -s 0 ?1 -s 1 ?2 -s 2 ?3 -s 3 ?4 -s 4 ?5 -s 5 ?0)
+set_tests_properties(cli.charset.short-cycle PROPERTIES PASS_REGULAR_EXPRESSION "circular reference")
+set_tests_properties(cli.charset.long-cycle  PROPERTIES PASS_REGULAR_EXPRESSION "circular reference")
+
 add_test(NAME cli.list COMMAND bkcrack -L secrets.zip WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/example)
 set_tests_properties(cli.list PROPERTIES PASS_REGULAR_EXPRESSION "
 Index Encryption Compression CRC32    Uncompressed  Packed size Name

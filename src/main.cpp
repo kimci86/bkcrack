@@ -88,6 +88,9 @@ Options to use the internal password representation:
  -r, --recover-password [ <min>..<max> | <min>.. | ..<max> | <max> ] <charset>
         Shortcut for --length and --bruteforce options
 
+ -s, --charset <identifier> <charset>
+        Define a custom character set. Example: -s h ?dabcdef
+
      --continue-recovery <checkpoint>
         Starting point of the password recovery. Useful to continue a previous
         non-exhaustive or interrupted password recovery.

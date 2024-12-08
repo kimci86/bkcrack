@@ -8,6 +8,7 @@
 #include <limits>
 #include <map>
 #include <optional>
+#include <unordered_map>
 
 /// Parse and store arguments
 class Arguments
@@ -134,6 +135,13 @@ private:
     const char**       m_current;
     const char** const m_end;
 
+    std::unordered_map<char, std::bitset<256>> m_charsets;
+    std::unordered_map<char, std::string>      m_rawCharsets;
+
+    auto resolveCharset(const std::string& rawCharset) -> std::bitset<256>;
+
+    std::optional<std::string> m_rawBruteforce;
+
     auto finished() const -> bool;
 
     void parseArgument();
@@ -161,6 +169,7 @@ private:
         bruteforce,
         length,
         recoverPassword,
+        charset,
         recoveryStart,
         jobs,
         exhaustive,
@@ -175,7 +184,7 @@ private:
     auto readSize(const std::string& description) -> std::size_t;
     auto readHex(const std::string& description) -> std::vector<std::uint8_t>;
     auto readKey(const std::string& description) -> std::uint32_t;
-    auto readCharset() -> std::vector<std::uint8_t>;
+    auto readRawCharset(const std::string& description) -> std::string;
 };
 
 #endif // BKCRACK_ARGUMENTS_HPP
