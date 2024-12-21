@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure project
-        run: cmake -S . -B build -DBKCRACK_CLANG_FORMAT_EXECUTABLE=/usr/bin/clang-format-15
+        run: cmake -S . -B build -DBKCRACK_CLANG_FORMAT_EXECUTABLE=/usr/bin/clang-format-17
 
       - name: Format C++ code
         run: cmake --build build --target format
