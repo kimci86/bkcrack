@@ -93,7 +93,7 @@ Options to use the internal password representation:
         non-exhaustive or interrupted password recovery.
 
 Other options:
- -j, --jobs <count>          Number of threads to use for parallelized operations
+ -j, --jobs <count>          Number of threads to use for parallel operations
  -e, --exhaustive            Exhaustively look for all solutions (keys or
                               passwords) instead of stopping after the first
                               solution is found
