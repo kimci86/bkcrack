@@ -125,12 +125,31 @@ Arguments::Arguments(int argc, const char* argv[])
     // deferred computations
     if (m_rawBruteforce)
         bruteforce = bitsetToVector(resolveCharset(*m_rawBruteforce));
+    if (m_rawMask)
+    {
+        mask.emplace();
+        for (auto it = m_rawMask->begin(); it != m_rawMask->end(); ++it)
+        {
+            if (*it == '?') // escape character to reference other charsets
+            {
+                if (++it == m_rawMask->end())
+                {
+                    mask->push_back({'?'});
+                    break;
+                }
+
+                mask->push_back(bitsetToVector(resolveCharset(std::string{"?"} + *it)));
+            }
+            else
+                mask->push_back({static_cast<std::uint8_t>(*it)});
+        }
+    }
 
     // check constraints on arguments
     if (keys)
     {
-        if (!decipheredFile && !decryptedArchive && !changePassword && !changeKeys && !bruteforce)
-            throw Error{"-d, -D, -U, --change-keys or --bruteforce parameter is missing (required by -k)"};
+        if (!decipheredFile && !decryptedArchive && !changePassword && !changeKeys && !bruteforce && !mask)
+            throw Error{"-d, -D, -U, --change-keys, --bruteforce or --mask parameter is missing (required by -k)"};
     }
     else if (!password)
     {
@@ -180,6 +199,9 @@ Arguments::Arguments(int argc, const char* argv[])
 
     if (length && !bruteforce)
         throw Error{"--bruteforce parameter is missing (required by --length)"};
+
+    if (bruteforce && mask)
+        throw Error{"--bruteforce and --mask cannot be used at the same time"};
 }
 
 auto Arguments::loadData() const -> Data
@@ -360,6 +382,9 @@ void Arguments::parseArgument()
                      parseInterval(readString("length")));
         m_rawBruteforce = readRawCharset("charset for bruteforce password recovery");
         break;
+    case Option::mask:
+        m_rawMask = readString("mask");
+        break;
     case Option::charset:
     {
         const auto identifier = readString("identifier");
@@ -430,6 +455,7 @@ auto Arguments::readOption(const std::string& description) -> Arguments::Option
         PAIRS(-b, --bruteforce,        bruteforce),
         PAIRS(-l, --length,            length),
         PAIRS(-r, --recover-password,  recoverPassword),
+        PAIRS(-m, --mask,              mask),
         PAIRS(-s, --charset,           charset),
         PAIR (    --continue-recovery, recoveryStart),
         PAIRS(-j, --jobs,              jobs),

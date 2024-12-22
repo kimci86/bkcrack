@@ -49,7 +49,7 @@ Options to get the internal password representation:
 Options to use the internal password representation:
  -k, --keys <X> <Y> <Z>      Internal password representation as three 32-bits
                               integers in hexadecimal (requires -d, -D, -U,
-                              --change-keys or --bruteforce)
+                              --change-keys, --bruteforce or --mask)
 
  -d, --decipher <file>       File to write the deciphered data (requires -c)
      --keep-header           Write the encryption header at the beginning of
@@ -87,6 +87,12 @@ Options to use the internal password representation:
 
  -r, --recover-password [ <min>..<max> | <min>.. | ..<max> | <max> ] <charset>
         Shortcut for --length and --bruteforce options
+
+ -m, --mask <mask>
+        Try to recover the password or an equivalent one by generating and
+        testing password candidates following the given mask.
+        The mask is a sequence of fixed characters or character sets (either
+        predefined or custom charsets). Example: -m ?u?l?l?l?l-?d?d?d?d
 
  -s, --charset <identifier> <charset>
         Define a custom character set. Example: -s h ?dabcdef
