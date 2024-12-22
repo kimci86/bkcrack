@@ -406,7 +406,7 @@ private:
 
                             clone.searchLongRecursive(init);
 
-                            if (reportProgress || (reportProgressCoarse && i % charsetSize == 0))
+                            if (reportProgress || (reportProgressCoarse && i % charsetSize == charsetSize - 1))
                                 clone.progress.done++;
 
                             if (clone.progress.state != Progress::State::Normal)
