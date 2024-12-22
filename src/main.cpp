@@ -311,7 +311,7 @@ try
     }
 
     // recover password
-    if (args.bruteforce)
+    if (args.bruteforce || args.mask)
     {
         std::cout << "[" << put_time << "] Recovering password" << std::endl;
 
@@ -319,13 +319,20 @@ try
 
         const auto [state, restart] = [&]() -> std::pair<Progress::State, std::string>
         {
-            const auto& charset                = *args.bruteforce;
-            const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
-            auto       start                   = args.recoveryStart;
-            auto       progress                = ConsoleProgress{std::cout};
-            const auto sigintHandler           = SigintHandler{progress.state};
-            passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs,
-                                        args.exhaustive, progress);
+            auto       start         = args.recoveryStart;
+            auto       progress      = ConsoleProgress{std::cout};
+            const auto sigintHandler = SigintHandler{progress.state};
+
+            if (args.bruteforce)
+            {
+                const auto& charset                = *args.bruteforce;
+                const auto& [minLength, maxLength] = args.length.value_or(Arguments::LengthInterval{});
+                passwords = recoverPassword(keysvec.front(), charset, minLength, maxLength, start, args.jobs,
+                                            args.exhaustive, progress);
+            }
+            else
+                passwords = recoverPassword(keysvec.front(), *args.mask, start, args.jobs, args.exhaustive, progress);
+
             return {progress.state, start};
         }();
 
