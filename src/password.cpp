@@ -15,8 +15,7 @@ template <typename Derived /* must implement onSolutionFound() method */>
 class SixCharactersRecovery
 {
 public:
-    SixCharactersRecovery(const Keys& target, const std::vector<std::uint8_t>& charset4,
-                          const std::vector<std::uint8_t>& charset5)
+    SixCharactersRecovery(const Keys& target, const std::vector<std::uint8_t>& charset5)
     {
         // initialize target X, Y and Z values
         x[6] = target.getX();
@@ -37,11 +36,20 @@ public:
             y[4] = (y[5] - 1) * MultTab::multInv - lsb(x[5]);
             z[3] = Crc32Tab::crc32inv(z[4], msb(y[4]));
 
-            for (const auto p4 : charset4)
+            const auto y3_ignoring_lsb_x4 = (y[4] - 1) * MultTab::multInv;
+            const auto msb_y3_min         = msb(y3_ignoring_lsb_x4 - 255);
+            const auto msb_y3_max         = msb(y3_ignoring_lsb_x4 - 0);
+
+            z[2] = Crc32Tab::crc32inv(z[3], msb_y3_min);
+            z[1] = Crc32Tab::crc32inv(z[2], 0);
+            z[0] = Crc32Tab::crc32inv(z[1], 0);
+
+            z0_16_32.set(z[0] >> 16);
+            zm1_24_32.set(Crc32Tab::crc32inv(z[0], 0) >> 24);
+
+            if (msb_y3_max != msb_y3_min)
             {
-                x[4] = Crc32Tab::crc32inv(x[5], p4);
-                y[3] = (y[4] - 1) * MultTab::multInv - lsb(x[4]);
-                z[2] = Crc32Tab::crc32inv(z[3], msb(y[3]));
+                z[2] = Crc32Tab::crc32inv(z[3], msb_y3_max);
                 z[1] = Crc32Tab::crc32inv(z[2], 0);
                 z[0] = Crc32Tab::crc32inv(z[1], 0);
 
@@ -140,7 +148,7 @@ class BruteforceRecovery : public SixCharactersRecovery<BruteforceRecovery>
 public:
     BruteforceRecovery(const Keys& keys, const std::vector<std::uint8_t>& charset, std::vector<std::string>& solutions,
                        std::mutex& solutionsMutex, bool exhaustive, Progress& progress)
-    : SixCharactersRecovery{keys, charset, charset}
+    : SixCharactersRecovery{keys, charset}
     , charset{charset}
     , solutions{solutions}
     , solutionsMutex{solutionsMutex}
