@@ -15,7 +15,7 @@ template <typename Derived /* must implement onSolutionFound() method */>
 class SixCharactersRecovery
 {
 public:
-    SixCharactersRecovery(const Keys& target, const std::vector<std::uint8_t>& charset5)
+    void setTarget(const Keys& target, const std::vector<std::uint8_t>& charset5)
     {
         // initialize target X, Y and Z values
         x[6] = target.getX();
@@ -30,6 +30,8 @@ public:
             z[i - 1] = Crc32Tab::crc32inv(z[i], msb(y[i]));
 
         // precompute possible Z0[16,32) and Z{-1}[24,32)
+        z0_16_32.reset();
+        zm1_24_32.reset();
         for (const auto p5 : charset5)
         {
             x[5] = Crc32Tab::crc32inv(x[6], p5);
@@ -148,13 +150,13 @@ class BruteforceRecovery : public SixCharactersRecovery<BruteforceRecovery>
 public:
     BruteforceRecovery(const Keys& keys, const std::vector<std::uint8_t>& charset, std::vector<std::string>& solutions,
                        std::mutex& solutionsMutex, bool exhaustive, Progress& progress)
-    : SixCharactersRecovery{keys, charset}
-    , charset{charset}
+    : charset{charset}
     , solutions{solutions}
     , solutionsMutex{solutionsMutex}
     , exhaustive{exhaustive}
     , progress{progress}
     {
+        setTarget(keys, charset);
     }
 
     void search(std::size_t length)
