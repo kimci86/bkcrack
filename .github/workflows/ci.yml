@@ -10,7 +10,8 @@ jobs:
     strategy:
       matrix:
         platform:
-          - { name: Ubuntu, os: ubuntu-latest }
+          - { name: Ubuntu x64, os: ubuntu-24.04 }
+          - { name: Ubuntu arm64, os: ubuntu-24.04-arm }
           - {
               name: macOS x64,
               os: macos-latest,
