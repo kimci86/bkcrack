@@ -2,6 +2,7 @@ bkcrack
 =======
 
 [![CI badge](https://github.com/kimci86/bkcrack/actions/workflows/ci.yml/badge.svg)](https://github.com/kimci86/bkcrack/actions/workflows/ci.yml)
+[![coverage badge](https://coveralls.io/repos/github/kimci86/bkcrack/badge.svg)](https://coveralls.io/github/kimci86/bkcrack)
 [![release badge](https://img.shields.io/github/v/release/kimci86/bkcrack)](https://github.com/kimci86/bkcrack/releases)
 [![license badge](https://img.shields.io/github/license/kimci86/bkcrack?color=informational)](license.txt)
 [![GitHub Sponsors badge](https://img.shields.io/github/sponsors/kimci86?color=red)](https://github.com/sponsors/kimci86)
