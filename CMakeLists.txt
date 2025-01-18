@@ -45,6 +45,11 @@ if(BKCRACK_BUILD_COVERAGE)
         COMMAND ${BKCRACK_GCOVR_EXECUTABLE} --root ${CMAKE_SOURCE_DIR} --html-nested coverage/index.html
         COMMENT "Generating code coverage HTML report"
         VERBATIM)
+
+    add_custom_target(coveralls
+        COMMAND ${BKCRACK_GCOVR_EXECUTABLE} --root ${CMAKE_SOURCE_DIR} --coveralls coverage.json
+        COMMENT "Generating coverage.json report for coveralls.io"
+        VERBATIM)
 endif()
 
 # code formatting
