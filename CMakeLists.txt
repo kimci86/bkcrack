@@ -32,6 +32,21 @@ if(BKCRACK_BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
+# code coverage report
+option(BKCRACK_BUILD_COVERAGE "Enable code coverage report generation." OFF)
+if(BKCRACK_BUILD_COVERAGE)
+    target_compile_options(bkcrack PRIVATE --coverage)
+    target_link_options(bkcrack PRIVATE --coverage)
+
+    find_program(BKCRACK_GCOVR_EXECUTABLE gcovr DOC "Path to gcovr program used to generate code coverage report." REQUIRED)
+
+    add_custom_target(coverage
+        COMMAND ${CMAKE_COMMAND} -E make_directory coverage
+        COMMAND ${BKCRACK_GCOVR_EXECUTABLE} --root ${CMAKE_SOURCE_DIR} --html-nested coverage/index.html
+        COMMENT "Generating code coverage HTML report"
+        VERBATIM)
+endif()
+
 # code formatting
 find_program(BKCRACK_CLANG_FORMAT_EXECUTABLE clang-format DOC "Path to clang-format program used to format C++ code.")
 if(BKCRACK_CLANG_FORMAT_EXECUTABLE)
