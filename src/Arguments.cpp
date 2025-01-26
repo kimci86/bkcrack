@@ -12,7 +12,7 @@
 namespace
 {
 
-auto charRange(char first, char last) -> std::bitset<256>
+auto charRange(std::uint8_t first, std::uint8_t last) -> std::bitset<256>
 {
     auto bitset = std::bitset<256>{};
 
@@ -22,6 +22,16 @@ auto charRange(char first, char last) -> std::bitset<256>
     } while (first++ != last);
 
     return bitset;
+}
+
+auto bitsetToVector(const std::bitset<256>& charset) -> std::vector<std::uint8_t>
+{
+    auto vector = std::vector<std::uint8_t>{};
+    for (auto c = 0; c < 256; c++)
+        if (charset[c])
+            vector.push_back(c);
+
+    return vector;
 }
 
 template <typename F>
@@ -86,6 +96,24 @@ Arguments::Arguments(int argc, const char* argv[])
        }()}
 , m_current{argv + 1}
 , m_end{argv + argc}
+, m_charsets{
+      []
+      {
+          const auto lowercase    = charRange('a', 'z');
+          const auto uppercase    = charRange('A', 'Z');
+          const auto digits       = charRange('0', '9');
+          const auto alphanum     = lowercase | uppercase | digits;
+          const auto printable    = charRange(' ', '~');
+          const auto punctuation  = printable & ~alphanum;
+          const auto bytes        = charRange('\x00', '\xff');
+          const auto questionMark = charRange('?', '?');
+
+          return std::unordered_map<char, std::bitset<256>>{
+              {'l', lowercase}, {'u', uppercase},   {'d', digits}, {'a', alphanum},
+              {'p', printable}, {'s', punctuation}, {'b', bytes},  {'?', questionMark},
+          };
+      }(),
+  }
 {
     // parse arguments
     while (!finished())
@@ -94,11 +122,34 @@ Arguments::Arguments(int argc, const char* argv[])
     if (help || version || infoArchive)
         return; // no further checks are needed for those options
 
+    // deferred computations
+    if (m_rawBruteforce)
+        bruteforce = bitsetToVector(resolveCharset(*m_rawBruteforce));
+    if (m_rawMask)
+    {
+        mask.emplace();
+        for (auto it = m_rawMask->begin(); it != m_rawMask->end(); ++it)
+        {
+            if (*it == '?') // escape character to reference other charsets
+            {
+                if (++it == m_rawMask->end())
+                {
+                    mask->push_back({'?'});
+                    break;
+                }
+
+                mask->push_back(bitsetToVector(resolveCharset(std::string{"?"} + *it)));
+            }
+            else
+                mask->push_back({static_cast<std::uint8_t>(*it)});
+        }
+    }
+
     // check constraints on arguments
     if (keys)
     {
-        if (!decipheredFile && !decryptedArchive && !changePassword && !changeKeys && !bruteforce)
-            throw Error{"-d, -D, -U, --change-keys or --bruteforce parameter is missing (required by -k)"};
+        if (!decipheredFile && !decryptedArchive && !changePassword && !changeKeys && !bruteforce && !mask)
+            throw Error{"-d, -D, -U, --change-keys, --bruteforce or --mask parameter is missing (required by -k)"};
     }
     else if (!password)
     {
@@ -148,6 +199,9 @@ Arguments::Arguments(int argc, const char* argv[])
 
     if (length && !bruteforce)
         throw Error{"--bruteforce parameter is missing (required by --length)"};
+
+    if (bruteforce && mask)
+        throw Error{"--bruteforce and --mask cannot be used at the same time"};
 }
 
 auto Arguments::loadData() const -> Data
@@ -195,6 +249,42 @@ auto Arguments::loadData() const -> Data
 auto Arguments::LengthInterval::operator&(const Arguments::LengthInterval& other) const -> Arguments::LengthInterval
 {
     return {std::max(minLength, other.minLength), std::min(maxLength, other.maxLength)};
+}
+
+auto Arguments::resolveCharset(const std::string& rawCharset) -> std::bitset<256>
+{
+    auto charset = std::bitset<256>{};
+
+    for (auto it = rawCharset.begin(); it != rawCharset.end(); ++it)
+    {
+        if (*it == '?') // escape character to reference other charsets
+        {
+            if (++it == rawCharset.end())
+            {
+                charset.set('?');
+                break;
+            }
+
+            if (const auto rawCharsetsIt = m_rawCharsets.find(*it); rawCharsetsIt != m_rawCharsets.end())
+            {
+                // insert in m_charsets to mark the identifier is being resolved and detect cycles
+                if (const auto [_, inserted] = m_charsets.try_emplace(*it); !inserted)
+                    throw Error{std::string{"circular reference resolving charset ?"} + *it};
+
+                m_charsets[*it] = resolveCharset(rawCharsetsIt->second);
+                m_rawCharsets.erase(rawCharsetsIt);
+            }
+
+            if (const auto charsetsIt = m_charsets.find(*it); charsetsIt != m_charsets.end())
+                charset |= charsetsIt->second;
+            else
+                throw Error{std::string{"unknown charset ?"} + *it};
+        }
+        else
+            charset.set(*it);
+    }
+
+    return charset;
 }
 
 auto Arguments::finished() const -> bool
@@ -265,7 +355,7 @@ void Arguments::parseArgument()
         changeKeys = {readString("unlockedzip"), {readKey("X"), readKey("Y"), readKey("Z")}};
         break;
     case Option::bruteforce:
-        bruteforce = readCharset();
+        m_rawBruteforce = readRawCharset("charset for bruteforce password recovery");
         break;
     case Option::length:
         length = length.value_or(LengthInterval{}) &
@@ -290,8 +380,21 @@ void Arguments::parseArgument()
                              return arg;
                      },
                      parseInterval(readString("length")));
-        bruteforce = readCharset();
+        m_rawBruteforce = readRawCharset("charset for bruteforce password recovery");
         break;
+    case Option::mask:
+        m_rawMask = readString("mask");
+        break;
+    case Option::charset:
+    {
+        const auto identifier = readString("identifier");
+        if (identifier.size() != 1)
+            throw Error{"charset identifier must be a single character, got \"" + identifier + "\""};
+        if (m_charsets.count(identifier[0]) || m_rawCharsets.count(identifier[0]))
+            throw Error{"charset ?" + identifier + " is already defined, it cannot be redefined"};
+        m_rawCharsets[identifier[0]] = readRawCharset("charset ?" + identifier);
+        break;
+    }
     case Option::recoveryStart:
     {
         const auto checkpoint = readHex("checkpoint");
@@ -352,6 +455,8 @@ auto Arguments::readOption(const std::string& description) -> Arguments::Option
         PAIRS(-b, --bruteforce,        bruteforce),
         PAIRS(-l, --length,            length),
         PAIRS(-r, --recover-password,  recoverPassword),
+        PAIRS(-m, --mask,              mask),
+        PAIRS(-s, --charset,           charset),
         PAIR (    --continue-recovery, recoveryStart),
         PAIRS(-j, --jobs,              jobs),
         PAIRS(-e, --exhaustive,        exhaustive),
@@ -409,55 +514,12 @@ auto Arguments::readKey(const std::string& description) -> std::uint32_t
     return static_cast<std::uint32_t>(std::stoul(str, nullptr, 16));
 }
 
-auto Arguments::readCharset() -> std::vector<std::uint8_t>
+auto Arguments::readRawCharset(const std::string& description) -> std::string
 {
-    const auto lowercase   = charRange('a', 'z');
-    const auto uppercase   = charRange('A', 'Z');
-    const auto digits      = charRange('0', '9');
-    const auto alphanum    = lowercase | uppercase | digits;
-    const auto printable   = charRange(' ', '~');
-    const auto punctuation = printable & ~alphanum;
+    auto charset = readString(description);
 
-    const auto charsetArg = readString("charset");
-    if (charsetArg.empty())
-        throw Error{"the charset for password recovery is empty"};
+    if (charset.empty())
+        throw Error{description + " is empty"};
 
-    auto charset = std::bitset<256>{};
-
-    for (auto it = charsetArg.begin(); it != charsetArg.end(); ++it)
-    {
-        if (*it == '?') // escape character for predefined charsets
-        {
-            if (++it == charsetArg.end())
-            {
-                charset.set('?');
-                break;
-            }
-
-            switch (*it)
-            {
-                // clang-format off
-            case 'l': charset |= lowercase;   break;
-            case 'u': charset |= uppercase;   break;
-            case 'd': charset |= digits;      break;
-            case 's': charset |= punctuation; break;
-            case 'a': charset |= alphanum;    break;
-            case 'p': charset |= printable;   break;
-            case 'b': charset.set();          break;
-            case '?': charset.set('?');       break;
-                // clang-format on
-            default:
-                throw Error{std::string{"unknown charset ?"} + *it};
-            }
-        }
-        else
-            charset.set(*it);
-    }
-
-    auto result = std::vector<std::uint8_t>{};
-    for (auto c = 0; c < 256; c++)
-        if (charset[c])
-            result.push_back(c);
-
-    return result;
+    return charset;
 }
