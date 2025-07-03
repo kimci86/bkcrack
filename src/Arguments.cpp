@@ -330,6 +330,7 @@ auto Arguments::readOption(const std::string& description) -> Arguments::Option
 #define PAIR(string, option) {#string, Option::option}
 #define PAIRS(short, long, option) PAIR(short, option), PAIR(long, option)
 
+    // GCOVR_EXCL_START
     static const auto stringToOption = std::map<std::string, Option>{
         PAIRS(-c, --cipher-file,       cipherFile),
         PAIR (    --cipher-index,      cipherIndex),
@@ -359,6 +360,7 @@ auto Arguments::readOption(const std::string& description) -> Arguments::Option
         PAIR (    --version,           version),
         PAIRS(-h, --help,              help),
     };
+    // GCOVR_EXCL_STOP
     // clang-format on
 
 #undef PAIR
