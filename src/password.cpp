@@ -233,7 +233,7 @@ private:
         auto initial = Keys{};
         // update initial state backward so that there are exactly 6 updates between it and the target state
         for (auto i = length; i < 6; i++)
-            initial.updateBackwardPlaintext('\0');
+            initial.updateBackwardPlaintext(charset.front());
 
         SixCharactersRecovery::search(initial);
     }
