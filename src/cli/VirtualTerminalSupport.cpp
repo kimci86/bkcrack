@@ -3,6 +3,7 @@
 #ifdef _WIN32
 
 #include <optional>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 class VirtualTerminalSupport::Impl
