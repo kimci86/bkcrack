@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure project
         run: cmake -S . -B build -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_LINK_WARNING_AS_ERROR=ON -DBKCRACK_BUILD_TESTING=ON ${{ matrix.platform.cmake-config }}
@@ -42,7 +42,7 @@ jobs:
         run: cmake --build build --config Release --target package
 
       - name: Upload package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.platform.name }} package
           path: |
@@ -59,7 +59,7 @@ jobs:
         run: sudo apt update && sudo apt install gcovr
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure project
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBKCRACK_BUILD_TESTING=ON -DBKCRACK_BUILD_COVERAGE=ON
@@ -84,7 +84,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure project
         run: cmake -S . -B build -DBKCRACK_CLANG_FORMAT_EXECUTABLE=/usr/bin/clang-format-17
@@ -103,7 +103,7 @@ jobs:
 
     steps:
       - name: Download packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: "* package"
           path: packages
