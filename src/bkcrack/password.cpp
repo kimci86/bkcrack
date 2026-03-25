@@ -127,7 +127,7 @@ protected:
             }
 
             if (x[0] == candidateX0) // the password is successfully recovered
-                (static_cast<Derived*>(this))->onSolutionFound();
+                static_cast<Derived*>(this)->onSolutionFound();
         }
     }
 
