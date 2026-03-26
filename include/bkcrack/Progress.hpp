@@ -2,6 +2,7 @@
 #define BKCRACK_PROGRESS_HPP
 
 #include <atomic>
+#include <concepts>
 #include <iostream>
 #include <mutex>
 
@@ -22,7 +23,7 @@ public:
 
     /// Get exclusive access to the shared output stream and output progress
     /// information with the given function
-    template <typename F>
+    template <std::invocable<std::ostream&> F>
     void log(F f)
     {
         const auto lock = std::scoped_lock{m_os_mutex};

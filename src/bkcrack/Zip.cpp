@@ -4,6 +4,7 @@
 #include <bkcrack/file.hpp>
 
 #include <algorithm>
+#include <concepts>
 #include <iterator>
 #include <map>
 #include <numeric>
@@ -12,7 +13,7 @@
 namespace
 {
 
-template <typename T>
+template <std::integral T>
 auto readInt(std::istream& is) -> T
 {
     // We make no assumption about platform endianness.
@@ -23,7 +24,7 @@ auto readInt(std::istream& is) -> T
     return x;
 }
 
-template <typename T>
+template <std::integral T>
 void writeInt(std::ostream& os, const T& x)
 {
     // We make no assumption about platform endianness.
@@ -137,8 +138,8 @@ struct ExtraField
         std::optional<std::uint64_t> headerOffset;
         std::optional<std::uint32_t> diskStartNumber;
 
-        template <typename Header, typename = std::enable_if_t<std::is_same_v<Header, LocalFileHeader> ||
-                                                               std::is_same_v<Header, CentralDirectoryHeader>>>
+        template <typename Header>
+            requires std::same_as<Header, LocalFileHeader> || std::same_as<Header, CentralDirectoryHeader>
         static auto read(std::istream& is, std::uint16_t dataSize, const Header& header) -> Zip64
         {
             auto data      = Zip64{};
@@ -211,8 +212,8 @@ struct ExtraField
         }
     };
 
-    template <typename Header, typename = std::enable_if_t<std::is_same_v<Header, LocalFileHeader> ||
-                                                           std::is_same_v<Header, CentralDirectoryHeader>>>
+    template <typename Header>
+        requires std::same_as<Header, LocalFileHeader> || std::same_as<Header, CentralDirectoryHeader>
     static auto read(std::istream& is, const Header& header) -> ExtraField
     {
         auto extraField = ExtraField{};

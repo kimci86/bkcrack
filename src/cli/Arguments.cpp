@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <concepts>
 #include <thread>
 #include <type_traits>
 #include <variant>
@@ -34,7 +35,7 @@ auto bitsetToVector(const std::bitset<256>& charset) -> std::vector<std::uint8_t
     return vector;
 }
 
-template <typename F>
+template <std::invocable<const std::string&> F>
 auto translateIntParseError(F&& f, const std::string& value)
 {
     try
