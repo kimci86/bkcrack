@@ -114,12 +114,6 @@ public:
             return (m_is == nullptr) == (other.m_is == nullptr);
         }
 
-        /// Test if iterators are not equivalent
-        auto operator!=(const Zip::Iterator& other) const -> bool
-        {
-            return !(*this == other);
-        }
-
     private:
         std::istream*        m_is = nullptr;
         std::optional<Entry> m_entry; // optional type allows the end-of-stream iterator to be empty
