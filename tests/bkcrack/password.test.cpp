@@ -17,19 +17,14 @@ auto makeCharset(std::uint8_t front, std::uint8_t back)
 auto charsetUnion(const std::vector<std::uint8_t>& charsetA, const std::vector<std::uint8_t>& charsetB)
 {
     auto vector = std::vector<std::uint8_t>{};
-    for (auto c = 0; c < 256; ++c)
-    {
-        if (std::find(charsetA.begin(), charsetA.end(), c) != charsetA.end() ||
-            std::find(charsetB.begin(), charsetB.end(), c) != charsetB.end())
-            vector.push_back(c);
-    }
+    std::ranges::merge(charsetA, charsetB, std::back_inserter(vector));
     return vector;
 }
 auto charsetDifference(const std::vector<std::uint8_t>& charsetA, const std::vector<std::uint8_t>& charsetB)
 {
     auto vector = std::vector<std::uint8_t>{};
     for (const auto c : charsetA)
-        if (std::find(charsetB.begin(), charsetB.end(), c) == charsetB.end())
+        if (!std::ranges::binary_search(charsetB, c))
             vector.push_back(c);
     return vector;
 }

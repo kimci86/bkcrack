@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <ranges>
 
 Zreduction::Zreduction(const std::vector<std::uint8_t>& keystream)
 : keystream{keystream}
@@ -115,8 +116,8 @@ void Zreduction::generate()
     for (auto i = std::size_t{}; i < number_of_zi_10_32; i++)
     {
         const auto& zi_2_16_vector = KeystreamTab::getZi_2_16_vector(keystream[index], zi_vector[i]);
-        for (auto j = std::size_t{1}; j < zi_2_16_vector.size(); j++)
-            zi_vector.push_back(zi_vector[i] | zi_2_16_vector[j]);
+        for (const auto zi_2_16 : zi_2_16_vector | std::views::drop(1))
+            zi_vector.push_back(zi_vector[i] | zi_2_16);
         zi_vector[i] |= zi_2_16_vector[0];
     }
 }

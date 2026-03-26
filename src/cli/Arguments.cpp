@@ -508,7 +508,7 @@ auto Arguments::readHex(const std::string& description) -> std::vector<std::uint
 
     if (str.size() % 2)
         throw Error{"expected an even-length string, got " + str};
-    if (!std::all_of(str.begin(), str.end(), [](char c) { return std::isxdigit(static_cast<unsigned char>(c)); }))
+    if (!std::ranges::all_of(str, [](char c) { return std::isxdigit(static_cast<unsigned char>(c)); }))
         throw Error{"expected " + description + " in hexadecimal, got " + str};
 
     auto data = std::vector<std::uint8_t>{};
@@ -524,7 +524,7 @@ auto Arguments::readKey(const std::string& description) -> std::uint32_t
 
     if (str.size() > 8)
         throw Error{"expected a string of length 8 or less, got " + str};
-    if (!std::all_of(str.begin(), str.end(), [](char c) { return std::isxdigit(static_cast<unsigned char>(c)); }))
+    if (!std::ranges::all_of(str, [](char c) { return std::isxdigit(static_cast<unsigned char>(c)); }))
         throw Error{"expected " + description + " in hexadecimal, got " + str};
 
     return static_cast<std::uint32_t>(std::stoul(str, nullptr, 16));
