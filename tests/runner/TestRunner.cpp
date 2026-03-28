@@ -50,7 +50,8 @@ auto TestRunner::runAllTests() -> bool
         }
         catch (const TestError& error)
         {
-            std::cout << "\n  " << error.expression << " [FAIL]";
+            std::cout << "\n  " << error.location.file_name() << ':' << error.location.line() //
+                      << "\n  " << error.expression << " [FAIL]";
             ++fail;
         }
         catch (const std::exception& error)

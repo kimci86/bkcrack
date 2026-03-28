@@ -1,9 +1,12 @@
 #ifndef BKCRACK_TESTRUNNER_HPP
 #define BKCRACK_TESTRUNNER_HPP
 
+#include <source_location>
+
 struct TestError
 {
-    const char* expression;
+    const char*          expression;
+    std::source_location location = std::source_location::current();
 };
 
 #define CHECK(...)                                                                                                     \
