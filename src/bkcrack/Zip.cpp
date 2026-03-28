@@ -4,15 +4,17 @@
 #include <bkcrack/file.hpp>
 
 #include <algorithm>
+#include <concepts>
 #include <iterator>
 #include <map>
 #include <numeric>
+#include <ranges>
 #include <variant>
 
 namespace
 {
 
-template <typename T>
+template <std::integral T>
 auto readInt(std::istream& is) -> T
 {
     // We make no assumption about platform endianness.
@@ -23,7 +25,7 @@ auto readInt(std::istream& is) -> T
     return x;
 }
 
-template <typename T>
+template <std::integral T>
 void writeInt(std::ostream& os, const T& x)
 {
     // We make no assumption about platform endianness.
@@ -137,8 +139,8 @@ struct ExtraField
         std::optional<std::uint64_t> headerOffset;
         std::optional<std::uint32_t> diskStartNumber;
 
-        template <typename Header, typename = std::enable_if_t<std::is_same_v<Header, LocalFileHeader> ||
-                                                               std::is_same_v<Header, CentralDirectoryHeader>>>
+        template <typename Header>
+            requires std::same_as<Header, LocalFileHeader> || std::same_as<Header, CentralDirectoryHeader>
         static auto read(std::istream& is, std::uint16_t dataSize, const Header& header) -> Zip64
         {
             auto data      = Zip64{};
@@ -211,8 +213,8 @@ struct ExtraField
         }
     };
 
-    template <typename Header, typename = std::enable_if_t<std::is_same_v<Header, LocalFileHeader> ||
-                                                           std::is_same_v<Header, CentralDirectoryHeader>>>
+    template <typename Header>
+        requires std::same_as<Header, LocalFileHeader> || std::same_as<Header, CentralDirectoryHeader>
     static auto read(std::istream& is, const Header& header) -> ExtraField
     {
         auto extraField = ExtraField{};
@@ -265,16 +267,16 @@ struct ExtraField
     template <typename T>
     auto find() const -> const T*
     {
-        const auto it = std::find_if(blocks.begin(), blocks.end(),
-                                     [](const auto& block) { return std::holds_alternative<T>(block); });
+        const auto it =
+            std::ranges::find_if(blocks, [](const auto& block) { return std::holds_alternative<T>(block); });
         return it != blocks.end() ? &std::get<T>(*it) : nullptr;
     }
 
     template <typename T>
     auto find() -> T*
     {
-        const auto it = std::find_if(blocks.begin(), blocks.end(),
-                                     [](const auto& block) { return std::holds_alternative<T>(block); });
+        const auto it =
+            std::ranges::find_if(blocks, [](const auto& block) { return std::holds_alternative<T>(block); });
         return it != blocks.end() ? &std::get<T>(*it) : nullptr;
     }
 
@@ -555,7 +557,7 @@ Zip::Zip(std::istream& stream)
 
 auto Zip::operator[](const std::string& name) const -> Zip::Entry
 {
-    const auto it = std::find_if(begin(), end(), [&name](const Entry& entry) { return entry.name == name; });
+    const auto it = std::ranges::find_if(*this, [&name](const Entry& entry) { return entry.name == name; });
 
     if (it == end())
         throw Error{"found no entry named \"" + name + "\""};
@@ -566,7 +568,7 @@ auto Zip::operator[](const std::string& name) const -> Zip::Entry
 auto Zip::operator[](std::size_t index) const -> Zip::Entry
 {
     auto       nextIndex = std::size_t{};
-    const auto it = std::find_if(begin(), end(), [&nextIndex, index](const Entry&) { return nextIndex++ == index; });
+    const auto it = std::ranges::find_if(*this, [&nextIndex, index](const Entry&) { return nextIndex++ == index; });
 
     if (it == end())
         throw Error{"found no entry at index " + std::to_string(index) + " (maximum index for this archive is " +
@@ -624,53 +626,43 @@ void Zip::changeKeys(std::ostream& os, const Keys& oldKeys, const Keys& newKeys,
     progress.done  = 0;
     progress.total = packedSizeByLocalOffset.size();
 
+    auto input  = std::ranges::subrange{std::istreambuf_iterator{m_is}, std::istreambuf_iterator<char>{}};
+    auto output = std::ostreambuf_iterator{os};
+
     for (const auto& [localHeaderOffset, packedSize] : packedSizeByLocalOffset)
     {
         if (currentOffset < localHeaderOffset)
-        {
-            std::copy_n(std::istreambuf_iterator{m_is}, localHeaderOffset - currentOffset,
-                        std::ostreambuf_iterator{os});
-            m_is.get();
-        }
+            std::ranges::copy(input | std::views::take(localHeaderOffset - currentOffset), output);
 
         if (!checkSignature(m_is, Signature::LocalFileHeader))
             throw Error{"could not find local file header"};
 
         writeInt(os, static_cast<std::uint32_t>(Signature::LocalFileHeader));
 
-        std::copy_n(std::istreambuf_iterator{m_is}, 22, std::ostreambuf_iterator{os});
-        m_is.get();
+        std::ranges::copy(input | std::views::take(22), output);
 
         const auto filenameLength = readInt<std::uint16_t>(m_is);
         const auto extraSize      = readInt<std::uint16_t>(m_is);
         writeInt(os, filenameLength);
         writeInt(os, extraSize);
+        std::ranges::copy(input | std::views::take(filenameLength + extraSize), output);
 
-        if (0 < filenameLength + extraSize)
-        {
-            std::copy_n(std::istreambuf_iterator{m_is}, filenameLength + extraSize, std::ostreambuf_iterator{os});
-            m_is.get();
-        }
-
-        auto decrypt = oldKeys;
-        auto encrypt = newKeys;
-        auto in      = std::istreambuf_iterator{m_is};
-        std::generate_n(std::ostreambuf_iterator{os}, packedSize,
-                        [&in, &decrypt, &encrypt]() -> char
-                        {
-                            const auto p = *in++ ^ decrypt.getK();
-                            const auto c = p ^ encrypt.getK();
-                            decrypt.update(p);
-                            encrypt.update(p);
-                            return c;
-                        });
+        std::ranges::transform(input | std::views::take(packedSize), output,
+                               [decrypt = oldKeys, encrypt = newKeys](char c) mutable -> char
+                               {
+                                   const auto p  = c ^ decrypt.getK();
+                                   const auto c2 = p ^ encrypt.getK();
+                                   decrypt.update(p);
+                                   encrypt.update(p);
+                                   return c2;
+                               });
 
         currentOffset = localHeaderOffset + 30 + filenameLength + extraSize + packedSize;
 
         progress.done++;
     }
 
-    std::copy(std::istreambuf_iterator{m_is}, {}, std::ostreambuf_iterator{os});
+    std::ranges::copy(input, output);
 }
 
 void Zip::decrypt(std::ostream& os, const Keys& keys, Progress& progress) const
@@ -689,14 +681,13 @@ void Zip::decrypt(std::ostream& os, const Keys& keys, Progress& progress) const
     progress.done  = 0;
     progress.total = packedSizeByLocalOffset.size();
 
+    auto input  = std::ranges::subrange{std::istreambuf_iterator{m_is}, std::istreambuf_iterator<char>{}};
+    auto output = std::ostreambuf_iterator{os};
+
     for (const auto& [localHeaderOffset, packedSize] : packedSizeByLocalOffset)
     {
         if (currentOffset < localHeaderOffset)
-        {
-            std::copy_n(std::istreambuf_iterator{m_is}, localHeaderOffset - currentOffset,
-                        std::ostreambuf_iterator{os});
-            m_is.get();
-        }
+            std::ranges::copy(input | std::views::take(localHeaderOffset - currentOffset), output);
 
         // transform file header
         if (!checkSignature(m_is, Signature::LocalFileHeader))
@@ -754,9 +745,7 @@ void Zip::decrypt(std::ostream& os, const Keys& keys, Progress& progress) const
 
     if (currentOffset < m_centralDirectoryOffset)
     {
-        std::copy_n(std::istreambuf_iterator{m_is}, m_centralDirectoryOffset - currentOffset,
-                    std::ostreambuf_iterator{os});
-        m_is.get();
+        std::ranges::copy(input | std::views::take(m_centralDirectoryOffset - currentOffset), output);
         currentOffset = m_centralDirectoryOffset;
     }
 
@@ -801,30 +790,24 @@ void Zip::decrypt(std::ostream& os, const Keys& keys, Progress& progress) const
         const auto sizeOfZip64Eocd = readInt<std::uint64_t>(m_is);
         writeInt<std::uint64_t>(os, sizeOfZip64Eocd);
 
-        std::copy_n(std::istreambuf_iterator{m_is}, 36, std::ostreambuf_iterator{os});
-        m_is.get();
+        std::ranges::copy(input | std::views::take(36), output);
 
         const auto eocdStartOffset = readInt<std::uint64_t>(m_is);
         writeInt<std::uint64_t>(os, translateOffset(eocdStartOffset));
 
         if (44 < sizeOfZip64Eocd)
-        {
-            std::copy_n(std::istreambuf_iterator{m_is}, sizeOfZip64Eocd - 44, std::ostreambuf_iterator{os});
-            m_is.get();
-        }
+            std::ranges::copy(input | std::views::take(sizeOfZip64Eocd - 44), output);
 
         if (!checkSignature(m_is, Signature::Zip64EocdLocator))
             throw Error{"could not find Zip64 end of central directory locator"};
         writeInt<std::uint32_t>(os, static_cast<std::uint32_t>(Signature::Zip64EocdLocator));
 
-        std::copy_n(std::istreambuf_iterator{m_is}, 4, std::ostreambuf_iterator{os});
-        m_is.get();
+        std::ranges::copy(input | std::views::take(4), output);
 
         const auto zip64EocdStartOffset = readInt<std::uint64_t>(m_is);
         writeInt<std::uint64_t>(os, translateOffset(zip64EocdStartOffset));
 
-        std::copy_n(std::istreambuf_iterator{m_is}, 4, std::ostreambuf_iterator{os});
-        m_is.get();
+        std::ranges::copy(input | std::views::take(4), output);
 
         signature = readInt<std::uint32_t>(m_is);
     }
@@ -833,30 +816,30 @@ void Zip::decrypt(std::ostream& os, const Keys& keys, Progress& progress) const
         throw Error{"could not find end of central directory record"};
     writeInt<std::uint32_t>(os, static_cast<std::uint32_t>(Signature::Eocd));
 
-    std::copy_n(std::istreambuf_iterator{m_is}, 12, std::ostreambuf_iterator{os});
-    m_is.get();
+    std::ranges::copy(input | std::views::take(12), output);
 
     auto eocdOffset = readInt<std::uint32_t>(m_is);
     if (!isZip64 || eocdOffset != mask<0, 32>)
         eocdOffset = translateOffset(eocdOffset);
     writeInt<std::uint32_t>(os, eocdOffset);
 
-    std::copy(std::istreambuf_iterator{m_is}, {}, std::ostreambuf_iterator{os});
+    std::ranges::copy(input, output);
 }
 
 void decipher(std::istream& is, std::size_t size, std::size_t discard, std::ostream& os, Keys keys)
 {
-    auto cipher = std::istreambuf_iterator{is};
-    auto i      = std::size_t{};
+    auto cipher = std::ranges::subrange{std::istreambuf_iterator{is}, std::istreambuf_iterator<char>{}};
+    auto output = std::ostreambuf_iterator{os};
 
-    for (; i < discard && i < size && cipher != std::istreambuf_iterator<char>{}; i++, ++cipher)
-        keys.update(*cipher ^ keys.getK());
+    for (const auto c : cipher | std::views::take(discard))
+        keys.update(c ^ keys.getK());
 
-    for (auto plain = std::ostreambuf_iterator{os}; i < size && cipher != std::istreambuf_iterator<char>{};
-         i++, ++cipher, ++plain)
-    {
-        const auto p = *cipher ^ keys.getK();
-        keys.update(p);
-        *plain = p;
-    }
+    if (discard < size)
+        std::ranges::transform(cipher | std::views::take(size - discard), output,
+                               [&keys](char c) -> char
+                               {
+                                   const auto p = c ^ keys.getK();
+                                   keys.update(p);
+                                   return p;
+                               });
 }

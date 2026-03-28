@@ -13,7 +13,7 @@ TEST("getMsbProdFiber2")
         {
             const auto m               = msb(x * MultTab::multInv);
             const auto expectedInFiber = m == msbprodinv || m == (msbprodinv + 255) % 256;
-            const auto actuallyInFiber = std::find(fiber.begin(), fiber.end(), x) != fiber.end();
+            const auto actuallyInFiber = std::ranges::find(fiber, x) != fiber.end();
             CHECK(actuallyInFiber == expectedInFiber);
         }
     }
@@ -29,7 +29,7 @@ TEST("getMsbProdFiber3")
             const auto m = msb(x * MultTab::multInv);
             const auto expectedInFiber =
                 m == msbprodinv || m == (msbprodinv + 255) % 256 || m == (msbprodinv + 1) % 256;
-            const auto actuallyInFiber = std::find(fiber.begin(), fiber.end(), x) != fiber.end();
+            const auto actuallyInFiber = std::ranges::find(fiber, x) != fiber.end();
             CHECK(actuallyInFiber == expectedInFiber);
         }
     }

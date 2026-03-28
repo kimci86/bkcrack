@@ -5,27 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
-
-namespace
-{
-
-struct Range
-{
-    auto size() const -> std::size_t
-    {
-        return std::distance(begin, end);
-    }
-
-    auto operator<(const Range& other) const -> bool
-    {
-        return size() < other.size();
-    }
-
-    std::vector<std::pair<std::size_t, std::uint8_t>>::iterator begin;
-    std::vector<std::pair<std::size_t, std::uint8_t>>::iterator end;
-};
-
-} // namespace
+#include <ranges>
 
 Data::Error::Error(const std::string& description)
 : BaseError{"Data error", description}
@@ -60,11 +40,8 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 
     // shift offsets to absolute values
     offset = encryptionHeaderSize + offsetArg;
-
-    std::transform(extraPlaintextArg.begin(), extraPlaintextArg.end(), std::back_inserter(extraPlaintext),
-                   [](const std::pair<int, std::uint8_t>& extra) {
-                       return std::pair{encryptionHeaderSize + extra.first, extra.second};
-                   });
+    for (const auto& [extraOffset, extraByte] : extraPlaintextArg)
+        extraPlaintext.emplace_back(encryptionHeaderSize + extraOffset, extraByte);
 
     // merge contiguous plaintext with adjacent extra plaintext
     {
@@ -73,14 +50,12 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
         // - [before, after)                  overlapping contiguous plaintext
         // - [after, extraPlaintext.end())    after contiguous plaintext
 
-        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::pair{offset, std::uint8_t{}});
-        auto after =
-            std::lower_bound(before, extraPlaintext.end(), std::pair{offset + plaintext.size(), std::uint8_t{}});
+        auto before = std::ranges::lower_bound(extraPlaintext, std::pair{offset, std::uint8_t{}});
+        auto after  = std::ranges::lower_bound(extraPlaintext, std::pair{offset + plaintext.size(), std::uint8_t{}});
 
         // overwrite overlapping plaintext
-        std::for_each(before, after,
-                      [this](const std::pair<std::size_t, std::uint8_t>& e)
-                      { plaintext[e.first - offset] = e.second; });
+        for (const auto& [extraOffset, extraByte] : std::ranges::subrange{before, after})
+            plaintext[extraOffset - offset] = extraByte;
 
         // merge contiguous plaintext with extra plaintext immediately before
         while (before != extraPlaintext.begin() && (before - 1)->first == offset - 1)
@@ -99,46 +74,45 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 
     // find the longest contiguous sequence in extra plaintext and use is as contiguous plaintext if sensible
     {
-        auto range = Range{extraPlaintext.begin(), extraPlaintext.begin()}; // empty
+        auto range = std::ranges::subrange{extraPlaintext.begin(), extraPlaintext.begin()}; // empty
 
         for (auto it = extraPlaintext.begin(); it != extraPlaintext.end();)
         {
-            auto current = Range{it, ++it};
-            while (it != extraPlaintext.end() && it->first == (current.end - 1)->first + 1)
-                current.end = ++it;
+            auto current = std::ranges::subrange{it, ++it};
+            while (it != extraPlaintext.end() && it->first == current.back().first + 1)
+                current = {current.begin(), ++it};
 
-            range = std::max(range, current);
+            range = std::ranges::max(range, current, {}, std::size<decltype(range)>);
         }
 
         if (plaintext.size() < range.size())
         {
             const auto plaintextSize = plaintext.size();
-            const auto rangeOffset   = range.begin->first;
+            const auto rangeOffset   = range.front().first;
 
             // append last bytes from the range to contiguous plaintext
-            for (auto i = plaintextSize; i < range.size(); i++)
-                plaintext.push_back(range.begin[i].second);
+            for (const auto& [extraOffset, extraByte] : range | std::views::drop(plaintextSize))
+                plaintext.push_back(extraByte);
 
             // remove those bytes from the range
-            range.end = extraPlaintext.erase(range.begin + plaintextSize, range.end);
+            range = {range.begin(), extraPlaintext.erase(range.begin() + plaintextSize, range.end())};
             if (plaintextSize == 0)
-                range.begin = range.end;
+                range = {range.end(), range.end()}; // begin iterator was invalidated
 
             // rotate extra plaintext so that it will be sorted at the end of this scope
             {
-                auto before =
-                    std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::pair{offset, std::uint8_t{}});
+                const auto before = std::ranges::lower_bound(extraPlaintext, std::pair{offset, std::uint8_t{}});
                 if (offset < rangeOffset)
-                    range = {before, std::rotate(before, range.begin, range.end)};
+                    range = {before, std::rotate(before, range.begin(), range.end())};
                 else
-                    range = {std::rotate(range.begin, range.end, before), before};
+                    range = {std::rotate(range.begin(), range.end(), before), before};
             }
 
             // swap bytes between the former contiguous plaintext and the beginning of the range
             for (auto i = std::size_t{}; i < plaintextSize; i++)
             {
-                range.begin[i].first = offset + i;
-                std::swap(plaintext[i], range.begin[i].second);
+                range[i].first = offset + i;
+                std::swap(plaintext[i], range[i].second);
             }
 
             offset = rangeOffset;
@@ -155,10 +129,10 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
 
     // reorder remaining extra plaintext for filtering
     {
-        auto before = std::lower_bound(extraPlaintext.begin(), extraPlaintext.end(), std::pair{offset, std::uint8_t{}});
-        std::reverse(extraPlaintext.begin(), before);
-        std::inplace_merge(
-            extraPlaintext.begin(), before, extraPlaintext.end(),
+        const auto before = std::ranges::lower_bound(extraPlaintext, std::pair{offset, std::uint8_t{}});
+        std::ranges::reverse(std::ranges::subrange{extraPlaintext.begin(), before});
+        std::ranges::inplace_merge(
+            extraPlaintext, before,
             [this](const std::pair<std::size_t, std::uint8_t>& a, const std::pair<std::size_t, std::uint8_t>& b)
             {
                 constexpr auto absdiff = [](std::size_t x, std::size_t y) { return x < y ? y - x : x - y; };
@@ -168,6 +142,6 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
     }
 
     // compute keystream
-    std::transform(plaintext.begin(), plaintext.end(), ciphertext.begin() + offset, std::back_inserter(keystream),
-                   std::bit_xor<>());
+    std::ranges::transform(plaintext, ciphertext | std::views::drop(offset), std::back_inserter(keystream),
+                           std::bit_xor<>());
 }

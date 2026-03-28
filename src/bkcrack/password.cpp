@@ -188,10 +188,8 @@ public:
         password.append(p.begin(), p.end());
         password.erase(password.begin(), password.end() - length);
 
-        const auto isInCharset =
-            std::all_of(password.begin(), password.end(),
-                        [this](char c)
-                        { return std::binary_search(charset.begin(), charset.end(), static_cast<std::uint8_t>(c)); });
+        const auto isInCharset = std::ranges::all_of(
+            password, [this](char c) { return std::ranges::binary_search(charset, static_cast<std::uint8_t>(c)); });
 
         if (!isInCharset)
         {
@@ -595,12 +593,12 @@ public:
         password.resize(mask.size());
 
         const auto isInSearchSpace =
-            std::all_of(password.begin(), password.end(),
-                        [this, i = 0](char c) mutable
-                        {
-                            const auto& charset = mask[i++];
-                            return std::binary_search(charset.begin(), charset.end(), static_cast<std::uint8_t>(c));
-                        });
+            std::ranges::all_of(password,
+                                [this, i = 0](char c) mutable
+                                {
+                                    const auto& charset = mask[i++];
+                                    return std::ranges::binary_search(charset, static_cast<std::uint8_t>(c));
+                                });
 
         if (!isInSearchSpace)
         {

@@ -30,7 +30,7 @@ auto getZvalue(std::size_t index) -> std::uint32_t
 
 auto contains(const std::vector<std::uint32_t>& vector, std::uint32_t value) -> bool
 {
-    return std::find(vector.begin(), vector.end(), value) != vector.end();
+    return std::ranges::find(vector, value) != vector.end();
 }
 } // namespace
 

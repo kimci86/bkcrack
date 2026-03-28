@@ -1,5 +1,8 @@
 #include "bkcrack/file.hpp"
 
+#include <algorithm>
+#include <ranges>
+
 FileError::FileError(const std::string& description)
 : BaseError{"File error", description}
 {
@@ -16,9 +19,9 @@ auto openInput(const std::string& filename) -> std::ifstream
 auto loadStream(std::istream& is, std::size_t size) -> std::vector<std::uint8_t>
 {
     auto content = std::vector<std::uint8_t>{};
-    auto it      = std::istreambuf_iterator{is};
-    for (auto i = std::size_t{}; i < size && it != std::istreambuf_iterator<char>{}; i++, ++it)
-        content.push_back(*it);
+    std::ranges::copy(std::ranges::subrange{std::istreambuf_iterator{is}, std::istreambuf_iterator<char>{}} |
+                          std::views::take(size),
+                      std::back_inserter(content));
 
     return content;
 }
