@@ -15,6 +15,12 @@ TEST("missing exception")
 
 TEST("mismatching exception type")
 {
+    const auto throwing = [] { throw 42; };
+    CHECK_THROWS(std::runtime_error, "", throwing());
+}
+
+TEST("mismatching std::exception type")
+{
     const auto throwing = [] { throw std::invalid_argument{"invalid argument"}; };
     CHECK_THROWS(std::runtime_error, "", throwing());
 }

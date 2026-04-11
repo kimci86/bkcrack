@@ -12,6 +12,7 @@ struct TestCase
 {
     const char* name;
     void (&function)();
+    std::source_location location;
 };
 
 auto testRegistry() -> std::vector<TestCase>&
@@ -27,9 +28,9 @@ auto checkMessageContains(const char* actual, const char* expected) -> bool
     return std::string_view{actual}.find(expected) != std::string_view::npos;
 }
 
-TestRegistration::TestRegistration(const char* name, void (&function)())
+TestRegistration::TestRegistration(const char* name, void (&function)(), std::source_location location)
 {
-    testRegistry().emplace_back(name, function);
+    testRegistry().emplace_back(name, function, location);
 }
 
 auto TestRunner::runAllTests() -> bool
@@ -38,36 +39,49 @@ auto TestRunner::runAllTests() -> bool
     auto fail = 0;
 
     const auto allStart = std::chrono::high_resolution_clock::now();
-    for (const auto& [name, function] : testRegistry())
+    for (const auto& [name, function, location] : testRegistry())
     {
         std::cout << name << std::flush;
-        const auto start = std::chrono::high_resolution_clock::now();
+
+        const auto maybeDuration = [start = std::chrono::high_resolution_clock::now()]()
+        {
+            const auto end = std::chrono::high_resolution_clock::now();
+            if (const auto duration = end - start; duration > std::chrono::milliseconds{1})
+            {
+                auto oss = std::ostringstream{};
+                oss << " (" << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << " ms)";
+                return std::move(oss).str();
+            }
+            return std::string{};
+        };
+
         try
         {
             function();
-            std::cout << " [PASS]";
+            std::cout << " [PASS]" << maybeDuration() << std::endl;
             ++pass;
         }
         catch (const TestError& error)
         {
+            std::cout << " [FAIL]" << maybeDuration();
             std::cout << "\n  " << error.location.file_name() << ':' << error.location.line() //
-                      << "\n  " << error.expression << " [FAIL]";
+                      << "\n  " << error.expression << std::endl;
             ++fail;
         }
         catch (const std::exception& error)
         {
-            std::cout << "\n  " << error.what() << " [FAIL]";
+            std::cout << " [FAIL]" << maybeDuration();
+            std::cout << "\n  " << location.file_name() << ':' << location.line() //
+                      << "\n  an exception occurred with message \"" << error.what() << "\"" << std::endl;
             ++fail;
         }
         catch (...)
         {
-            std::cout << "\n  exception [FAIL]";
+            std::cout << " [FAIL]" << maybeDuration();
+            std::cout << "\n  " << location.file_name() << ':' << location.line() //
+                      << "\n  an exception occurred" << std::endl;
             ++fail;
         }
-        const auto end = std::chrono::high_resolution_clock::now();
-        if (const auto duration = end - start; duration > std::chrono::milliseconds{1})
-            std::cout << " (" << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << " ms)";
-        std::cout << std::endl;
     }
 
     std::cout << "Tests: " << pass << " pass, " << fail << " fail";
