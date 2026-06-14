@@ -24,10 +24,21 @@ jobs:
             }
           - { name: Windows 64-bit, os: windows-latest, cmake-config: -A x64 }
           - { name: Windows 32-bit, os: windows-latest, cmake-config: -A Win32 }
+          - {
+              name: Emscripten,
+              os: ubuntu-24.04,
+              cmake-config: -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake,
+            }
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Install Emscripten
+        if: matrix.platform.name == 'Emscripten'
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          actions-cache-folder: "emsdk-cache"
 
       - name: Configure project
         run: cmake -S . -B build -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_LINK_WARNING_AS_ERROR=ON -DBKCRACK_BUILD_TESTING=ON ${{ matrix.platform.cmake-config }}

@@ -26,3 +26,6 @@ endif()
 
 # install rules
 install(TARGETS bkcrack DESTINATION .)
+if(EMSCRIPTEN)
+    install(FILES $<TARGET_FILE_DIR:bkcrack>/bkcrack.wasm DESTINATION .)
+endif()
