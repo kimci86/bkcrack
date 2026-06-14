@@ -25,3 +25,17 @@ target_compile_features(bkcrack-core PUBLIC cxx_std_20)
 # let CMake work out the system-specific details to use threads
 find_package(Threads REQUIRED)
 target_link_libraries(bkcrack-core PRIVATE Threads::Threads)
+
+if(EMSCRIPTEN)
+    target_compile_options(bkcrack-core PUBLIC
+        -fexceptions
+        -pthread
+    )
+    target_link_options(bkcrack-core PUBLIC
+        -fexceptions
+        -pthread
+        -sPTHREAD_POOL_SIZE='navigator.hardwareConcurrency'
+        -sINITIAL_MEMORY=64mb
+        -sSTACK_SIZE=1mb
+    )
+endif()

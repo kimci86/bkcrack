@@ -20,6 +20,9 @@ add_executable(bkcrack)
 target_sources(bkcrack PRIVATE main.cpp utf-8.manifest)
 target_enable_warnings(bkcrack)
 target_link_libraries(bkcrack PRIVATE bkcrack-cli)
+if(EMSCRIPTEN)
+    target_link_options(bkcrack PRIVATE -sEXECUTABLE -sENVIRONMENT=node -sNODERAWFS)
+endif()
 
 # install rules
 install(TARGETS bkcrack DESTINATION .)
