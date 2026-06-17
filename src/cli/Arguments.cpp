@@ -233,8 +233,8 @@ auto Arguments::loadData() const -> Data
     if (!extraPlaintext.empty())
         needed = std::max(needed, Data::encryptionHeaderSize + extraPlaintext.rbegin()->first + 1);
 
-    auto ciphertext                  = std::vector<std::uint8_t>{};
-    auto extraPlaintextWithCheckByte = std::optional<std::map<int, std::uint8_t>>{};
+    auto ciphertext = std::vector<std::uint8_t>{};
+    auto checkByte  = std::optional<std::uint8_t>{};
     if (cipherArchive)
     {
         auto       stream  = openInput(*cipherArchive);
@@ -243,11 +243,8 @@ auto Arguments::loadData() const -> Data
         Zip::checkEncryption(entry, Zip::Encryption::Traditional);
         ciphertext = archive.load(entry, needed);
 
-        if (!ignoreCheckByte && !extraPlaintext.count(-1))
-        {
-            extraPlaintextWithCheckByte        = extraPlaintext;
-            (*extraPlaintextWithCheckByte)[-1] = entry.checkByte;
-        }
+        if (!ignoreCheckByte)
+            checkByte = entry.checkByte;
     }
     else
     {
@@ -255,7 +252,7 @@ auto Arguments::loadData() const -> Data
         ciphertext  = loadStream(stream, needed);
     }
 
-    return {std::move(ciphertext), std::move(plaintext), offset, extraPlaintextWithCheckByte.value_or(extraPlaintext)};
+    return {std::move(ciphertext), checkByte, std::move(plaintext), offset, extraPlaintext};
 }
 
 auto Arguments::LengthInterval::operator&(const Arguments::LengthInterval& other) const -> Arguments::LengthInterval

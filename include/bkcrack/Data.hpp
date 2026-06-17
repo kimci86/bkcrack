@@ -4,6 +4,7 @@
 #include <bkcrack/types.hpp>
 
 #include <map>
+#include <optional>
 
 /// Structure to hold the data needed for an attack
 struct Data
@@ -21,13 +22,15 @@ struct Data
 
     /// \brief Construct data and check it can be used to carry out an attack
     /// \param ciphertext Ciphertext bytes including encryption header
+    /// \param checkByte Plaintext byte at the end of encryption header (offset -1) coming for zip entry metadata.
+    ///                  Can be overridden by plaintext or extraPlaintext.
     /// \param plaintext Plaintext bytes
     /// \param offset Plaintext offset relative to ciphertext without encryption header (may be negative)
-    /// \param extraPlaintext Additional bytes of plaintext with their offset relative to ciphertext without encryption
-    /// header (may be negative)
+    /// \param extraPlaintext Additional bytes of plaintext with their offset relative to ciphertext without
+    ///                       encryption header (may be negative)
     /// \exception Error if the given data cannot be used to carry out an attack
-    Data(std::vector<std::uint8_t> ciphertext, std::vector<std::uint8_t> plaintext, int offset,
-         const std::map<int, std::uint8_t>& extraPlaintext);
+    Data(std::vector<std::uint8_t> ciphertext, std::optional<std::uint8_t> checkByte,
+         std::vector<std::uint8_t> plaintext, int offset, const std::map<int, std::uint8_t>& extraPlaintext);
 
     std::vector<std::uint8_t> ciphertext; ///< ciphertext bytes including encryption header
     std::vector<std::uint8_t> plaintext;  ///< plaintext bytes

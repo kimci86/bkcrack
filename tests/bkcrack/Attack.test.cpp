@@ -29,7 +29,7 @@ const auto z9_2_32 = std::vector<std::uint32_t>{
 
 TEST("simple case")
 {
-    const auto data     = Data{ciphertext, plaintext, 0, {}};
+    const auto data     = Data{ciphertext, {}, plaintext, 0, {}};
     auto       start    = 0;
     auto       os       = std::ostringstream{};
     auto       progress = Progress{os};
@@ -51,7 +51,7 @@ TEST("offset and extra plaintext")
 {
     const auto plaintext2 = std::vector<std::uint8_t>{plaintext.begin() + 2, plaintext.end() - 2};
     const auto extra      = std::map<int, std::uint8_t>{{-2, 0x65 ^ 0x7d}, {-1, 0x81 ^ 0x0d}, {0, 'H'}, {11, '!'}};
-    const auto data       = Data{ciphertext, plaintext2, 2, extra};
+    const auto data       = Data{ciphertext, {}, plaintext2, 2, extra};
     auto       start      = 0;
     auto       os         = std::ostringstream{};
     auto       progress   = Progress{os};
@@ -71,7 +71,7 @@ TEST("offset and extra plaintext")
 
 TEST("restart point before solution")
 {
-    const auto data     = Data{ciphertext, plaintext, 0, {}};
+    const auto data     = Data{ciphertext, {}, plaintext, 0, {}};
     auto       start    = 4;
     auto       os       = std::ostringstream{};
     auto       progress = Progress{os};
@@ -91,7 +91,7 @@ TEST("restart point before solution")
 
 TEST("restart point past solution")
 {
-    const auto data     = Data{ciphertext, plaintext, 0, {}};
+    const auto data     = Data{ciphertext, {}, plaintext, 0, {}};
     auto       start    = 8;
     auto       os       = std::ostringstream{};
     auto       progress = Progress{os};
@@ -108,7 +108,7 @@ TEST("restart point past solution")
 
 TEST("exhaustive attack")
 {
-    const auto data     = Data{ciphertext, plaintext, 0, {}};
+    const auto data     = Data{ciphertext, {}, plaintext, 0, {}};
     auto       start    = 0;
     auto       os       = std::ostringstream{};
     auto       progress = Progress{os};

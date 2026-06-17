@@ -37,7 +37,7 @@ TEST("Data::Error")
 
 TEST("contiguous plaintext only")
 {
-    const auto data = Data{ciphertext, plaintext, 0, {}};
+    const auto data = Data{ciphertext, {}, plaintext, 0, {}};
     CHECK(data.ciphertext == ciphertext);
     CHECK(data.plaintext == plaintext);
     CHECK(data.offset == 12);
@@ -47,7 +47,7 @@ TEST("contiguous plaintext only")
 
 TEST("contiguous plaintext and sparse extra plaintext")
 {
-    const auto data = Data{ciphertext, prefix(plaintext, 8), 0, {{-3, 0x4e}, {-2, 0x18}, {10, 'd'}, {11, '!'}}};
+    const auto data = Data{ciphertext, {}, prefix(plaintext, 8), 0, {{-3, 0x4e}, {-2, 0x18}, {10, 'd'}, {11, '!'}}};
     CHECK(data.ciphertext == ciphertext);
     CHECK(data.plaintext == prefix(plaintext, 8));
     CHECK(data.offset == 12);
@@ -57,7 +57,7 @@ TEST("contiguous plaintext and sparse extra plaintext")
 
 TEST("merge extra plaintext after")
 {
-    const auto data = Data{ciphertext, prefix(plaintext, 10), 0, {{10, 'd'}, {11, '!'}}};
+    const auto data = Data{ciphertext, {}, prefix(plaintext, 10), 0, {{10, 'd'}, {11, '!'}}};
     CHECK(data.ciphertext == ciphertext);
     CHECK(data.plaintext == plaintext);
     CHECK(data.offset == 12);
@@ -67,7 +67,7 @@ TEST("merge extra plaintext after")
 
 TEST("merge extra plaintext before")
 {
-    const auto data = Data{ciphertext, slice(plaintext, 2, 12), 2, {{0, 'H'}, {1, 'e'}}};
+    const auto data = Data{ciphertext, {}, slice(plaintext, 2, 12), 2, {{0, 'H'}, {1, 'e'}}};
     CHECK(data.ciphertext == ciphertext);
     CHECK(data.plaintext == plaintext);
     CHECK(data.offset == 12);
@@ -83,7 +83,7 @@ TEST("overwrite contiguous plaintext with extra plaintext")
     auto overwrittenKeystream = keystream;
     overwrittenKeystream[17]  = ciphertext[17] ^ '*';
 
-    const auto data = Data{ciphertext, plaintext, 0, {{5, '*'}}};
+    const auto data = Data{ciphertext, {}, plaintext, 0, {{5, '*'}}};
     CHECK(data.ciphertext == ciphertext);
     CHECK(data.plaintext == overwrittenPlaintext);
     CHECK(data.offset == 12);
@@ -94,6 +94,7 @@ TEST("overwrite contiguous plaintext with extra plaintext")
 TEST("long contiguous extra plaintext after")
 {
     const auto data = Data{ciphertext,
+                           {},
                            {0x8c, 'H', 'e', 'l'},
                            -1,
                            {{4, 'o'}, {5, ' '}, {6, 'W'}, {7, 'o'}, {8, 'r'}, {9, 'l'}, {10, 'd'}, {11, '!'}}};
@@ -107,6 +108,7 @@ TEST("long contiguous extra plaintext after")
 TEST("long contiguous extra plaintext before")
 {
     const auto data = Data{ciphertext,
+                           {},
                            {'r', 'l', 'd', '!'},
                            8,
                            {{-1, 0x8c}, {0, 'H'}, {1, 'e'}, {2, 'l'}, {3, 'l'}, {4, 'o'}, {5, ' '}, {6, 'W'}}};
@@ -123,7 +125,7 @@ TEST("extra plaintext only")
         {0, 'H'}, {1, 'e'}, {2, 'l'}, {3, 'l'}, {4, 'o'},  {5, ' '},
         {6, 'W'}, {7, 'o'}, {8, 'r'}, {9, 'l'}, {10, 'd'}, {11, '!'},
     };
-    const auto data = Data{ciphertext, {}, -1, extraPlaintext};
+    const auto data = Data{ciphertext, {}, {}, -1, extraPlaintext};
     CHECK(data.ciphertext == ciphertext);
     CHECK(data.plaintext == plaintext);
     CHECK(data.offset == 12);
@@ -131,30 +133,72 @@ TEST("extra plaintext only")
     CHECK(data.extraPlaintext.empty());
 }
 
+TEST("check byte added to plaintext")
+{
+    const auto data = Data{ciphertext, 0x8c, plaintext, 0, {}};
+    CHECK(data.ciphertext == ciphertext);
+    CHECK(data.plaintext == decltype(data.plaintext){0x8c, 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'});
+    CHECK(data.offset == 11);
+    CHECK(data.keystream == slice(keystream, 11, 24));
+    CHECK(data.extraPlaintext.empty());
+}
+
+TEST("check byte added to extra plaintext")
+{
+    const auto data = Data{ciphertext, 0x8c, slice(plaintext, 2, 10), 2, {{-3, 0x4e}, {-2, 0x18}, {11, '!'}}};
+    CHECK(data.ciphertext == ciphertext);
+    CHECK(data.plaintext == slice(plaintext, 2, 10));
+    CHECK(data.offset == 14);
+    CHECK(data.keystream == slice(keystream, 14, 22));
+    CHECK(data.extraPlaintext == decltype(data.extraPlaintext){{23, '!'}, {11, 0x8c}, {10, 0x18}, {9, 0x4e}});
+}
+
+TEST("check byte overridden by plaintext")
+{
+    const auto data =
+        Data{ciphertext, 0xff, {0x8c, 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'}, -1, {}};
+    CHECK(data.ciphertext == ciphertext);
+    CHECK(data.plaintext == decltype(data.plaintext){0x8c, 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'});
+    CHECK(data.offset == 11);
+    CHECK(data.keystream == slice(keystream, 11, 24));
+    CHECK(data.extraPlaintext.empty());
+}
+
+TEST("check byte overridden by extra plaintext")
+{
+    const auto data = Data{ciphertext, 0x8c, slice(plaintext, 2, 12), 2, {{-2, 0x18}, {-1, 0xff}}};
+    CHECK(data.ciphertext == ciphertext);
+    CHECK(data.plaintext == slice(plaintext, 2, 12));
+    CHECK(data.offset == 14);
+    CHECK(data.keystream == slice(keystream, 14, 24));
+    CHECK(data.extraPlaintext == decltype(data.extraPlaintext){{11, 0xff}, {10, 0x18}});
+}
+
 TEST("not enough data")
 {
     CHECK_THROWS(Data::Error, "ciphertext is too small for an attack (minimum length is 12)",
-                 Data{prefix(ciphertext, 11), prefix(plaintext, 11), -12, {}});
+                 Data{prefix(ciphertext, 11), {}, prefix(plaintext, 11), -12, {}});
 
     CHECK_THROWS(Data::Error, "ciphertext is smaller than plaintext",
-                 Data{prefix(ciphertext, 12), std::vector<std::uint8_t>('A', 13), -12, {}});
+                 Data{prefix(ciphertext, 12), {}, std::vector<std::uint8_t>('A', 13), -12, {}});
 
     CHECK_THROWS(Data::Error, "not enough contiguous plaintext (7 bytes available, minimum is 8)",
-                 Data{ciphertext, prefix(plaintext, 7), 0, {}});
+                 Data{ciphertext, {}, prefix(plaintext, 7), 0, {}});
 
     CHECK_THROWS(Data::Error, "not enough plaintext (11 bytes available, minimum is 12)",
-                 Data{ciphertext, prefix(plaintext, 9), 0, {{10, 'd'}, {11, '!'}}});
+                 Data{ciphertext, {}, prefix(plaintext, 9), 0, {{10, 'd'}, {11, '!'}}});
 }
 
 TEST("invalid offset")
 {
     CHECK_THROWS(Data::Error, "plaintext offset -13 is too small (minimum is -12)",
-                 Data{ciphertext, plaintext, -13, {}});
+                 Data{ciphertext, {}, plaintext, -13, {}});
 
-    CHECK_THROWS(Data::Error, "plaintext offset 1 is too large", Data{ciphertext, plaintext, 1, {}});
+    CHECK_THROWS(Data::Error, "plaintext offset 1 is too large", Data{ciphertext, {}, plaintext, 1, {}});
 
     CHECK_THROWS(Data::Error, "extra plaintext offset -13 is too small (minimum is -12)",
-                 Data{ciphertext, plaintext, 0, {{-13, 0x00}}});
+                 Data{ciphertext, {}, plaintext, 0, {{-13, 0x00}}});
 
-    CHECK_THROWS(Data::Error, "extra plaintext offset 12 is too large", Data{ciphertext, plaintext, 0, {{12, 0x00}}});
+    CHECK_THROWS(Data::Error, "extra plaintext offset 12 is too large",
+                 Data{ciphertext, {}, plaintext, 0, {{12, 0x00}}});
 }

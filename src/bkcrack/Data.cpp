@@ -12,8 +12,8 @@ Data::Error::Error(const std::string& description)
 {
 }
 
-Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> plaintextArg, int offsetArg,
-           const std::map<int, std::uint8_t>& extraPlaintextArg)
+Data::Data(std::vector<std::uint8_t> ciphertextArg, std::optional<std::uint8_t> checkByte,
+           std::vector<std::uint8_t> plaintextArg, int offsetArg, const std::map<int, std::uint8_t>& extraPlaintextArg)
 : ciphertext{std::move(ciphertextArg)}
 , plaintext{std::move(plaintextArg)}
 {
@@ -42,6 +42,20 @@ Data::Data(std::vector<std::uint8_t> ciphertextArg, std::vector<std::uint8_t> pl
     offset = encryptionHeaderSize + offsetArg;
     for (const auto& [extraOffset, extraByte] : extraPlaintextArg)
         extraPlaintext.emplace_back(encryptionHeaderSize + extraOffset, extraByte);
+
+    // include checkByte at the end of encryption header unless the byte at this offset is already provided
+    if (checkByte)
+    {
+        const auto providedByPlaintext =
+            offset <= encryptionHeaderSize - 1 && encryptionHeaderSize - 1 < offset + plaintext.size();
+        const auto providedByExtraPlaintext = extraPlaintextArg.count(-1) != 0;
+        if (!providedByPlaintext && !providedByExtraPlaintext)
+        {
+            const auto insertionPos =
+                std::ranges::lower_bound(extraPlaintext, std::pair{encryptionHeaderSize - 1, std::uint8_t{}});
+            extraPlaintext.emplace(insertionPos, encryptionHeaderSize - 1, *checkByte);
+        }
+    }
 
     // merge contiguous plaintext with adjacent extra plaintext
     {
