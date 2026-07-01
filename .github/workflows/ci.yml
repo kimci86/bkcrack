@@ -44,7 +44,7 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.platform.name }} package
+          archive: false
           path: |
             build/*.zip
             build/*.tar.gz
@@ -105,9 +105,9 @@ jobs:
       - name: Download packages
         uses: actions/download-artifact@v8
         with:
-          pattern: "* package"
           path: packages
           merge-multiple: true
+          skip-decompress: true
 
       - name: Create release
         uses: softprops/action-gh-release@v3
