@@ -21,12 +21,16 @@ public:
     /// Constructor
     explicit Progress(std::ostream& os);
 
+    /// Destructor
+    virtual ~Progress() = default;
+
     /// Get exclusive access to the shared output stream and output progress
     /// information with the given function
     template <std::invocable<std::ostream&> F>
     void log(F f)
     {
         const auto lock = std::scoped_lock{m_os_mutex};
+        beforeLog(m_os);
         f(m_os);
     }
 
@@ -34,7 +38,9 @@ public:
     std::atomic<int>   done  = 0;             ///< Number of steps already done
     std::atomic<int>   total = 0;             ///< Total number of steps
 
-private:
+protected:
+    virtual void beforeLog(std::ostream&) {}
+
     std::mutex    m_os_mutex;
     std::ostream& m_os;
 };
