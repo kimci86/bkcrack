@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <string>
 #include <thread>
 
 /// Progress indicator which prints itself at regular time intervals
@@ -27,6 +28,11 @@ private:
 
     std::thread m_printer;
     void        printerFunction();
+
+    void        beforeLog(std::ostream& os) override;
+    std::size_t m_lengthToClear = 0;
+
+    auto getProgressLine() -> std::string;
 };
 
 #endif // BKCRACK_CONSOLEPROGRESS_HPP
