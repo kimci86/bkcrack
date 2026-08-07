@@ -1,7 +1,6 @@
 #include "Arguments.hpp"
 #include "ConsoleProgress.hpp"
 #include "SigintHandler.hpp"
-#include "VirtualTerminalSupport.hpp"
 
 #include <bkcrack/Attack.hpp>
 #include <bkcrack/Data.hpp>
@@ -119,9 +118,6 @@ void listEntries(const std::string& archiveFilename);
 auto main(int argc, const char* argv[]) -> int
 try
 {
-    // enable virtual terminal support on Windows, no-op on other platforms
-    const auto vtSupport = VirtualTerminalSupport{};
-
     // version information
     std::cout << "bkcrack " << bkcrackVersion << " - " << bkcrackVersionDate << std::endl;
 
