@@ -2,6 +2,9 @@
 
 #include <bkcrack/log.hpp>
 
+#include <array>
+#include <cstdio>
+
 ConsoleProgress::ConsoleProgress(std::ostream& os, const std::chrono::milliseconds& interval)
 : Progress{os}
 , m_interval{interval}
@@ -34,34 +37,50 @@ void ConsoleProgress::printerFunction()
 
     while (repeat)
     {
-        if (const auto total = this->total.load())
-            log(
-                [done = done.load(), total](std::ostream& os)
-                {
-                    const auto flagsBefore     = os.setf(std::ios::fixed, std::ios::floatfield);
-                    const auto precisionBefore = os.precision(1);
-
-                    os << (100.0 * done / total) << " % (" << done << " / " << total << ")" << std::flush
-                       << "\033[1K\r";
-
-                    os.precision(precisionBefore);
-                    os.flags(flagsBefore);
-                });
+        if (const auto line = getProgressLine(); !line.empty())
+        {
+            const auto lock = std::scoped_lock{m_os_mutex};
+            m_os << '\r' << line;
+            if (line.size() < m_lengthToClear)
+                m_os << std::string(m_lengthToClear - line.size(), ' ');
+            m_os << std::flush;
+            m_lengthToClear = line.size();
+        }
 
         auto lock = std::unique_lock{m_in_destructor_mutex};
         repeat    = !m_in_destructor_cv.wait_for(lock, m_interval, [this] { return m_in_destructor; });
     }
 
+    if (const auto line = getProgressLine(); !line.empty())
+    {
+        const auto lock = std::scoped_lock{m_os_mutex};
+        m_os << '\r' << line;
+        if (line.size() < m_lengthToClear)
+            m_os << std::string(m_lengthToClear - line.size(), ' ');
+        m_os << std::endl;
+        m_lengthToClear = 0;
+    }
+}
+
+void ConsoleProgress::beforeLog(std::ostream& os)
+{
+    if (!m_lengthToClear)
+        return;
+
+    os << '\r' << std::string(m_lengthToClear, ' ') << '\r';
+    m_lengthToClear = 0;
+}
+
+auto ConsoleProgress::getProgressLine() -> std::string
+{
     if (const auto total = this->total.load())
-        log(
-            [done = done.load(), total](std::ostream& os)
-            {
-                const auto flagsBefore     = os.setf(std::ios::fixed, std::ios::floatfield);
-                const auto precisionBefore = os.precision(1);
-
-                os << (100.0 * done / total) << " % (" << done << " / " << total << ")" << std::endl;
-
-                os.precision(precisionBefore);
-                os.flags(flagsBefore);
-            });
+    {
+        const auto done   = this->done.load();
+        auto       buffer = std::array<char, 80 + 1>{};
+        const auto length =
+            std::snprintf(buffer.data(), buffer.size(), "%.1f %% (%d / %d)", 100.0 * done / total, done, total);
+        if (0 <= length && length < int{sizeof(buffer)})
+            return std::string{buffer.data(), static_cast<std::size_t>(length)};
+    }
+    return "";
 }
