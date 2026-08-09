@@ -38,15 +38,37 @@ void ConsoleProgress::printerFunction()
     while (repeat)
     {
         if (const auto line = getProgressLine(); !line.empty())
-            log([line](std::ostream& os)
-                { os << line << std::flush << '\r' << std::string(line.size(), ' ') << '\r'; });
+        {
+            const auto lock = std::scoped_lock{m_os_mutex};
+            m_os << '\r' << line;
+            if (line.size() < m_lengthToClear)
+                m_os << std::string(m_lengthToClear - line.size(), ' ');
+            m_os << std::flush;
+            m_lengthToClear = line.size();
+        }
 
         auto lock = std::unique_lock{m_in_destructor_mutex};
         repeat    = !m_in_destructor_cv.wait_for(lock, m_interval, [this] { return m_in_destructor; });
     }
 
     if (const auto line = getProgressLine(); !line.empty())
-        log([line](std::ostream& os) { os << line << std::endl; });
+    {
+        const auto lock = std::scoped_lock{m_os_mutex};
+        m_os << '\r' << line;
+        if (line.size() < m_lengthToClear)
+            m_os << std::string(m_lengthToClear - line.size(), ' ');
+        m_os << std::endl;
+        m_lengthToClear = 0;
+    }
+}
+
+void ConsoleProgress::beforeLog(std::ostream& os)
+{
+    if (!m_lengthToClear)
+        return;
+
+    os << '\r' << std::string(m_lengthToClear, ' ') << '\r';
+    m_lengthToClear = 0;
 }
 
 auto ConsoleProgress::getProgressLine() -> std::string

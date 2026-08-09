@@ -13,11 +13,11 @@ TEST("print progress regularly")
         CHECK(oss.str() == "");
 
         std::this_thread::sleep_for(std::chrono::milliseconds{500});
-        CHECK(oss.str().ends_with("0.0 % (0 / 10)\r              \r"));
+        CHECK(oss.str().ends_with("0.0 % (0 / 10)"));
 
         progress.done = 9;
         std::this_thread::sleep_for(std::chrono::milliseconds{500});
-        CHECK(oss.str().ends_with("90.0 % (9 / 10)\r               \r"));
+        CHECK(oss.str().ends_with("90.0 % (9 / 10)"));
 
         progress.done = 10;
     }
