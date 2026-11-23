@@ -3,6 +3,7 @@
 #include <TestRunner.hpp>
 
 #include <algorithm>
+#include <iterator>
 #include <numeric>
 #include <sstream>
 
